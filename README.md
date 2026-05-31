@@ -13,10 +13,10 @@ README LANGUAGES [ [**English**](README.md)  ]
 # **Quarkdown** for **IntelliJ** 
 <img src=".doc/images/logo.svg" width="150px" alt="logo" align="right" style="float: right"/>
 
-_**"Quarkdown syntax support for JetBrains IntelliJ Platform."**_
+_**"Quarkdown language support for JetBrains IntelliJ Platform."**_
 
-An IntelliJ IDEA plugin that provides comprehensive support for [Quarkdown](https://github.com/CarmJos/quarkdown)
-syntax, enabling developers to write and edit Quarkdown documents with full IDE assistance.
+An IntelliJ IDEA plugin that provides comprehensive support for [Quarkdown](https://github.com/CarmJos/quarkdown) language syntax with `.qd` files,
+enabling developers to write and edit Quarkdown documents with full IDE assistance.
 
 > Also see the [VS Code extension](https://github.com/quarkdown-labs/quarkdown-vscode) for Quarkdown support in Visual Studio Code.
 
