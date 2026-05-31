@@ -1,7 +1,7 @@
 <div align=center>
 
-<H1>**THIS PROJECT IS STILL W.I.P, EXPECT BUGS AND MISSING FEATURES.** 
-</H1>
+<h1><b>THIS PROJECT IS STILL W.I.P</b></h1>
+<h2>EXPECT BUGS AND MISSING FEATURES.</h2>
 
 <img src=".doc/images/banner.png"  alt="Banner"/>
 
