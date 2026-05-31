@@ -1,7 +1,7 @@
 <div align=center>
 
-<h1><b>THIS PROJECT IS STILL W.I.P</b></h1>
-<h2>EXPECT BUGS AND MISSING FEATURES.</h2>
+<h3><b>THIS PROJECT IS STILL W.I.P</b></h3>
+<h4>EXPECT BUGS AND MISSING FEATURES.</h4>
 
 <img src=".doc/images/banner.png"  alt="Banner"/>
 
@@ -14,7 +14,7 @@
 README LANGUAGES [ [**English**](README.md)  ]
 </div>
 
-# **Quarkdown** for **IntelliJ** 
+# **Quarkdown** _for IntelliJ_
 <img src=".doc/images/logo.svg" width="150px" alt="logo" align="right" style="float: right"/>
 
 _**"Quarkdown language support for JetBrains IntelliJ Platform."**_
