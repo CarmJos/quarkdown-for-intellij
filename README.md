@@ -10,7 +10,7 @@
 README LANGUAGES [ [**English**](README.md) | [中文](README_CN.md)  ]
 </div>
 
-# quarkdown-for-intellij <img src=".doc/images/logo.svg" width="150px" alt="logo" align="right" style="float: right"/>
+# **Quarkdown** for **IntelliJ** <img src=".doc/images/logo.svg" width="150px" alt="logo" align="right" style="float: right"/>
 
 
 _**"Quarkdown syntax support for JetBrains IntelliJ Platform."**_
