@@ -18,6 +18,8 @@ _**"Quarkdown syntax support for JetBrains IntelliJ Platform."**_
 An IntelliJ IDEA plugin that provides comprehensive support for [Quarkdown](https://github.com/CarmJos/quarkdown)
 syntax, enabling developers to write and edit Quarkdown documents with full IDE assistance.
 
+> Also see the [VS Code extension](https://github.com/quarkdown-labs/quarkdown-vscode) for Quarkdown support in Visual Studio Code.
+
 ## Features & Advantages
 
 - **Syntax Highlighting**: Full syntax highlighting for Quarkdown directives and markdown elements
