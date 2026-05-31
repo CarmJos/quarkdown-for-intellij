@@ -7,7 +7,7 @@
 [![CodeFactor](https://www.codefactor.io/repository/github/carmjos/quarkdown-for-intellij/badge)](https://www.codefactor.io/repository/github/carmjos/quarkdown-for-intellij)
 ![CodeSize](https://img.shields.io/github/languages/code-size/CarmJos/quarkdown-for-intellij)
 
-README LANGUAGES [ [**English**](README.md) | [中文](README_CN.md)  ]
+README LANGUAGES [ [**English**](README.md)  ]
 </div>
 
 # **Quarkdown** for **IntelliJ** 
@@ -31,7 +31,7 @@ syntax, enabling developers to write and edit Quarkdown documents with full IDE 
 
 ## Installation
 
-### From JetBrains Marketplace
+### From JetBrains Marketplace _(Recommended)_
 
 1. Open IntelliJ IDEA
 2. Go to `Settings/Preferences` → `Plugins`
@@ -46,54 +46,15 @@ syntax, enabling developers to write and edit Quarkdown documents with full IDE 
 4. Click the gear icon → `Install Plugin from Disk...`
 5. Select the downloaded `.zip` file and restart the IDE
 
-## Development
-
-### Preview
-
-To quickly demonstrate the applicability of the project, here are a few practical demonstrations:
-
-- [Basic Quarkdown syntax support](src/main/kotlin/cc/carm/plugin/intellij/)
-- [Tool window integration](src/main/kotlin/cc/carm/plugin/intellij/toolWindow/)
-
-Check out all code demonstrations [HERE](src/main/kotlin/cc/carm/plugin/intellij/).
-For more examples, see the [Development Guide](.doc/README.md).
-
-### Building from Source
-
-#### Prerequisites
-
-- JDK 21 or later
-- IntelliJ IDEA (for development)
-
-#### Build
-
-```bash
-# Build the plugin
-./gradlew buildPlugin
-
-# Run the plugin in a development IDE instance
-./gradlew runIde
-
-# Run tests
-./gradlew test
-```
-
-### Configuration
-
-The plugin can be configured through:
-
-- `gradle.properties`: Project metadata and build configuration
-- `settings.gradle.kts`: Gradle plugin versions and repositories
-- `build.gradle.kts`: IntelliJ Platform version and dependencies
-- `plugin.xml`: Plugin metadata and extension registrations
-
 ## Support and Donation
 
-If you appreciate this plugin, consider supporting me with a [donation](https://github.com/sponsors/CarmJos)!
+If you appreciate this plugin, consider supporting me with a donation at 
+[GitHub Sponsors](https://github.com/sponsors/CarmJos) or
+[爱发电](https://www.ifdian.net/a/carmjos/plan) !
 
-Thank you for supporting open-source projects!
+**Thank you for supporting open-source projects!**
 
-Many thanks to Jetbrains for kindly providing a license for us to work on this and other open-source projects.
+Many thanks to JetBrains for kindly providing a license for us to work on this and other open-source projects.
 
 [![](https://resources.jetbrains.com/storage/products/company/brand/logos/jb_beam.svg)](https://www.jetbrains.com/?from=https://github.com/CarmJos/)
 
