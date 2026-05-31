@@ -1,4 +1,8 @@
 <div align=center>
+
+<H1>**THIS PROJECT IS STILL W.I.P, EXPECT BUGS AND MISSING FEATURES.** 
+</H1>
+
 <img src=".doc/images/banner.png"  alt="Banner"/>
 
 [![version](https://img.shields.io/github/v/release/CarmJos/quarkdown-for-intellij)](https://github.com/CarmJos/quarkdown-for-intellij/releases)
