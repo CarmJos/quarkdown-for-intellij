@@ -26,7 +26,7 @@ enabling developers to write and edit Quarkdown documents with full IDE assistan
 
 ## Features & Advantages
 
-- **Syntax Highlighting**: Full syntax highlighting for Quarkdown directives and markdown elements
+- **Syntax Highlighting**: Full syntax highlighting for Quarkdown directives and Markdown elements
 - **Code Completion**: Intelligent code completion for Quarkdown directives and parameters
 - **Quick Documentation**: Instant documentation lookup for Quarkdown elements
 - **Error Detection**: Real-time error detection and highlighting
