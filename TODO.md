@@ -1,10 +1,31 @@
 # TODOs
 
+## References
+
+- https://github.com/quarkdown-labs/quarkdown-vscode (Plugins for VSCode)
+- https://github.com/iamgio/quarkdown/tree/main/quarkdown-lsp (QuarkDown Language Server)
+
 ## Dependencies
 
 - Use the [Quarkdown language server](https://github.com/iamgio/quarkdown/tree/main/quarkdown-lsp) .
 - Auto import Quarkdown jars as dependencies for features like code completion and error checking.
 - Auto-detect Quarkdown installation from `QUARKDOWN_HOME`, system `PATH`,
+
+Mark: Use jars as library to read/implement auto completions and error checks,
+
+as a example:
+
+```markdown
+
+.doctype {paged}
+
+```
+
+when typing "." will auto suggest all usable commands like `.doctype` `.docname` with `{}`, and put input inner.
+
+Then, will suggest `paged`/`plain`/`slides`/`docs` (based on `.doctype`'s available params).
+
+All of this should base on current jar's definition.
 
 ## Settings
 
