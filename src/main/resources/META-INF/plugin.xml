@@ -1,0 +1,63 @@
+<idea-plugin>
+    <id>cc.carm.plugin.intellij.quarkdown</id>
+    <name>Quarkdown</name>
+    <vendor>CarmJos</vendor>
+    <description>Quarkdown language support for JetBrains IntelliJ Platform.</description>
+
+    <depends>com.intellij.modules.platform</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <fileType name="Quarkdown"
+                  implementationClass="cc.carm.plugin.intellij.quarkdown.QuarkdownFileType"
+                  fieldName="INSTANCE"
+                  extensions="qd"/>
+    </extensions>
+
+    <actions>
+        <group id="Quarkdown.EditorActions" popup="true" text="Quarkdown">
+            <add-to-group group-id="EditorPopupMenu" anchor="last"/>
+            <action id="Quarkdown.ToggleBold"
+                    class="cc.carm.plugin.intellij.quarkdown.actions.ToggleBoldAction"
+                    text="Bold"
+                    description="Toggle bold text">
+                <keyboard-shortcut first-keystroke="control B" keymap="$default"/>
+            </action>
+            <action id="Quarkdown.ToggleItalic"
+                    class="cc.carm.plugin.intellij.quarkdown.actions.ToggleItalicAction"
+                    text="Italic"
+                    description="Toggle italic text">
+                <keyboard-shortcut first-keystroke="control I" keymap="$default"/>
+            </action>
+            <action id="Quarkdown.ToggleStrikethrough"
+                    class="cc.carm.plugin.intellij.quarkdown.actions.ToggleStrikethroughAction"
+                    text="Strikethrough"
+                    description="Toggle strikethrough text">
+                <keyboard-shortcut first-keystroke="control shift S" keymap="$default"/>
+            </action>
+            <action id="Quarkdown.ToggleCode"
+                    class="cc.carm.plugin.intellij.quarkdown.actions.ToggleCodeAction"
+                    text="Code"
+                    description="Toggle inline code">
+                <keyboard-shortcut first-keystroke="control shift C" keymap="$default"/>
+            </action>
+            <action id="Quarkdown.InsertLink"
+                    class="cc.carm.plugin.intellij.quarkdown.actions.InsertLinkAction"
+                    text="Link"
+                    description="Insert link">
+                <keyboard-shortcut first-keystroke="control shift L" keymap="$default"/>
+            </action>
+            <action id="Quarkdown.InsertImage"
+                    class="cc.carm.plugin.intellij.quarkdown.actions.InsertImageAction"
+                    text="Image"
+                    description="Insert image">
+                <keyboard-shortcut first-keystroke="control shift I" keymap="$default"/>
+            </action>
+            <action id="Quarkdown.InsertTable"
+                    class="cc.carm.plugin.intellij.quarkdown.actions.InsertTableAction"
+                    text="Table"
+                    description="Insert table">
+                <keyboard-shortcut first-keystroke="control shift T" keymap="$default"/>
+            </action>
+        </group>
+    </actions>
+</idea-plugin>

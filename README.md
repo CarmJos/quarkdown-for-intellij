@@ -3,7 +3,7 @@
 <h3><b>THIS PROJECT IS STILL W.I.P</b></h3>
 <h4>EXPECT BUGS AND MISSING FEATURES.</h4>
 
-<img src=".doc/images/banner.png"  alt="Banner"/>
+<img src=".doc/images/banner_V2.png"  alt="Banner"/>
 
 [![version](https://img.shields.io/github/v/release/CarmJos/quarkdown-for-intellij)](https://github.com/CarmJos/quarkdown-for-intellij/releases)
 [![License](https://img.shields.io/github/license/CarmJos/quarkdown-for-intellij)](https://www.gnu.org/licenses/gpl-3.0.html)
@@ -11,7 +11,7 @@
 [![CodeFactor](https://www.codefactor.io/repository/github/carmjos/quarkdown-for-intellij/badge)](https://www.codefactor.io/repository/github/carmjos/quarkdown-for-intellij)
 ![CodeSize](https://img.shields.io/github/languages/code-size/CarmJos/quarkdown-for-intellij)
 
-README LANGUAGES [ [**English**](README.md)  ]
+README LANGUAGES [ [**English**](README.md) | [Chinese(W.I.P)] ]
 </div>
 
 # **Quarkdown** _for IntelliJ_
