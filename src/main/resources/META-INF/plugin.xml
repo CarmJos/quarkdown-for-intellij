@@ -11,6 +11,16 @@
                   implementationClass="cc.carm.plugin.intellij.quarkdown.QuarkdownFileType"
                   fieldName="INSTANCE"
                   extensions="qd"/>
+
+        <projectService serviceImplementation="cc.carm.plugin.intellij.quarkdown.settings.QuarkdownSettings"/>
+
+        <projectConfigurable
+                parentId="tools"
+                id="Settings.Tools.Quarkdown"
+                instance="cc.carm.plugin.intellij.quarkdown.settings.QuarkdownSettingsConfigurable"
+                displayName="Quarkdown"/>
+
+        <postStartupActivity implementation="cc.carm.plugin.intellij.quarkdown.QuarkdownStartupActivity"/>
     </extensions>
 
     <actions>
