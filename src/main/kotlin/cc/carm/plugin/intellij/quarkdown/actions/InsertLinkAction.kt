@@ -1,5 +1,6 @@
 package cc.carm.plugin.intellij.quarkdown.actions
 
+import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
@@ -7,6 +8,8 @@ import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.project.DumbAware
 
 class InsertLinkAction : AnAction(), DumbAware {
+
+    override fun getActionUpdateThread() = ActionUpdateThread.BGT
 
     override fun update(e: AnActionEvent) {
         val editor = e.getData(CommonDataKeys.EDITOR)
