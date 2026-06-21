@@ -13,6 +13,9 @@
                   language="Quarkdown"
                   extensions="qd"/>
 
+        <internalFileTemplate name="Quarkdown Empty"/>
+        <internalFileTemplate name="Quarkdown Example"/>
+
         <projectService serviceImplementation="cc.carm.plugin.intellij.quarkdown.settings.QuarkdownSettings"/>
 
         <projectConfigurable
@@ -35,6 +38,13 @@
     </extensions>
 
     <actions>
+        <action id="Quarkdown.NewDocument"
+                class="cc.carm.plugin.intellij.quarkdown.actions.NewQuarkdownDocumentAction"
+                text="Quarkdown Document"
+                description="Create a new Quarkdown document">
+            <add-to-group group-id="NewGroup" anchor="last"/>
+        </action>
+
         <group id="Quarkdown.EditorActions" popup="true" text="Quarkdown">
             <add-to-group group-id="EditorPopupMenu" anchor="last"/>
             <action id="Quarkdown.ToggleBold"
