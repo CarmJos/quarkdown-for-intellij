@@ -10,17 +10,28 @@
         <fileType name="Quarkdown"
                   implementationClass="cc.carm.plugin.intellij.quarkdown.QuarkdownFileType"
                   fieldName="INSTANCE"
+                  language="Quarkdown"
                   extensions="qd"/>
 
         <projectService serviceImplementation="cc.carm.plugin.intellij.quarkdown.settings.QuarkdownSettings"/>
 
         <projectConfigurable
-                parentId="tools"
-                id="Settings.Tools.Quarkdown"
+                parentId="language"
+                id="Settings.Language.Quarkdown"
                 instance="cc.carm.plugin.intellij.quarkdown.settings.QuarkdownSettingsConfigurable"
                 displayName="Quarkdown"/>
 
         <postStartupActivity implementation="cc.carm.plugin.intellij.quarkdown.QuarkdownStartupActivity"/>
+
+        <completion.contributor
+                language="Quarkdown"
+                implementationClass="cc.carm.plugin.intellij.quarkdown.lang.completion.QuarkdownCompletionContributor"/>
+
+        <typedHandler implementation="cc.carm.plugin.intellij.quarkdown.lang.QuarkdownTypedHandlerDelegate"/>
+
+        <annotator
+                language="Quarkdown"
+                implementationClass="cc.carm.plugin.intellij.quarkdown.lang.annotator.QuarkdownAnnotator"/>
     </extensions>
 
     <actions>

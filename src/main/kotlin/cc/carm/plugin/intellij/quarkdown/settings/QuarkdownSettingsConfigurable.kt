@@ -2,39 +2,42 @@ package cc.carm.plugin.intellij.quarkdown.settings
 
 import com.intellij.icons.AllIcons
 import com.intellij.ide.BrowserUtil
+import com.intellij.openapi.components.service
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
 import com.intellij.openapi.options.BoundSearchableConfigurable
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogPanel
 import com.intellij.openapi.ui.TextFieldWithBrowseButton
+import java.nio.charset.Charset
 import com.intellij.ui.dsl.builder.AlignX
 import com.intellij.ui.dsl.builder.bindIntText
 import com.intellij.ui.dsl.builder.bindSelected
 import com.intellij.ui.dsl.builder.bindText
 import com.intellij.ui.dsl.builder.panel
-import javax.swing.Icon
+import cc.carm.plugin.intellij.quarkdown.lang.function.FunctionRegistry
+import com.intellij.ui.components.JBTextField
+import java.io.File
+import javax.swing.JButton
 import javax.swing.JLabel
-import javax.swing.Timer
-import javax.swing.event.DocumentEvent
-import javax.swing.event.DocumentListener
+import javax.swing.SwingUtilities
 
 class QuarkdownSettingsConfigurable(private val project: Project) :
     BoundSearchableConfigurable(
         "Quarkdown",
         "Quarkdown",
-        "Settings.Tools.Quarkdown"
+        "Settings.Language.Quarkdown"
     ) {
 
     val settings: QuarkdownSettings
         get() = QuarkdownSettings.getInstance(project)
 
-    private var validationTimer: Timer? = null
-    private val loadingIcon: Icon = AllIcons.Actions.Refresh
-    private var statusLabel: JLabel? = null
+    private var checkButton: JButton? = null
+    private var checkResultLabel: JLabel? = null
+    private var cacheInfoLabel: JLabel? = null
+    private var refreshCacheButton: JButton? = null
+    private var homeField: TextFieldWithBrowseButton? = null
 
     override fun createPanel(): DialogPanel {
-        lateinit var homeField: TextFieldWithBrowseButton
-
         return panel {
             group("Quarkdown Installation") {
                 row("Quarkdown Home:") {
@@ -49,39 +52,50 @@ class QuarkdownSettingsConfigurable(private val project: Project) :
                         .align(AlignX.FILL)
                         .applyToComponent {
                             homeField = this
-                    textField.document.addDocumentListener(object : DocumentListener {
-                        override fun insertUpdate(e: DocumentEvent) {
-                            showLoading()
-                            scheduleValidation(homeField.text)
+                            textField.columns = 40
+                            if (text.isNullOrEmpty()) {
+                                val detected = QuarkdownPathDetector.detect()
+                                if (detected != null) {
+                                    (textField as? JBTextField)?.emptyText?.text = "Auto-detected: $detected"
+                                } else {
+                                    (textField as? JBTextField)?.emptyText?.text = "Quarkdown Home not found, please install or select manually"
+                                }
+                            }
                         }
-
-                        override fun removeUpdate(e: DocumentEvent) {
-                            showLoading()
-                            scheduleValidation(homeField.text)
-                        }
-
-                        override fun changedUpdate(e: DocumentEvent) {
-                            showLoading()
-                            scheduleValidation(homeField.text)
-                        }
-                    })
-                        }
-                    label("").applyToComponent {
-                        statusLabel = this
-                        setImmediateStatus(this, homeField.text)
+                    button("Check") {
+                        doVersionCheck()
+                    }.applyToComponent {
+                        checkButton = this
                     }
+                }
+                row {
+                    label("").applyToComponent {
+                        checkResultLabel = this
+                        isVisible = false
+                    }
+                }
+                row {
+                    label("Cache: " + project.service<FunctionRegistry>().getCacheInfo())
+                        .applyToComponent { cacheInfoLabel = this }
                 }
                 row {
                     button("Installation Guide") {
                         BrowserUtil.browse("https://quarkdown.com/#install")
                     }
-                    button("Auto-detect") {
-                        val path = QuarkdownPathDetector.detect()
-                        if (path != null) {
-                            settings.state.quarkdownPath = path
-                            homeField.text = path
+                    button("Refresh Cache") {
+                        val path = homeField?.text.orEmpty()
+                        if (QuarkdownPathDetector.isValidQuarkdownHome(path)) {
+                            val registry = project.service<FunctionRegistry>()
+                            refreshCacheButton?.isEnabled = false
+                            cacheInfoLabel?.text = "Cache: Refreshing..."
+                            registry.refreshAsync(path, force = true) { _ ->
+                                refreshCacheButton?.isEnabled = true
+                                cacheInfoLabel?.text = "Cache: " + registry.getCacheInfo()
+                            }
                         }
-                        setImmediateStatus(statusLabel!!, homeField.text)
+                    }.applyToComponent {
+                        refreshCacheButton = this
+                        isEnabled = QuarkdownPathDetector.isValidQuarkdownHome(homeField?.text.orEmpty())
                     }
                 }
             }
@@ -154,41 +168,100 @@ class QuarkdownSettingsConfigurable(private val project: Project) :
         }
     }
 
-    private fun showLoading() {
-        statusLabel?.icon = loadingIcon
+    private fun doVersionCheck() {
+        var path = homeField?.text.orEmpty()
+        if (path.isBlank()) {
+            path = QuarkdownPathDetector.detect().orEmpty()
+        }
+        checkButton?.isEnabled = false
+        checkButton?.text = "Checking..."
+
+        Thread {
+            try {
+                val homeDir = File(path)
+                if (!homeDir.isDirectory) {
+                    SwingUtilities.invokeLater {
+                        showCheckResult(false, "Directory does not exist: $path")
+                        resetCheckButton()
+                    }
+                    return@Thread
+                }
+
+                val executable = resolveExecutable(homeDir)
+                if (executable == null) {
+                    SwingUtilities.invokeLater {
+                        showCheckResult(false, "No quarkdown executable found in $path")
+                        resetCheckButton()
+                    }
+                    return@Thread
+                }
+
+                val process = ProcessBuilder(executable.absolutePath, "--version")
+                    .redirectErrorStream(true)
+                    .start()
+
+                val output = process.inputStream.bufferedReader(Charset.forName("UTF-8")).readText().trim()
+                val exitCode = process.waitFor()
+
+                SwingUtilities.invokeLater {
+                    try {
+                        if (exitCode == 0 && output.isNotBlank()) {
+                            val version = extractVersion(output)
+                            showCheckResult(true, "Quarkdown version: $version")
+                        } else {
+                            showCheckResult(false, "Command failed (exit=$exitCode): ${output.ifBlank { "<no output>" }}")
+                        }
+                    } finally {
+                        resetCheckButton()
+                    }
+                }
+            } catch (e: Throwable) {
+                SwingUtilities.invokeLater {
+                    try {
+                        showCheckResult(false, "Error: ${e.message}")
+                    } finally {
+                        resetCheckButton()
+                    }
+                }
+            }
+        }.apply { isDaemon = true }.start()
     }
 
-    private fun scheduleValidation(path: String) {
-        validationTimer?.stop()
-        validationTimer = Timer(500) {
-            doValidation(path)
-        }.apply {
-            isRepeats = false
-            start()
+    private fun resolveExecutable(homeDir: File): File? {
+        for (name in listOf("quarkdown.bat", "quarkdown.cmd", "quarkdown")) {
+            val f = File(File(homeDir, "bin"), name)
+            if (f.isFile) return f
+        }
+        for (name in listOf("quarkdown.bat", "quarkdown.cmd", "quarkdown")) {
+            val f = File(homeDir, name)
+            if (f.isFile) return f
+        }
+        return null
+    }
+
+    private fun extractVersion(output: String): String {
+        return output.split("\\s+".toRegex()).lastOrNull() ?: output
+    }
+
+    private fun showCheckResult(success: Boolean, message: String) {
+        checkResultLabel?.let {
+            it.icon = if (success) AllIcons.General.InspectionsOK else AllIcons.General.BalloonError
+            it.text = message
+            it.isVisible = true
         }
     }
 
-    private fun doValidation(path: String) {
-        val label = statusLabel ?: return
-        label.icon = if (QuarkdownPathDetector.isValidQuarkdownHome(path)) {
-            AllIcons.General.InspectionsOK
-        } else {
-            AllIcons.General.BalloonError
-        }
-    }
-
-    private fun setImmediateStatus(label: JLabel, path: String) {
-        validationTimer?.stop()
-        label.icon = if (QuarkdownPathDetector.isValidQuarkdownHome(path)) {
-            AllIcons.General.InspectionsOK
-        } else {
-            AllIcons.General.BalloonError
-        }
+    private fun resetCheckButton() {
+        checkButton?.isEnabled = true
+        checkButton?.text = "Check"
     }
 
     override fun disposeUIResources() {
-        validationTimer?.stop()
-        statusLabel = null
+        checkResultLabel = null
+        cacheInfoLabel = null
+        homeField = null
+        checkButton = null
+        refreshCacheButton = null
         super.disposeUIResources()
     }
 }

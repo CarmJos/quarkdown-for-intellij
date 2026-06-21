@@ -18,6 +18,10 @@ object QuarkdownPathDetector {
         if (path.isNullOrEmpty()) return false
         val home = File(path)
         if (!home.exists() || !home.isDirectory) return false
+
+        val libDir = File(home, "lib")
+        if (libDir.isDirectory && libDir.listFiles { f -> f.name.endsWith(".jar") }?.isNotEmpty() == true) return true
+
         return hasQuarkdownBinary(home)
     }
 
@@ -38,6 +42,7 @@ object QuarkdownPathDetector {
     private fun detectDefaultInstallations(): String? {
         val userHome = System.getProperty("user.home")
         val defaultPaths = listOf(
+            "$userHome/AppData/Local/Quarkdown/",
             "$userHome/scoop/apps/quarkdown/current",
             "C:/Program Files/Quarkdown",
             "/usr/local/Cellar/quarkdown/current",

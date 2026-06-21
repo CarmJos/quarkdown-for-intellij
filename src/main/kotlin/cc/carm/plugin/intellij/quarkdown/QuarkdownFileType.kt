@@ -1,10 +1,9 @@
 package cc.carm.plugin.intellij.quarkdown
 
-import com.intellij.openapi.fileTypes.FileType
-import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.openapi.fileTypes.LanguageFileType
 import javax.swing.Icon
 
-class QuarkdownFileType : FileType {
+class QuarkdownFileType : LanguageFileType(QuarkdownLanguage.INSTANCE) {
 
     override fun getName(): String = "Quarkdown"
 
@@ -14,11 +13,7 @@ class QuarkdownFileType : FileType {
 
     override fun getIcon(): Icon = QuarkdownIcons.FILE
 
-    override fun isBinary(): Boolean = false
-
     override fun isReadOnly(): Boolean = false
-
-    override fun getCharset(file: VirtualFile, content: ByteArray): String? = null
 
     companion object {
         @JvmField
