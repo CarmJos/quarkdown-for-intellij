@@ -1,13 +1,54 @@
 ---
 name: idea-plugin-dev
-description: Develop IntelliJ IDEA plugins with two templates, standard plugins and AI-integrated plugins. Use when creating new IntelliJ IDEA plugins, setting up plugin projects, implementing actions, settings pages, or integrating with IntelliAI Engine. Supports both simple plugins without AI dependencies and advanced plugins with AI provider selection and prompt template management.
-metadata:
-  mcpmarket-version: 1.0.0
+description: Develop IntelliJ IDEA plugins. Use when creating new IntelliJ IDEA plugins, setting up plugin projects, implementing actions, settings pages, or other plugin features. Emphasizes documentation-first development by consulting the IntelliJ Platform SDK before implementation.
 ---
 # IntelliJ IDEA Plugin Development
 
-This Skill provides guidance for developing IntelliJ IDEA plugins using standardized templates. It covers two types of plugins: standard
-plugins (without AI) and AI-integrated plugins (with IntelliAI Engine).
+This Skill provides guidance for developing IntelliJ IDEA plugins. **All feature implementation MUST start from the official documentation.**
+
+## Documentation-First Workflow
+
+**CRITICAL**: Before implementing ANY feature, always consult the official IntelliJ Platform SDK documentation first:
+
+- **Homepage**: https://plugins.jetbrains.com/docs/intellij/
+- **Sitemap (all available pages)**: https://plugins.jetbrains.com/docs/intellij/sitemap.xml
+
+### Feature-to-Documentation Mapping
+
+For every feature requirement, identify the correct documentation page before writing code:
+
+| Feature / Requirement             | Documentation Page                                                              |
+|-----------------------------------|---------------------------------------------------------------------------------|
+| Code Completion                   | https://plugins.jetbrains.com/docs/intellij/code-completion.html                |
+| Actions                           | https://plugins.jetbrains.com/docs/intellij/action-system.html                  |
+| Editor / PSI Files                | https://plugins.jetbrains.com/docs/intellij/psi.html                            |
+| Tool Windows                      | https://plugins.jetbrains.com/docs/intellij/tool-windows.html                   |
+| Settings (Preferences)            | https://plugins.jetbrains.com/docs/intellij/settings-guide.html                 |
+| Notifications                     | https://plugins.jetbrains.com/docs/intellij/notifications.html                  |
+| Icons                             | https://plugins.jetbrains.com/docs/intellij/work-with-icons-and-images.html     |
+| Internationalization              | https://plugins.jetbrains.com/docs/intellij/localization-guide.html             |
+| Plugin Configuration (plugin.xml) | https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html      |
+| Services (Application/Project)    | https://plugins.jetbrains.com/docs/intellij/plugin-services.html                |
+| Persistent State                  | https://plugins.jetbrains.com/docs/intellij/persisting-state-of-components.html |
+| File Editors                      | https://plugins.jetbrains.com/docs/intellij/file-editors.html                   |
+| Inspections                       | https://plugins.jetbrains.com/docs/intellij/code-inspections.html               |
+| Intentions                        | https://plugins.jetbrains.com/docs/intellij/intention-actions.html              |
+| Live Templates                    | https://plugins.jetbrains.com/docs/intellij/live-templates.html                 |
+| Refactoring                       | https://plugins.jetbrains.com/docs/intellij/refactoring-support.html            |
+| Testing                           | https://plugins.jetbrains.com/docs/intellij/testing-plugins.html                |
+| Build System (Gradle)             | https://plugins.jetbrains.com/docs/intellij/gradle-build-system.html            |
+| Run/Debug Configurations          | https://plugins.jetbrains.com/docs/intellij/run-debug-configuration.html        |
+| Dialog / Popup / UI               | https://plugins.jetbrains.com/docs/intellij/dialog-wrapper.html                 |
+
+### Development Process
+
+For any feature implementation, follow this strict process:
+
+1. **Identify the feature type** (e.g., "code completion", "tool window", "inspection")
+2. **Look up the sitemap** → https://plugins.jetbrains.com/docs/intellij/sitemap.xml to find the relevant documentation page
+3. **Read the documentation** thoroughly before writing any code
+4. **Implement** following the documented API and patterns
+5. If encountering issues, **re-check the documentation first**, then search the SDK docs for related topics
 
 ## When to Use This Skill
 
@@ -16,58 +57,17 @@ Use this Skill when:
 - Creating a new IntelliJ IDEA plugin project
 - Setting up plugin structure and configuration
 - Implementing actions, settings pages, or UI components
-- Integrating AI capabilities via IntelliAI Engine
 - Following best practices for IntelliJ plugin development
-- Working with plugin templates (`template-without-ai` or `template-with-ai`)
-
-## Plugin Types  
-
-### 1. Standard Plugin (template-without-ai)
-
-**Use for**: Plugins that don't require AI functionality.
-
-**Features**:
-
-- Simplified Action (right-click menu)
-- Icon management class
-- Notification utilities
-- Internationalization support
-- Basic project structure
-
-**Key Components**:
-
-- `ExampleAction` - Single action example
-- `ExampleIcons` - Icon management
-- `NotificationUtil` - Notification helper
-- `ExampleBundle` - Internationalization
-
-### 2. AI-Integrated Plugin (template-with-ai)
-
-**Use for**: Plugins that need AI capabilities via IntelliAI Engine.
-
-**Additional Features**:
-
-- AI provider selection in settings
-- Prompt template management
-- Settings page with advanced options
-- Integration with IntelliAI Engine
-
-**Key Components**:
-
-- All standard plugin components
-- `SettingsState` - Persistent configuration
-- `ExampleSettingsConfigurable` - Settings UI
-- `ExampleSettingsPanel` - Settings panel with AI provider dropdown and prompt templates
+- Working with the standard plugin template (`template-without-ai`)
 
 ## Project Structure
-
-### Standard Plugin Structure
 
 ```
 template-without-ai/
 ├── src/main/java/dev/dong4j/zeka/stack/idea/plugin/example/
 │   ├── action/          # Actions
 │   ├── icons/           # Icon management
+│   ├── settings/        # Settings (State, Configurable, Panel)
 │   └── util/            # Utilities (Bundle, Notification)
 ├── src/main/resources/
 │   ├── icons/           # Icon resources (SVG)
@@ -80,56 +80,31 @@ template-without-ai/
 └── gradle.properties    # Plugin properties
 ```
 
-### AI-Integrated Plugin Structure
-
-```
-template-with-ai/
-├── src/main/java/dev/dong4j/zeka/stack/idea/plugin/example/
-│   ├── action/          # Actions
-│   ├── icons/           # Icon management
-│   ├── settings/        # Settings (State, Configurable, Panel)
-│   └── util/            # Utilities
-├── ... (same as standard)
-└── build.gradle.kts     # Includes AI Engine dependencies
-```
-
 ## Development Steps
 
-### Step 1: Choose Template Type
-
-**For standard plugins**:
-
-- Use `template-without-ai` as base
-- No AI Engine dependencies needed
-- Simpler configuration
-
-**For AI-integrated plugins**:
-
-- Use `template-with-ai` as base
-- Requires IntelliAI Engine plugin
-- Includes settings page and AI provider management
-
-### Step 2: Configure Project
+### Step 1: Configure Project
 
 1. **Update `gradle.properties`**:
    ```properties
-   pluginGroup=dev.dong4j.zeka.stack.idea.plugin.example
+   pluginGroup=your.package.name
    pluginName=Your Plugin Name
    pluginVersion=1.0.0
    rootProjectName=your-plugin-name
    ```
 
 2. **Update `plugin.xml`**:
-    - Change plugin ID
-    - Update plugin name
-    - Register your actions and services
+   - Change plugin ID
+   - Update plugin name
+   - Register your actions and services
 
 3. **Update package names**:
-    - Replace `dev.dong4j.zeka.stack.idea.plugin.example` with your package
-    - Update all Java files
-    - Update `plugin.xml` references
+   - Replace `dev.dong4j.zeka.stack.idea.plugin.example` with your package
+   - Update all Java files
+   - Update `plugin.xml` references
 
-### Step 3: Implement Actions
+### Step 2: Implement Actions
+
+> **Documentation**: https://plugins.jetbrains.com/docs/intellij/action-system.html
 
 **Standard Action Pattern**:
 
@@ -168,9 +143,9 @@ public class ExampleAction extends AnAction {
 </action>
 ```
 
-### Step 4: Icon Management
+### Step 3: Icon Management
 
-**Create Icon Class**:
+> **Documentation**: https://plugins.jetbrains.com/docs/intellij/work-with-icons-and-images.html
 
 ```java
 public class ExampleIcons {
@@ -188,7 +163,9 @@ public class ExampleIcons {
 - Place SVG files in `src/main/resources/icons/`
 - Use 16x16 for actions, 24x24 for notifications, 32x32 for dialogs
 
-### Step 5: Internationalization
+### Step 4: Internationalization
+
+> **Documentation**: https://plugins.jetbrains.com/docs/intellij/localization-guide.html
 
 **Add Messages**:
 
@@ -214,7 +191,9 @@ error.no.file=未找到文件
 String message = ExampleBundle.message("action.example.title");
 ```
 
-### Step 6: Settings Page (AI-Integrated Only)
+### Step 5: Settings Page
+
+> **Documentation**: https://plugins.jetbrains.com/docs/intellij/settings-guide.html
 
 **Create SettingsState**:
 
@@ -224,11 +203,8 @@ String message = ExampleBundle.message("action.example.title");
     storages = @Storage("example-settings.xml")
 )
 public class SettingsState implements PersistentStateComponent<SettingsState> {
-    public AIProviderConfig providerConfig;
-    public boolean showAdvancedSettings = false;
-    public String systemPrompt = getDefaultSystemPrompt();
-    public String exampleTemplate = getDefaultExampleTemplate();
-    
+    public String exampleSetting = "";
+
     public static SettingsState getInstance() {
         return ApplicationManager.getApplication().getService(SettingsState.class);
     }
@@ -239,13 +215,30 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
 
 ```java
 public class ExampleSettingsPanel {
-    private JComboBox<AIProviderConfig> providerComboBox;
-    private JBTextArea systemPromptTextArea;
-    
-    // Create AI provider selection panel
-    private JPanel createAIProviderSelectionPanel() {
-        List<AIProviderConfig> providers = getAiProviderTypes();
-        // Build UI with FormBuilder
+    private final JPanel rootPanel;
+    private final JBTextField exampleField;
+
+    public ExampleSettingsPanel() {
+        rootPanel = FormBuilder.createFormBuilder()
+            .addLabeledComponent("Example Setting:", exampleField = new JBTextField())
+            .addComponentFillVertically(new JPanel(), 0)
+            .getPanel();
+    }
+
+    public JPanel getPanel() {
+        return rootPanel;
+    }
+
+    public void apply(SettingsState settings) {
+        settings.exampleSetting = exampleField.getText();
+    }
+
+    public void reset(SettingsState settings) {
+        exampleField.setText(settings.exampleSetting);
+    }
+
+    public boolean isModified(SettingsState settings) {
+        return !Objects.equals(exampleField.getText(), settings.exampleSetting);
     }
 }
 ```
@@ -261,55 +254,26 @@ public class ExampleSettingsPanel {
     displayName="Your Plugin"/>
 ```
 
-### Step 7: Build Configuration
+### Step 6: Build Configuration
 
-**Standard Plugin (`build.gradle.kts`)**:
+**`build.gradle.kts`**:
 
 ```kotlin
 dependencies {
     intellijPlatform {
-        create(providers.gradleProperty("platformType"), 
+        create(providers.gradleProperty("platformType"),
                providers.gradleProperty("platformVersion"))
         bundledPlugin("com.intellij.java")
-        // No AI Engine dependency
     }
 }
 ```
 
-**AI-Integrated Plugin (`build.gradle.kts`)**:
+### Step 7: Testing
 
-```kotlin
-dependencies {
-    intellijPlatform {
-        // ... same as standard
-        // plugin("dev.dong4j.zeka.stack.idea.plugin.common.ai")  // Uncomment for marketplace
-    }
-    compileOnly("dev.dong4j:intelli-ai-engine:1.1.0")
-}
-
-tasks {
-    // Add buildAiCommonPlugin and copyAiCommonPlugin tasks
-    // for local development
-}
-```
-
-### Step 8: Testing
-
-1. **Build plugin**:
+**Build plugin**:
    ```bash
    ./gradlew buildPlugin
    ```
-
-2. **Run in sandbox**:
-   ```bash
-   ./gradlew runIde
-   ```
-
-3. **Verify**:
-    - Action appears in right-click menu
-    - Settings page loads (AI-integrated)
-    - Notifications work
-    - Internationalization works
 
 ## Best Practices
 
@@ -318,7 +282,7 @@ tasks {
 1. **Package Structure**:
     - `action/` - User actions
     - `icons/` - Icon management
-    - `settings/` - Settings (AI-integrated only)
+    - `settings/` - Settings
     - `util/` - Utilities (Bundle, Notification)
 
 2. **Naming Conventions**:
@@ -336,10 +300,8 @@ tasks {
     - `JBTable` for data tables
 
 2. **Settings Page**:
-    - Use `FormBuilder` for consistent layout
-    - Add emojis to labels for better UX (🤖, ⚙️, 📝, etc.)
-    - Support collapsible advanced settings
-    - Use `JBTabbedPane` for multiple prompt templates
+   - Use `FormBuilder` for consistent layout
+   - Use `JBTabbedPane` for tabbed settings
 
 ### Internationalization
 
@@ -404,18 +366,9 @@ public void apply() throws ConfigurationException {
 }
 ```
 
-## Differences: Standard vs AI-Integrated
-
-| Feature               | Standard Plugin | AI-Integrated Plugin                      |
-|-----------------------|-----------------|-------------------------------------------|
-| AI Engine Dependency  | ❌ No            | ✅ Yes (compileOnly)                       |
-| Settings Page         | ❌ No            | ✅ Yes                                     |
-| AI Provider Selection | ❌ No            | ✅ Yes                                     |
-| Prompt Templates      | ❌ No            | ✅ Yes                                     |
-| Build Tasks           | Basic           | + buildAiCommonPlugin, copyAiCommonPlugin |
-| plugin.xml            | Actions only    | + SettingsState, SettingsConfigurable     |
-
 ## Troubleshooting
+
+> Always check https://plugins.jetbrains.com/docs/intellij/ first when encountering issues. Use the sitemap at https://plugins.jetbrains.com/docs/intellij/sitemap.xml to find relevant pages.
 
 ### Plugin doesn't load
 
@@ -429,12 +382,6 @@ public void apply() throws ConfigurationException {
 - Check `getState()` and `loadState()` methods
 - Ensure fields are `public`
 
-### AI provider not available
-
-- Check IntelliAI Engine plugin is installed
-- Verify provider is configured and tested
-- Check `AIProviderSettings.getInstance().getVerifiedProviders()`
-
 ### Icons not showing
 
 - Verify icon path starts with `/icons/`
@@ -443,27 +390,17 @@ public void apply() throws ConfigurationException {
 
 ## References
 
-- Template projects: `template-without-ai/` and `template-with-ai/`
 - IntelliJ Platform SDK: https://plugins.jetbrains.com/docs/intellij/
-- IntelliAI Engine: See `intelli-ai-engine/` project
-- Example implementations: `intelli-ai-changelog/`, `intelli-ai-javadoc/`
+- Sitemap (all documentation pages): https://plugins.jetbrains.com/docs/intellij/sitemap.xml
+- Template project: `template-without-ai/`
 
 ## Examples
 
-### Creating a Standard Plugin
+### Creating a New Plugin
 
 1. Copy `template-without-ai` to your project
 2. Update `gradle.properties` with your plugin info
 3. Rename package from `example` to your package
 4. Implement your action in `action/` package
 5. Add icons and internationalization
-6. Build and test
-
-### Creating an AI-Integrated Plugin
-
-1. Copy `template-with-ai` to your project
-2. Follow standard plugin steps
-3. Configure AI provider in settings
-4. Implement prompt templates
-5. Use `AIService.getInstance()` to call AI
-6. Build and test (ensure IntelliAI Engine is available)
+6. Build and test with `./gradlew buildPlugin`
