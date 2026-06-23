@@ -1,4 +1,4 @@
-package cc.carm.plugin.intellij.quarkdown.actions
+package cc.carm.plugin.intellij.quarkdown.action
 
 import cc.carm.plugin.intellij.quarkdown.QuarkdownIcons
 import com.intellij.ide.actions.CreateFileFromTemplateAction

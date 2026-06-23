@@ -35,11 +35,39 @@
         <annotator
                 language="Quarkdown"
                 implementationClass="cc.carm.plugin.intellij.quarkdown.lang.annotator.QuarkdownAnnotator"/>
+
+        <!-- Syntax highlighting -->
+        <lang.syntaxHighlighterFactory
+                language="Quarkdown"
+                implementationClass="cc.carm.plugin.intellij.quarkdown.lang.highlighter.QuarkdownSyntaxHighlighterFactory"/>
+
+        <!-- Color settings page -->
+        <colorSettingsPage
+                implementation="cc.carm.plugin.intellij.quarkdown.lang.highlighter.QuarkdownColorSettingsPage"/>
+
+        <!-- Language commenter (Ctrl+/) -->
+        <lang.commenter
+                language="Quarkdown"
+                implementationClass="cc.carm.plugin.intellij.quarkdown.lang.commenter.QuarkdownCommenter"/>
+
+        <!-- PSI references (go-to-definition for .ref, .read, etc.) -->
+        <psiReferenceContributor
+                implementation="cc.carm.plugin.intellij.quarkdown.lang.reference.QuarkdownReferenceContributor"/>
+
+        <!-- Parser definition (creates Lexer + PSI tree) -->
+        <lang.parserDefinition
+                language="Quarkdown"
+                implementationClass="cc.carm.plugin.intellij.quarkdown.lang.parser.QuarkdownParserDefinition"/>
+
+        <!-- Gutter icon for image lines -->
+        <codeInsight.lineMarkerProvider
+                language="Quarkdown"
+                implementationClass="cc.carm.plugin.intellij.quarkdown.lang.marker.QuarkdownImageLineMarkerProvider"/>
     </extensions>
 
     <actions>
         <action id="Quarkdown.NewDocument"
-                class="cc.carm.plugin.intellij.quarkdown.actions.NewQuarkdownDocumentAction"
+                class="cc.carm.plugin.intellij.quarkdown.action.NewQuarkdownDocumentAction"
                 text="Quarkdown Document"
                 description="Create a new Quarkdown document">
             <add-to-group group-id="NewGroup" anchor="last"/>
@@ -48,43 +76,43 @@
         <group id="Quarkdown.EditorActions" popup="true" text="Quarkdown">
             <add-to-group group-id="EditorPopupMenu" anchor="last"/>
             <action id="Quarkdown.ToggleBold"
-                    class="cc.carm.plugin.intellij.quarkdown.actions.ToggleBoldAction"
+                    class="cc.carm.plugin.intellij.quarkdown.action.ToggleBoldAction"
                     text="Bold"
                     description="Toggle bold text">
                 <keyboard-shortcut first-keystroke="control B" keymap="$default"/>
             </action>
             <action id="Quarkdown.ToggleItalic"
-                    class="cc.carm.plugin.intellij.quarkdown.actions.ToggleItalicAction"
+                    class="cc.carm.plugin.intellij.quarkdown.action.ToggleItalicAction"
                     text="Italic"
                     description="Toggle italic text">
                 <keyboard-shortcut first-keystroke="control I" keymap="$default"/>
             </action>
             <action id="Quarkdown.ToggleStrikethrough"
-                    class="cc.carm.plugin.intellij.quarkdown.actions.ToggleStrikethroughAction"
+                    class="cc.carm.plugin.intellij.quarkdown.action.ToggleStrikethroughAction"
                     text="Strikethrough"
                     description="Toggle strikethrough text">
                 <keyboard-shortcut first-keystroke="control shift S" keymap="$default"/>
             </action>
             <action id="Quarkdown.ToggleCode"
-                    class="cc.carm.plugin.intellij.quarkdown.actions.ToggleCodeAction"
+                    class="cc.carm.plugin.intellij.quarkdown.action.ToggleCodeAction"
                     text="Code"
                     description="Toggle inline code">
                 <keyboard-shortcut first-keystroke="control shift C" keymap="$default"/>
             </action>
             <action id="Quarkdown.InsertLink"
-                    class="cc.carm.plugin.intellij.quarkdown.actions.InsertLinkAction"
+                    class="cc.carm.plugin.intellij.quarkdown.action.InsertLinkAction"
                     text="Link"
                     description="Insert link">
                 <keyboard-shortcut first-keystroke="control shift L" keymap="$default"/>
             </action>
             <action id="Quarkdown.InsertImage"
-                    class="cc.carm.plugin.intellij.quarkdown.actions.InsertImageAction"
+                    class="cc.carm.plugin.intellij.quarkdown.action.InsertImageAction"
                     text="Image"
                     description="Insert image">
                 <keyboard-shortcut first-keystroke="control shift I" keymap="$default"/>
             </action>
             <action id="Quarkdown.InsertTable"
-                    class="cc.carm.plugin.intellij.quarkdown.actions.InsertTableAction"
+                    class="cc.carm.plugin.intellij.quarkdown.action.InsertTableAction"
                     text="Table"
                     description="Insert table">
                 <keyboard-shortcut first-keystroke="control shift T" keymap="$default"/>

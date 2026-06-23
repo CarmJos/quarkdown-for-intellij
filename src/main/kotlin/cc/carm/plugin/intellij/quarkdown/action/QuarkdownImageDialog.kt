@@ -1,10 +1,10 @@
-package cc.carm.plugin.intellij.quarkdown.actions
+package cc.carm.plugin.intellij.quarkdown.action
 
 import com.intellij.openapi.fileChooser.FileChooserDescriptor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.ui.DialogWrapper
-import com.intellij.openapi.ui.TextComponentAccessor
+import com.intellij.openapi.ui.TextBrowseFolderListener
 import com.intellij.openapi.ui.TextFieldWithBrowseButton
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.ui.components.JBLabel
@@ -16,7 +16,6 @@ import com.intellij.util.ui.JBUI
 import java.awt.BorderLayout
 import java.awt.FlowLayout
 import java.io.File
-import java.nio.file.Path
 import java.nio.file.Paths
 import javax.swing.ButtonGroup
 import javax.swing.JComponent
@@ -26,7 +25,24 @@ import javax.swing.SwingConstants
 import javax.swing.SwingUtilities
 import javax.swing.UIManager
 
-class InsertImageDialog(private val project: Project?) : DialogWrapper(project) {
+/**
+ * Dialog for inserting or editing an image in Quarkdown syntax:
+ *   ![(size)][(id)]((path) "(label)") {#id}
+ */
+class QuarkdownImageDialog(
+    private val project: Project?,
+    private val mode: Mode = Mode.INSERT
+) : DialogWrapper(project) {
+
+    enum class Mode {
+        /** Creating a new image */
+        INSERT,
+        /** Editing an existing image line */
+        EDIT
+    }
+
+    /** The original full line text (for EDIT mode, to compute indent) */
+    private var originalLine: String = ""
 
     private var pathField: TextFieldWithBrowseButton? = null
     private var percentRadio: JBRadioButton? = null
@@ -37,7 +53,8 @@ class InsertImageDialog(private val project: Project?) : DialogWrapper(project) 
     private var heightField: JBTextField? = null
     private var unitCombo: ComboBox<String>? = null
     private var labelField: JBTextField? = null
-    private var idField: JBTextField? = null
+    private var altField: JBTextField? = null
+    private var anchorIdField: JBTextField? = null
 
     private var percentPanel: JPanel? = null
     private var fixedSizePanel: JPanel? = null
@@ -45,7 +62,7 @@ class InsertImageDialog(private val project: Project?) : DialogWrapper(project) 
     private var currentFileDir: VirtualFile? = null
 
     init {
-        title = "Insert Image"
+        title = if (mode == Mode.EDIT) "Edit Image" else "Insert Image"
         init()
     }
 
@@ -53,24 +70,90 @@ class InsertImageDialog(private val project: Project?) : DialogWrapper(project) 
         currentFileDir = dir
     }
 
+    /** Pre-populate from an existing image syntax line. Preserves indent. */
+    fun parseExistingLine(line: String) {
+        originalLine = line
+        val indentLen = line.indexOfFirst { it != ' ' }
+        val prefix = if (indentLen > 0) line.substring(0, indentLen) else ""
+        val content = line.trim()
+
+        // ![(100%)][id](path "label") or !(100%)[id](path "label")
+        val imageRegex = Regex(
+            """^!\s*(?:\(([^)]*)\))?\s*(?:\[([^\]]*)\])?\s*\(([^)]+)\)(?:\s*\{#([^}]+)})?\s*$"""
+        )
+        val match = imageRegex.find(content)
+        if (match != null) {
+            val size = match.groupValues[1].trim()
+            val imgId = match.groupValues[2].trim()
+            val pathEtc = match.groupValues[3].trim()
+            val anchorId = match.groupValues[4].trim()
+
+            // Parse path and optional label: path "label"
+            val labelMatch = Regex("""^(.+?)\s*"([^"]*)"$""").find(pathEtc)
+            val rawPath: String
+            val label: String
+            if (labelMatch != null) {
+                rawPath = labelMatch.groupValues[1].trim()
+                label = labelMatch.groupValues[2].trim()
+            } else {
+                rawPath = pathEtc.trim()
+                label = ""
+            }
+
+            pathField?.text = rawPath
+            labelField?.text = label
+            altField?.text = imgId
+            anchorIdField?.text = anchorId
+
+            // Parse size
+            if (size.isNotEmpty()) {
+                if (size.endsWith("%")) {
+                    percentRadio?.isSelected = true
+                    val pct = size.removeSuffix("%").trim().toIntOrNull() ?: 100
+                    percentSlider?.value = pct.coerceIn(0, 150)
+                    percentInput?.text = pct.toString()
+                } else {
+                    // Fixed size like "100px 200px"
+                    fixedSizeRadio?.isSelected = true
+                    val parts = size.split(Regex("""\s+"""))
+                    if (parts.size >= 2) {
+                        val wPair = parseSizeUnit(parts[0])
+                        val hPair = parseSizeUnit(parts[1])
+                        widthField?.text = wPair.first ?: ""
+                        heightField?.text = hPair.first ?: ""
+                        val unit = (wPair.second ?: hPair.second) ?: "px"
+                        unitCombo?.selectedItem = unit
+                    }
+                }
+                toggleSizePanels()
+            }
+        }
+    }
+
+    private fun parseSizeUnit(s: String): Pair<String?, String?> {
+        val num = s.takeWhile { it.isDigit() || it == '.' }
+        val unit = s.removePrefix(num)
+        return if (num.isEmpty()) null to null else num to unit.ifEmpty { "px" }
+    }
+
     override fun createCenterPanel(): JComponent {
-        val panel = JPanel(GridLayoutManager(7, 2, JBUI.insets(10), -1, -1))
+        val panel = JPanel(GridLayoutManager(9, 2, JBUI.insets(10), -1, -1))
         var row = 0
 
         val pathLabel = JBLabel("Image Path:")
         val pf = TextFieldWithBrowseButton()
         pathField = pf
         val imageDescriptor = FileChooserDescriptor(true, false, false, false, false, false)
+            .withTitle("Select Image")
+            .withDescription("Select an image file to insert")
             .withFileFilter { f ->
                 val name = f.name.lowercase()
                 name.endsWith(".png") || name.endsWith(".jpg") || name.endsWith(".jpeg")
                         || name.endsWith(".gif") || name.endsWith(".bmp") || name.endsWith(".svg")
                         || name.endsWith(".webp")
             }
-        pf.addBrowseFolderListener(
-            "Select Image", "Select an image file to insert", project, imageDescriptor,
-            TextComponentAccessor.TEXT_FIELD_WHOLE_TEXT
-        )
+        val listener = TextBrowseFolderListener(imageDescriptor, project)
+        pf.addBrowseFolderListener(listener)
         pf.addPropertyChangeListener("text") { onPathChanged() }
         panel.add(pathLabel, GridConstraints(row, 0, 1, 1,
             GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE,
@@ -106,7 +189,7 @@ class InsertImageDialog(private val project: Project?) : DialogWrapper(project) 
 
         percentPanel = buildPercentPanel()
         fixedSizePanel = buildFixedSizePanel()
-        fixedSizePanel!!.isVisible = false
+        fixedSizePanel?.isVisible = false
 
         panel.add(percentPanel, GridConstraints(row, 0, 1, 2,
             GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL,
@@ -134,14 +217,27 @@ class InsertImageDialog(private val project: Project?) : DialogWrapper(project) 
             null, null, null))
         row++
 
-        val idLabel = JBLabel("Reference ID:")
-        val idf = JBTextField()
-        idField = idf
-        panel.add(idLabel, GridConstraints(row, 0, 1, 1,
+        val altLabel = JBLabel("Alt Text:")
+        val altf = JBTextField()
+        altField = altf
+        panel.add(altLabel, GridConstraints(row, 0, 1, 1,
             GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE,
             GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED,
             null, null, null))
-        panel.add(idf, GridConstraints(row, 1, 1, 1,
+        panel.add(altf, GridConstraints(row, 1, 1, 1,
+            GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL,
+            GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED,
+            null, null, null))
+        row++
+
+        val anchorIdLabel = JBLabel("Anchor ID:")
+        val aidf = JBTextField()
+        anchorIdField = aidf
+        panel.add(anchorIdLabel, GridConstraints(row, 0, 1, 1,
+            GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE,
+            GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED,
+            null, null, null))
+        panel.add(aidf, GridConstraints(row, 1, 1, 1,
             GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL,
             GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED,
             null, null, null))
@@ -174,32 +270,23 @@ class InsertImageDialog(private val project: Project?) : DialogWrapper(project) 
         panel.add(rightPanel, BorderLayout.EAST)
 
         slider.addChangeListener {
-            if (!slider.valueIsAdjusting) {
-                input.text = slider.value.toString()
-            }
+            if (!slider.valueIsAdjusting) { input.text = slider.value.toString() }
         }
-
         input.addActionListener {
-            try {
-                val v = input.text.replace("%", "").trim().toInt()
-                slider.value = v.coerceIn(0, 150)
-            } catch (_: NumberFormatException) {
-            }
+            val v = input.text.replace("%", "").trim().toIntOrNull()
+            if (v != null) slider.value = v.coerceIn(0, 150)
         }
-
         return panel
     }
 
     private fun buildFixedSizePanel(): JPanel {
         val panel = JPanel(GridLayoutManager(2, 4, JBUI.emptyInsets(), -1, -1))
-
         val widthLabel = JBLabel("Width:")
         val wf = JBTextField(6)
         widthField = wf
         val heightLabel = JBLabel("Height:")
         val hf = JBTextField(6)
         heightField = hf
-
         val combo = ComboBox(arrayOf("px", "cm", "in"))
         combo.selectedIndex = 0
         unitCombo = combo
@@ -229,31 +316,28 @@ class InsertImageDialog(private val project: Project?) : DialogWrapper(project) 
             GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL,
             GridConstraints.SIZEPOLICY_CAN_SHRINK, GridConstraints.SIZEPOLICY_FIXED,
             null, null, null))
-
         val optionalLabel = JBLabel("(optional)")
         optionalLabel.foreground = UIManager.getColor("Label.disabledForeground")
         panel.add(optionalLabel, GridConstraints(1, 3, 1, 1,
             GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE,
             GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED,
             null, null, null))
-
         return panel
     }
 
     private fun toggleSizePanels() {
         val isPercent = percentRadio!!.isSelected
-        percentPanel!!.isVisible = isPercent
-        fixedSizePanel!!.isVisible = !isPercent
-        SwingUtilities.getWindowAncestor(percentPanel).pack()
+        percentPanel?.isVisible = isPercent
+        fixedSizePanel?.isVisible = !isPercent
+        SwingUtilities.getWindowAncestor(percentPanel)?.pack()
     }
 
     private fun onPathChanged() {
-        if (idField!!.text.isEmpty()) {
+        if (altField!!.text.isEmpty()) {
             val path = pathField!!.text.trim()
             if (path.isNotEmpty()) {
-                val fileName = File(path).name
-                val dotIdx = fileName.lastIndexOf('.')
-                idField!!.text = if (dotIdx > 0) fileName.substring(0, dotIdx) else fileName
+                val fileName = File(path).nameWithoutExtension
+                altField?.text = fileName
             }
         }
     }
@@ -263,50 +347,55 @@ class InsertImageDialog(private val project: Project?) : DialogWrapper(project) 
         super.doOKAction()
     }
 
+    /** Build image syntax. In EDIT mode, preserves the original line's indent. */
     fun buildImageSyntax(): String {
         val rawPath = pathField!!.text.trim()
         val path = toRelativePath(rawPath)
         val size = buildSizeString()
         val label = labelField!!.text.trim()
-        val id = idField!!.text.trim()
+        val alt = altField!!.text.trim()
+        val anchorId = anchorIdField!!.text.trim()
 
         val sb = StringBuilder()
         sb.append("!(").append(size).append(")")
-        sb.append("[").append(id).append("]")
+        sb.append("[").append(alt).append("]")
         sb.append("(").append(path)
-        if (label.isNotEmpty()) {
-            sb.append(" \"").append(label).append("\"")
-        }
+        if (label.isNotEmpty()) sb.append(" \"").append(label).append("\"")
         sb.append(")")
-        if (id.isNotEmpty()) {
-            sb.append(" {#").append(id).append("}")
+        if (anchorId.isNotEmpty()) sb.append(" {#").append(anchorId).append("}")
+
+        if (mode == Mode.EDIT) {
+            val indent = computeIndent()
+            if (indent.isNotEmpty()) sb.insert(0, indent)
         }
         return sb.toString()
     }
 
+    /** Recover leading whitespace from the original line. */
+    fun computeIndent(): String {
+        val idx = originalLine.indexOfFirst { it != ' ' && it != '\t' }
+        return if (idx > 0) originalLine.substring(0, idx) else ""
+    }
+
     private fun toRelativePath(rawPath: String): String {
         val dir = currentFileDir ?: return rawPath
-        return try {
-            val imagePath = Paths.get(rawPath)
-            if (!imagePath.isAbsolute) return rawPath
-            val baseDir = Paths.get(dir.path)
-            val relative = baseDir.relativize(imagePath)
-            relative.toString().replace('\\', '/')
-        } catch (_: IllegalArgumentException) {
-            rawPath
+            val directoryPath = com.intellij.openapi.vfs.VfsUtilCore.virtualToIoFile(dir).absolutePath
+            return try {
+                val imagePath = Paths.get(rawPath)
+                if (!imagePath.isAbsolute) return rawPath
+                val baseDir = Paths.get(directoryPath)
+                baseDir.relativize(imagePath).toString().replace('\\', '/')
+            } catch (_: IllegalArgumentException) { rawPath }
         }
-    }
 
     private fun buildSizeString(): String {
         if (percentRadio!!.isSelected) {
             val text = percentInput!!.text.replace("%", "").trim()
             return if (text.isEmpty()) "100%" else "$text%"
         }
-
         val unit = unitCombo!!.selectedItem as String
         val w = widthField!!.text.trim()
         val h = heightField!!.text.trim()
-
         return when {
             w.isNotEmpty() && h.isNotEmpty() -> "$w$unit $h$unit"
             w.isNotEmpty() -> "$w$unit _"

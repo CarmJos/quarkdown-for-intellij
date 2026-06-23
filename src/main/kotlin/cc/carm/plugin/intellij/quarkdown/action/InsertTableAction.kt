@@ -1,4 +1,4 @@
-package cc.carm.plugin.intellij.quarkdown.actions
+package cc.carm.plugin.intellij.quarkdown.action
 
 import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnAction

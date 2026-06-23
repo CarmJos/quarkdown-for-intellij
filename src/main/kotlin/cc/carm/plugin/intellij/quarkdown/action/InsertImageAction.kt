@@ -1,4 +1,4 @@
-package cc.carm.plugin.intellij.quarkdown.actions
+package cc.carm.plugin.intellij.quarkdown.action
 
 import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnAction
@@ -20,7 +20,7 @@ class InsertImageAction : AnAction(), DumbAware {
     override fun actionPerformed(e: AnActionEvent) {
         val editor = e.getData(CommonDataKeys.EDITOR) ?: return
 
-        val dialog = InsertImageDialog(e.project)
+        val dialog = QuarkdownImageDialog(e.project, QuarkdownImageDialog.Mode.INSERT)
 
         val docFile = FileDocumentManager.getInstance().getFile(editor.document)
         if (docFile != null) {

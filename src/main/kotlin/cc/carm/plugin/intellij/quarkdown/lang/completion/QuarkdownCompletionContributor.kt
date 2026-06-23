@@ -68,9 +68,33 @@ class QuarkdownCompletionContributor : CompletionContributor() {
             val prefix = ctx.paramPrefix.lowercase()
 
             if (ctx.afterColon) {
+                // After "paramName: " — suggest value options
                 suggestParamValues(fn, prefix, result)
             } else {
-                suggestParamNames(fn, prefix, result)
+                // Before colon: could be a param name OR a positional value
+                // If the text doesn't match any param name, suggest values for the first param
+                val visibleParams = fn.parameters.filter { !it.isInjected }
+                val matchingParam = visibleParams.find { it.name.startsWith(prefix) }
+
+                if (matchingParam != null) {
+                    // Typing a param name — suggest param names
+                    suggestParamNames(fn, prefix, result)
+                }
+
+                // Always suggest values for the first positional param
+                // (Quarkdown supports .func { value } as shorthand for .func { firstParam: value })
+                if (visibleParams.isNotEmpty()) {
+                    val firstParam = visibleParams.first()
+                    if (firstParam.allowedValues != null) {
+                        for (value in firstParam.allowedValues.filter { it.startsWith(prefix) }) {
+                            result.addElement(
+                                LookupElementBuilder.create(value)
+                                    .withTypeText(firstParam.type, true)
+                                    .withTailText(" (${firstParam.name})", true)
+                            )
+                        }
+                    }
+                }
             }
         }
 
@@ -80,7 +104,6 @@ class QuarkdownCompletionContributor : CompletionContributor() {
             result: CompletionResultSet
         ) {
             val visibleParams = fn.parameters.filter { !it.isInjected }
-
             if (visibleParams.isEmpty()) return
 
             for (param in visibleParams.filter { it.name.startsWith(prefix) }) {
@@ -104,14 +127,32 @@ class QuarkdownCompletionContributor : CompletionContributor() {
             prefix: String,
             result: CompletionResultSet
         ) {
-            val paramName = prefix.substringBefore(":").trim()
-            val param = fn.parameters.find { it.name == paramName.lowercase() } ?: return
+            // prefix at this point is "{paramName}: {partialValue}" or just "{partialValue}"
+            val parts = prefix.split(":", limit = 2)
+            val paramName = parts[0].trim()
+            val valuePrefix = if (parts.size > 1) parts[1].trim().lowercase() else ""
 
-            val allowed = param.allowedValues ?: return
-            val afterColon = prefix.substringAfter(":", "").trim().lowercase()
-
-            for (value in allowed.filter { it.startsWith(afterColon) }) {
-                result.addElement(LookupElementBuilder.create(value).withTypeText(param.type, true))
+            // First, try to find the named param
+            val param = fn.parameters.find { it.name == paramName.lowercase() }
+            if (param != null && param.allowedValues != null) {
+                for (value in param.allowedValues.filter { it.startsWith(valuePrefix) }) {
+                    result.addElement(LookupElementBuilder.create(value).withTypeText(param.type, true))
+                }
+            } else {
+                // No named param matched — suggest values for first positional param
+                val visibleParams = fn.parameters.filter { !it.isInjected }
+                if (visibleParams.isNotEmpty()) {
+                    val firstParam = visibleParams.first()
+                    if (firstParam.allowedValues != null) {
+                        for (value in firstParam.allowedValues.filter { it.startsWith(valuePrefix) }) {
+                            result.addElement(
+                                LookupElementBuilder.create(value)
+                                    .withTypeText(firstParam.type, true)
+                                    .withTailText(" (${firstParam.name})", true)
+                            )
+                        }
+                    }
+                }
             }
         }
 
