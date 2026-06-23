@@ -9,52 +9,33 @@
 
 ## Dependencies
 
-- Use the [Quarkdown language server](https://github.com/iamgio/quarkdown/tree/main/quarkdown-lsp) .
-- Auto import Quarkdown jars as dependencies for features like code completion and error checking.
-- Auto-detect Quarkdown installation from `QUARKDOWN_HOME`, system `PATH`,
-
-Mark: Use jars as library to read/implement auto completions and error checks,
-
-as an example:
-
-
-```markdown
-
-.doctype {paged}
-
-```
-
-when typing "." will auto suggest all usable commands like `.doctype` `.docname` with `{}`, and put input inner.
-
-Then, will suggest `paged`/`plain`/`slides`/`docs` (based on `.doctype`'s available params).
-
-All of this should base on current jar's definition.
-
-> **Note:** Real-time rendering (charts, math formulas, etc.) should be handled by the LSP's own preview window, not controlled by this plugin.
+- [x] Auto-detect Quarkdown installation from `QUARKDOWN_HOME`, system `PATH`,
+- [x] Auto import Quarkdown jars as dependencies for features like code completion and error checking.
 
 ## Infrastructure
 
-- [ ] Create `META-INF/plugin.xml` with all required registrations (fileType, actions, services, extensions).
-- [ ] Register `.qd` file type (`FileType` + `FileTypeFactory`) with file icon.
-- [ ] Implement Lexer for syntax highlighting tokenization.
-- [ ] Implement Parser / PSI tree for structured syntax analysis.
-- [ ] Create customizable Color Settings Page for `.qd` syntax.
-- [ ] Support `Ctrl+/` comment/uncomment using Quarkdown `//` syntax.
+- [x] Create `META-INF/plugin.xml` with all required registrations (fileType, actions, services, extensions).
+- [x] Register `.qd` file type (`FileType` + `FileTypeFactory`) with file icon.
+- [x] Implement Lexer for syntax highlighting tokenization.
+- [x] Implement Parser / PSI tree for structured syntax analysis.
+- [x] Create customizable Color Settings Page for `.qd` syntax.
+- [x] Support `Ctrl+/` comment/uncomment using Quarkdown comment syntax. 
+```markdown
+<!-- 这是一个注释，用于添加备注 -->
+```
 
 ## Basement
 
-- [ ] Use `quarkdown.svg` as file icon.
-- [ ] Use `logo.svg` as plugin's logo icon.
+- [x] Use `quarkdown.svg` as file icon.
+- [x] Use `pluginIcon.svg` as plugin's logo icon.
 
 ## Settings
 
-- [ ] Auto-detect Quarkdown installation on project open.
-- [ ] Provide installation guidance with commands for missing Quarkdown.
-- [ ] Provide "Auto Install" option for Quarkdown if not found.
-- [ ] Documentation button to Quarkdown wiki in settings.
-- [ ] Manual override for Quarkdown CLI and JAR paths.
-- [ ] Compile parameters configuration (CLI args, output directory, etc.).
-- [ ] Preview settings (auto-refresh interval, default zoom, theme).
+- [x] Auto-detect Quarkdown installation.
+- [x] Provide installation guidance with commands for missing Quarkdown.
+- [x] Documentation button to Quarkdown wiki in settings.
+- [x] Compile parameters configuration (CLI args, output directory, etc.).
+- [x] Preview parameters configuration (CLI args, output directory, etc.).
 - [ ] Editor appearance settings for `.qd` files (font family, size, line height, line wrap; per-component: headings, code blocks, tables, etc.).
 - [ ] Completion behavior settings (case sensitivity, auto-insert brackets, etc.).
 - [ ] Code formatting settings (indent size, max line width, etc.).
@@ -82,14 +63,13 @@ All of this should base on current jar's definition.
 - [ ] Auto Code Completion for function names and parameters.
 - [ ] Code reformatting for Quarkdown files, also for code blocks based on its languages formatting rules.
 - [ ] Syntax error highlighting for invalid directives, missing parameters, etc.
-- [ ] File completion and navigation for `.include` `.css` `.code`, etc. Also for cross-references `.ref {id}`.
-- [ ] File path completion and navigation for images `!(100%)[](path "label")` and tables.
+- [x] File completion and navigation for `.include` `.css` `.code`, etc. Also for cross-references `.ref {id}`.
+- [x] File path completion and navigation for images `!(100%)[](path "label")` and tables.
 - [ ] For images, add a panel to preview the image, and give a multiplier sliders and size inputs for width and height.
 - [ ] For tables:
     - Add a panel to edit the table in a spreadsheet-like interface.
     - Add a side button to change lines, columns, and alignment.
 - [ ] Auto-close paired symbols (`{}`, `[]`, `""`, etc.) on typing.
-- [ ] Quick documentation (`Ctrl+Q`) popup for directives, with link to wiki.
 - [ ] Structure View (`Alt+7`) showing document outline (chapters, tables, images).
 - [ ] Breadcrumbs navigation showing current position in document hierarchy.
 - [ ] Code folding for sections, code blocks, and tables (similar to IntelliJ Markdown plugin).
@@ -106,20 +86,17 @@ All of this should base on current jar's definition.
 
 ## Keyboard Shortcuts
 
-- [ ] `Ctrl+B` for bold text
-- [ ] `Ctrl+I` for italic text
-- [ ] `Ctrl+Shift+S` for strikethrough
-- [ ] `Ctrl+Shift+C` for code block
-- [ ] `Ctrl+Shift+L` for link
-- [ ] `Ctrl+Shift+I` for image
-- [ ] `Ctrl+Shift+T` for table
+- [x] `Ctrl+B` for bold text
+- [x] `Ctrl+I` for italic text
+- [x] `Ctrl+Shift+S` for strikethrough
+- [x] `Ctrl+Shift+C` for code block
+- [x] `Ctrl+Shift+L` for link
+- [x] `Ctrl+Shift+I` for image
+- [x] `Ctrl+Shift+T` for table
 
 ## Project Management
 
-- [ ] "New Quarkdown Document" file template (File -> New menu).
-- [ ] Quarkdown Project Wizard (New Project -> Quarkdown skeleton).
-- [ ] Quarkdown SDK configuration per project (similar to JDK selection).
-- [ ] Quarkdown Module type for multi-module projects.
+- [x] "New Quarkdown Document" file template (File -> New menu).
 
 ## Preview
 
@@ -136,7 +113,7 @@ All of this should base on current jar's definition.
 
 ## Tool Windows & UI
 
-- [ ] Quarkdown tool window integrating: document outline + compilation output + error list + preview.
+- [ ] Quarkdown tool window integrating: Preview.
 - [ ] Sidebar action icons on `.qd` files in project tree.
 - [ ] Status bar widget showing current document's doctype and Quarkdown version.
 - [ ] Notification system for Quarkdown version updates.

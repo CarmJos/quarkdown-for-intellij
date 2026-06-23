@@ -160,8 +160,9 @@ class QuarkdownReferenceContributor : PsiReferenceContributor() {
             // Match .read/.include/.css/.code { "path" }
             private val FILE_PATTERN = Regex("""\.(read|include|css|code)\s*\{\s*"([^"]+)"\s*\}""", RegexOption.IGNORE_CASE)
 
-            // Match image paths ![](path) and ![size](path)
-            private val IMG_PATH_PATTERN = Regex("""!\[[^\]]*\]\(\s*([^)\s]+)""")
+            // Match image paths: !(size)[alt](path) — the Quarkdown image syntax
+            // The (size) group is optional to also support ! [alt](path) as fallback
+            private val IMG_PATH_PATTERN = Regex("""!\s*(?:\([^)]*\)\s*)?\[[^\]]*\]\s*\(\s*([^)\s]+)""")
         }
     }
 }

@@ -63,6 +63,14 @@
         <codeInsight.lineMarkerProvider
                 language="Quarkdown"
                 implementationClass="cc.carm.plugin.intellij.quarkdown.lang.marker.QuarkdownImageLineMarkerProvider"/>
+
+        <!-- Drag-and-drop image files into Quarkdown editor -->
+        <dropHandler
+                implementation="cc.carm.plugin.intellij.quarkdown.action.QuarkdownImageDropHandler"
+                order="first"/>
+        <fileDropHandler
+                implementation="cc.carm.plugin.intellij.quarkdown.action.QuarkdownImageDropHandler"
+                order="first"/>
     </extensions>
 
     <actions>

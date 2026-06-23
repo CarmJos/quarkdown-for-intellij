@@ -70,6 +70,12 @@ class QuarkdownImageDialog(
         currentFileDir = dir
     }
 
+    /** Pre-fill the image path field (used by drag & drop). */
+    fun setImagePath(path: String) {
+        pathField?.text = path
+        onPathChanged()
+    }
+
     /** Pre-populate from an existing image syntax line. Preserves indent. */
     fun parseExistingLine(line: String) {
         originalLine = line
