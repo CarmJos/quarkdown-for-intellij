@@ -93,6 +93,11 @@
         <annotator
                 language="Quarkdown"
                 implementationClass="cc.carm.plugin.intellij.quarkdown.lang.todo.QuarkdownTodoAnnotator"/>
+
+        <!-- Auto-close paired symbols ({ }, [ ], ( )) with brace matching and navigation -->
+        <lang.braceMatcher
+                language="Quarkdown"
+                implementationClass="cc.carm.plugin.intellij.quarkdown.lang.QuarkdownBraceMatcher"/>
     </extensions>
 
     <actions>

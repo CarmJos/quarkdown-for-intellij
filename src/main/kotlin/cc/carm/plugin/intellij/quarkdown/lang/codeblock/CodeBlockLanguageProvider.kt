@@ -1,21 +1,38 @@
 package cc.carm.plugin.intellij.quarkdown.lang.codeblock
 
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
+
 /**
  * Provides the list of supported code block languages (from highlight.js).
  *
- * The language data is auto-generated at build time into [GENERATED_CODE_BLOCK_LANGUAGES].
- * If that is unavailable, a built-in fallback list is used.
+ * The language data is auto-generated at build time into `code-block-languages.json`
+ * and packaged in the JAR. If the JSON resource is unavailable, a built-in fallback
+ * list is used.
  */
 object CodeBlockLanguageProvider {
 
     @JvmStatic
     val languages: List<CodeBlockLanguage> = run {
-        // Use generated list from build task if available, otherwise fallback
-        @Suppress("UNUSED_EXPRESSION")
+        loadFromJson() ?: FALLBACK_LANGUAGES
+    }
+
+    /**
+     * Tries to load the language list from the JSON resource bundled in the JAR.
+     * Returns `null` if the resource is not found or parsing fails.
+     */
+    private fun loadFromJson(): List<CodeBlockLanguage>? {
         try {
-            GENERATED_CODE_BLOCK_LANGUAGES
+            val resourceStream = CodeBlockLanguageProvider::class.java
+                .getResourceAsStream("code-block-languages.json")
+                ?: return null
+
+            val json = resourceStream.reader().readText()
+            val gson = Gson()
+            val type = object : TypeToken<List<CodeBlockLanguage>>() {}.type
+            return gson.fromJson<List<CodeBlockLanguage>>(json, type)
         } catch (_: Exception) {
-            FALLBACK_LANGUAGES
+            return null
         }
     }
 
@@ -81,4 +98,3 @@ private val FALLBACK_LANGUAGES = listOf(
     CodeBlockLanguage("dockerfile", listOf("docker")),
     CodeBlockLanguage("graphql", listOf("gql")),
 )
-

@@ -69,7 +69,7 @@
 - [ ] For tables:
     - Add a panel to edit the table in a spreadsheet-like interface.
     - Add a side button to change lines, columns, and alignment.
-- [ ] Auto-close paired symbols (`{}`, `[]`, `""`, etc.) on typing.
+- [x] Auto-close paired symbols (`{}`, `[]`, `""`, code block, etc.) on typing.
 - [x] Structure View (`Alt+7`) showing document outline (chapters, tables, images).
 - [x] Breadcrumbs navigation showing current position in document hierarchy.
 - [x] Code folding for sections, code blocks, and tables (similar to IntelliJ Markdown plugin).
