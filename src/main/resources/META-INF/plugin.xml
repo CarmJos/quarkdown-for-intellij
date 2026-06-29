@@ -4,7 +4,10 @@
     <vendor>CarmJos</vendor>
     <description>Quarkdown language support for JetBrains IntelliJ Platform.</description>
 
+    <depends>org.intellij.intelliLang</depends>
+    <depends>com.intellij.java</depends>
     <depends>com.intellij.modules.platform</depends>
+    <depends>org.intellij.plugins.markdown</depends>
 
     <extensions defaultExtensionNs="com.intellij">
         <fileType name="Quarkdown"
@@ -15,8 +18,6 @@
 
         <internalFileTemplate name="Quarkdown Empty"/>
         <internalFileTemplate name="Quarkdown Example"/>
-
-        <projectService serviceImplementation="cc.carm.plugin.intellij.quarkdown.settings.QuarkdownSettings"/>
 
         <projectConfigurable
                 parentId="language"
@@ -30,6 +31,10 @@
                 language="Quarkdown"
                 implementationClass="cc.carm.plugin.intellij.quarkdown.lang.completion.QuarkdownCompletionContributor"/>
 
+        <completion.contributor
+                language="Quarkdown"
+                implementationClass="cc.carm.plugin.intellij.quarkdown.lang.completion.CodeBlockLanguageCompletionContributor"/>
+
         <typedHandler implementation="cc.carm.plugin.intellij.quarkdown.lang.QuarkdownTypedHandlerDelegate"/>
 
         <annotator
@@ -39,8 +44,7 @@
         <!-- Image path validity check (warn on non-existent paths) -->
         <annotator
                 language="Quarkdown"
-                implementationClass="cc.carm.plugin.intellij.quarkdown.lang.annotator.QuarkdownImagePathAnnotator"
-                order="after QuarkdownAnnotator"/>
+                implementationClass="cc.carm.plugin.intellij.quarkdown.lang.annotator.QuarkdownImagePathAnnotator"/>
 
         <!-- Syntax highlighting -->
         <lang.syntaxHighlighterFactory
@@ -56,10 +60,6 @@
                 language="Quarkdown"
                 implementationClass="cc.carm.plugin.intellij.quarkdown.lang.commenter.QuarkdownCommenter"/>
 
-        <!-- PSI references (go-to-definition for .ref, .read, etc.) -->
-        <psiReferenceContributor
-                implementation="cc.carm.plugin.intellij.quarkdown.lang.reference.QuarkdownReferenceContributor"/>
-
         <!-- Parser definition (creates Lexer + PSI tree) -->
         <lang.parserDefinition
                 language="Quarkdown"
@@ -71,11 +71,8 @@
                 implementationClass="cc.carm.plugin.intellij.quarkdown.lang.marker.QuarkdownImageLineMarkerProvider"/>
 
         <!-- Drag-and-drop image files into Quarkdown editor -->
-        <dropHandler
-                implementation="cc.carm.plugin.intellij.quarkdown.action.QuarkdownImageDropHandler"
-                order="first"/>
         <fileDropHandler
-                implementation="cc.carm.plugin.intellij.quarkdown.action.QuarkdownImageDropHandler"
+                implementation="cc.carm.plugin.intellij.quarkdown.action.image.ImageDropHandler"
                 order="first"/>
 
         <!-- Breadcrumbs navigation showing heading hierarchy -->
@@ -91,11 +88,16 @@
         <lang.foldingBuilder
                 language="Quarkdown"
                 implementationClass="cc.carm.plugin.intellij.quarkdown.lang.fold.QuarkdownFoldingBuilder"/>
+
+        <!-- TODO / FIXME highlighting in comments (shows in IDE TODO panel) -->
+        <annotator
+                language="Quarkdown"
+                implementationClass="cc.carm.plugin.intellij.quarkdown.lang.todo.QuarkdownTodoAnnotator"/>
     </extensions>
 
     <actions>
         <action id="Quarkdown.NewDocument"
-                class="cc.carm.plugin.intellij.quarkdown.action.NewQuarkdownDocumentAction"
+                class="cc.carm.plugin.intellij.quarkdown.action.CreateDocumentAction"
                 text="Quarkdown Document"
                 description="Create a new Quarkdown document">
             <add-to-group group-id="NewGroup" anchor="last"/>
@@ -104,43 +106,49 @@
         <group id="Quarkdown.EditorActions" popup="true" text="Quarkdown">
             <add-to-group group-id="EditorPopupMenu" anchor="last"/>
             <action id="Quarkdown.ToggleBold"
-                    class="cc.carm.plugin.intellij.quarkdown.action.ToggleBoldAction"
+                    class="cc.carm.plugin.intellij.quarkdown.action.text.BoldToggleAction"
                     text="Bold"
                     description="Toggle bold text">
                 <keyboard-shortcut first-keystroke="control B" keymap="$default"/>
             </action>
             <action id="Quarkdown.ToggleItalic"
-                    class="cc.carm.plugin.intellij.quarkdown.action.ToggleItalicAction"
+                    class="cc.carm.plugin.intellij.quarkdown.action.text.ItalicToggleAction"
                     text="Italic"
                     description="Toggle italic text">
                 <keyboard-shortcut first-keystroke="control I" keymap="$default"/>
             </action>
             <action id="Quarkdown.ToggleStrikethrough"
-                    class="cc.carm.plugin.intellij.quarkdown.action.ToggleStrikethroughAction"
+                    class="cc.carm.plugin.intellij.quarkdown.action.text.StrikethroughToggleAction"
                     text="Strikethrough"
                     description="Toggle strikethrough text">
                 <keyboard-shortcut first-keystroke="control shift S" keymap="$default"/>
             </action>
             <action id="Quarkdown.ToggleCode"
-                    class="cc.carm.plugin.intellij.quarkdown.action.ToggleCodeAction"
+                    class="cc.carm.plugin.intellij.quarkdown.action.text.CodeToggleAction"
                     text="Code"
                     description="Toggle inline code">
                 <keyboard-shortcut first-keystroke="control shift C" keymap="$default"/>
             </action>
+            <action id="Quarkdown.InsertCodeBlock"
+                    class="cc.carm.plugin.intellij.quarkdown.action.text.CodeBlockInsertAction"
+                    text="Code Block"
+                    description="Insert code block">
+                <keyboard-shortcut first-keystroke="control shift B" keymap="$default"/>
+            </action>
             <action id="Quarkdown.InsertLink"
-                    class="cc.carm.plugin.intellij.quarkdown.action.InsertLinkAction"
+                    class="cc.carm.plugin.intellij.quarkdown.action.text.LinkInsertAction"
                     text="Link"
                     description="Insert link">
                 <keyboard-shortcut first-keystroke="control shift L" keymap="$default"/>
             </action>
             <action id="Quarkdown.InsertImage"
-                    class="cc.carm.plugin.intellij.quarkdown.action.InsertImageAction"
+                    class="cc.carm.plugin.intellij.quarkdown.action.image.ImageInsertAction"
                     text="Image"
                     description="Insert image">
                 <keyboard-shortcut first-keystroke="control shift I" keymap="$default"/>
             </action>
             <action id="Quarkdown.InsertTable"
-                    class="cc.carm.plugin.intellij.quarkdown.action.InsertTableAction"
+                    class="cc.carm.plugin.intellij.quarkdown.action.table.InsertTableAction"
                     text="Table"
                     description="Insert table">
                 <keyboard-shortcut first-keystroke="control shift T" keymap="$default"/>

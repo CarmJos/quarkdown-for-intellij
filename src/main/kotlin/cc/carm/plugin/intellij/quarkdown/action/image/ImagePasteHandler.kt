@@ -1,4 +1,4 @@
-package cc.carm.plugin.intellij.quarkdown.action
+package cc.carm.plugin.intellij.quarkdown.action.image
 
 import cc.carm.plugin.intellij.quarkdown.QuarkdownFileType
 import com.intellij.openapi.actionSystem.DataContext
@@ -11,23 +11,25 @@ import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.roots.ProjectFileIndex
 import java.awt.Toolkit
+import java.awt.datatransfer.Clipboard
 import java.awt.datatransfer.DataFlavor
 import java.awt.image.BufferedImage
+import java.io.File
 
 /**
  * Handles paste (Ctrl+V) in Quarkdown (.qd) editors.
  * When the clipboard contains an image (file or in-memory), this handler:
- *  - If the image file is already inside the current project → opens [QuarkdownImageDialog] directly.
- *  - If the image file is outside the project → opens [QuarkdownImageSaveDialog] first to let the
- *    user choose where to copy the file, then opens [QuarkdownImageDialog].
+ *  - If the image file is already inside the current project → opens [ImageDialog] directly.
+ *  - If the image file is outside the project → opens [ImageSaveDialog] first to let the
+ *    user choose where to copy the file, then opens [ImageDialog].
  *  - If the clipboard holds an in-memory [BufferedImage] (e.g. screenshot) → opens
- *    [QuarkdownImageSaveDialog] first, saves the image, then opens [QuarkdownImageDialog].
+ *    [ImageSaveDialog] first, saves the image, then opens [ImageDialog].
  *
  * When the clipboard does NOT contain an image, or the current file is not a `.qd` file,
  * the paste is delegated to the original handler.
  */
 @Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
-class QuarkdownImagePasteHandler(
+class ImagePasteHandler(
     private val originalHandler: EditorActionHandler,
 ) : EditorActionHandler() {
 
@@ -66,19 +68,19 @@ class QuarkdownImagePasteHandler(
     // ========================
 
     private fun getImageFilesFromClipboard(
-        clipboard: java.awt.datatransfer.Clipboard,
-    ): List<java.io.File> {
+        clipboard: Clipboard,
+    ): List<File> {
         if (!clipboard.isDataFlavorAvailable(DataFlavor.javaFileListFlavor)) return emptyList()
         val list = try {
             clipboard.getData(DataFlavor.javaFileListFlavor) as? List<*>
         } catch (_: Exception) {
             return emptyList()
         } ?: return emptyList()
-        return list.filterIsInstance<java.io.File>().filter { QuarkdownImageDropHandler.isImageFile(it) }
+        return list.filterIsInstance<File>().filter { ImageDropHandler.isImageFile(it) }
     }
 
     private fun getBufferedImageFromClipboard(
-        clipboard: java.awt.datatransfer.Clipboard,
+        clipboard: Clipboard,
     ): BufferedImage? {
         if (!clipboard.isDataFlavorAvailable(DataFlavor.imageFlavor)) return null
         return try {
@@ -105,7 +107,7 @@ class QuarkdownImagePasteHandler(
         project: Project,
         editor: Editor,
         docFile: VirtualFile,
-        imageFile: java.io.File,
+        imageFile: File,
     ) {
         // Check if the image is already in the current project
         val virtualImageFile = LocalFileSystem.getInstance().refreshAndFindFileByIoFile(imageFile)
@@ -116,7 +118,7 @@ class QuarkdownImagePasteHandler(
             showImageInsertDialog(project, editor, docFile, imageFile.absolutePath)
         } else {
             // Image is outside the project — show save dialog first
-            val saveDialog = QuarkdownImageSaveDialog(
+            val saveDialog = ImageSaveDialog(
                 project = project,
                 defaultFileName = imageFile.name,
                 defaultDir = docFile.parent,
@@ -138,7 +140,7 @@ class QuarkdownImagePasteHandler(
         docFile: VirtualFile,
         image: BufferedImage,
     ) {
-        val saveDialog = QuarkdownImageSaveDialog(
+        val saveDialog = ImageSaveDialog(
             project = project,
             defaultFileName = "pasted-image.png",
             defaultDir = docFile.parent,
@@ -159,7 +161,7 @@ class QuarkdownImagePasteHandler(
         docFile: VirtualFile,
         imagePath: String,
     ) {
-        val dialog = QuarkdownImageDialog(project, QuarkdownImageDialog.Mode.INSERT)
+        val dialog = ImageDialog(project, ImageDialog.Mode.INSERT)
         dialog.setCurrentFileDir(docFile.parent)
         dialog.setImagePath(imagePath)
 

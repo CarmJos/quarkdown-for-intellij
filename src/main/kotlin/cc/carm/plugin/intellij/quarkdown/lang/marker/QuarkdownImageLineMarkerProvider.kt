@@ -5,7 +5,7 @@ import com.intellij.codeInsight.daemon.LineMarkerInfo
 import com.intellij.codeInsight.daemon.LineMarkerProvider
 import cc.carm.plugin.intellij.quarkdown.QuarkdownFileType
 import cc.carm.plugin.intellij.quarkdown.QuarkdownIcons
-import cc.carm.plugin.intellij.quarkdown.action.QuarkdownImageDialog
+import cc.carm.plugin.intellij.quarkdown.action.image.ImageDialog
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.editor.markup.GutterIconRenderer
 import com.intellij.openapi.fileEditor.FileEditorManager
@@ -85,7 +85,7 @@ class QuarkdownImageLineMarkerProvider : LineMarkerProvider {
             val text = document.immutableCharSequence
             val line = getFullLine(text, elementOffset)
 
-            val dialog = QuarkdownImageDialog(project, QuarkdownImageDialog.Mode.EDIT)
+            val dialog = ImageDialog(project, ImageDialog.Mode.EDIT)
             dialog.setCurrentFileDir(fileDir)
             dialog.parseExistingLine(line)
 

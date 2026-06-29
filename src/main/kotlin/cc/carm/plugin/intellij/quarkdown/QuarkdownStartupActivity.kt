@@ -1,6 +1,6 @@
 package cc.carm.plugin.intellij.quarkdown
 
-import cc.carm.plugin.intellij.quarkdown.action.QuarkdownImagePasteHandler
+import cc.carm.plugin.intellij.quarkdown.action.image.ImagePasteHandler
 import cc.carm.plugin.intellij.quarkdown.lang.completion.QuarkdownCompletionRegistrar
 import cc.carm.plugin.intellij.quarkdown.lang.function.FunctionRegistry
 import cc.carm.plugin.intellij.quarkdown.settings.QuarkdownPathDetector
@@ -45,7 +45,7 @@ class QuarkdownStartupActivity : ProjectActivity {
     }
 
     /**
-     * Installs [QuarkdownImagePasteHandler] as the first handler for the "EditorPaste" action.
+     * Installs [ImagePasteHandler] as the first handler for the "EditorPaste" action.
      * Uses [EditorActionManager] to wrap the existing handler.
      */
     private fun installPasteHandlerIfNeeded() {
@@ -54,7 +54,7 @@ class QuarkdownStartupActivity : ProjectActivity {
             val manager = EditorActionManager.getInstance()
             val actionId = IdeActions.ACTION_EDITOR_PASTE
             val originalHandler = manager.getActionHandler(actionId)
-            manager.setActionHandler(actionId, QuarkdownImagePasteHandler(originalHandler))
+            manager.setActionHandler(actionId, ImagePasteHandler(originalHandler))
             logger.info("Installed QuarkdownImagePasteHandler for $actionId")
         } catch (e: Exception) {
             logger.warn("Failed to install QuarkdownImagePasteHandler", e)

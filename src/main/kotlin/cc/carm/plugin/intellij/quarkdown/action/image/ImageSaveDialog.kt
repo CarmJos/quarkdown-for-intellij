@@ -1,4 +1,4 @@
-package cc.carm.plugin.intellij.quarkdown.action
+package cc.carm.plugin.intellij.quarkdown.action.image
 
 import com.intellij.openapi.fileChooser.FileChooserDescriptor
 import com.intellij.openapi.project.Project
@@ -23,7 +23,7 @@ import javax.swing.JPanel
  * Shows a directory chooser and a filename field.
  * Returns the target [File] where the image should be saved.
  */
-class QuarkdownImageSaveDialog(
+class ImageSaveDialog(
     project: Project?,
     private val defaultFileName: String,
     private val defaultDir: VirtualFile?,
@@ -57,26 +57,42 @@ class QuarkdownImageSaveDialog(
         if (defaultDir != null) {
             df.text = defaultDir.path
         }
-        panel.add(dirLabel, GridConstraints(0, 0, 1, 1,
-            GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE,
-            GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED,
-            null, null, null))
-        panel.add(df, GridConstraints(0, 1, 1, 1,
-            GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL,
-            GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED,
-            null, null, null))
+        panel.add(
+            dirLabel, GridConstraints(
+                0, 0, 1, 1,
+                GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE,
+                GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED,
+                null, null, null
+            )
+        )
+        panel.add(
+            df, GridConstraints(
+                0, 1, 1, 1,
+                GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL,
+                GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED,
+                null, null, null
+            )
+        )
 
         val nameLabel = JBLabel("File name:")
         val nf = JBTextField(defaultFileName)
         nameField = nf
-        panel.add(nameLabel, GridConstraints(1, 0, 1, 1,
-            GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE,
-            GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED,
-            null, null, null))
-        panel.add(nf, GridConstraints(1, 1, 1, 1,
-            GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL,
-            GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED,
-            null, null, null))
+        panel.add(
+            nameLabel, GridConstraints(
+                1, 0, 1, 1,
+                GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE,
+                GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED,
+                null, null, null
+            )
+        )
+        panel.add(
+            nf, GridConstraints(
+                1, 1, 1, 1,
+                GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL,
+                GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED,
+                null, null, null
+            )
+        )
 
         return panel
     }
@@ -116,6 +132,7 @@ class QuarkdownImageSaveDialog(
                 sourceImageFile != null -> {
                     sourceImageFile.copyTo(target, overwrite = true)
                 }
+
                 sourceBufferedImage != null -> {
                     val ext = target.extension.lowercase()
                     val formatName = when (ext) {
@@ -126,6 +143,7 @@ class QuarkdownImageSaveDialog(
                     }
                     ImageIO.write(sourceBufferedImage, formatName, target)
                 }
+
                 else -> return false
             }
             true

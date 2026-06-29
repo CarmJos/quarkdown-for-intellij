@@ -1,14 +1,13 @@
-package cc.carm.plugin.intellij.quarkdown.action
+package cc.carm.plugin.intellij.quarkdown.action.text
 
 import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.command.WriteCommandAction
-import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.project.DumbAware
 
-class InsertImageAction : AnAction(), DumbAware {
+class LinkInsertAction : AnAction(), DumbAware {
 
     override fun getActionUpdateThread() = ActionUpdateThread.BGT
 
@@ -20,26 +19,19 @@ class InsertImageAction : AnAction(), DumbAware {
     override fun actionPerformed(e: AnActionEvent) {
         val editor = e.getData(CommonDataKeys.EDITOR) ?: return
 
-        val dialog = QuarkdownImageDialog(e.project, QuarkdownImageDialog.Mode.INSERT)
-
-        val docFile = FileDocumentManager.getInstance().getFile(editor.document)
-        if (docFile != null) {
-            dialog.setCurrentFileDir(docFile.parent)
-        }
-
-        if (!dialog.showAndGet()) return
-
-        val syntax = dialog.buildImageSyntax()
-
         WriteCommandAction.runWriteCommandAction(e.project) {
             val primaryCaret = editor.caretModel.primaryCaret
             if (primaryCaret.hasSelection()) {
+                val selected = primaryCaret.selectedText
                 val start = primaryCaret.selectionStart
                 val end = primaryCaret.selectionEnd
-                editor.document.replaceString(start, end, syntax)
-                primaryCaret.moveToOffset(start + syntax.length)
+                val wrapped = "[$selected](url)"
+                editor.document.replaceString(start, end, wrapped)
+                primaryCaret.moveToOffset(start + wrapped.length)
             } else {
-                editor.document.insertString(editor.caretModel.offset, syntax)
+                editor.document.insertString(editor.caretModel.offset, "[text](url)")
+                val pos = editor.caretModel.offset
+                primaryCaret.setSelection(pos + 1, pos + 5)
             }
         }
     }

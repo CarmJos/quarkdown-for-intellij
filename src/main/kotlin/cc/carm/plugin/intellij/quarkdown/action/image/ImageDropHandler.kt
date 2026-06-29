@@ -1,7 +1,8 @@
-package cc.carm.plugin.intellij.quarkdown.action
+package cc.carm.plugin.intellij.quarkdown.action.image
 
 import cc.carm.plugin.intellij.quarkdown.QuarkdownFileType
 import com.intellij.openapi.command.WriteCommandAction
+import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.EditorDropHandler
 import com.intellij.openapi.editor.FileDropEvent
 import com.intellij.openapi.editor.FileDropHandler
@@ -24,7 +25,7 @@ import java.io.File
  * the drop at the lowest AWT level before [com.intellij.openapi.fileEditor.impl.FileEditorDropHandler]
  * opens the image in a new editor tab.
  */
-class QuarkdownImageDropHandler : FileDropHandler, EditorDropHandler {
+class ImageDropHandler : FileDropHandler, EditorDropHandler {
 
     companion object {
         val IMAGE_EXTENSIONS = setOf(
@@ -108,11 +109,11 @@ class QuarkdownImageDropHandler : FileDropHandler, EditorDropHandler {
 
     private fun showDialogAndInsert(
         project: Project,
-        editor: com.intellij.openapi.editor.Editor,
+        editor: Editor,
         docFile: VirtualFile,
         imageFile: File,
     ): Boolean {
-        val dialog = QuarkdownImageDialog(project, QuarkdownImageDialog.Mode.INSERT)
+        val dialog = ImageDialog(project, ImageDialog.Mode.INSERT)
         dialog.setCurrentFileDir(docFile.parent)
         dialog.setImagePath(imageFile.absolutePath)
 

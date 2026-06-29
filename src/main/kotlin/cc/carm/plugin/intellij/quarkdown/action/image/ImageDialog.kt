@@ -1,4 +1,4 @@
-package cc.carm.plugin.intellij.quarkdown.action
+package cc.carm.plugin.intellij.quarkdown.action.image
 
 import com.intellij.openapi.fileChooser.FileChooserDescriptor
 import com.intellij.openapi.project.Project
@@ -6,6 +6,7 @@ import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.TextBrowseFolderListener
 import com.intellij.openapi.ui.TextFieldWithBrowseButton
+import com.intellij.openapi.vfs.VfsUtilCore
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBRadioButton
@@ -17,6 +18,7 @@ import java.awt.BorderLayout
 import java.awt.FlowLayout
 import java.io.File
 import java.nio.file.Paths
+import javax.swing.Box
 import javax.swing.ButtonGroup
 import javax.swing.JComponent
 import javax.swing.JPanel
@@ -29,7 +31,7 @@ import javax.swing.UIManager
  * Dialog for inserting or editing an image in Quarkdown syntax:
  *   ![(size)][(id)]((path) "(label)") {#id}
  */
-class QuarkdownImageDialog(
+class ImageDialog(
     private val project: Project?,
     private val mode: Mode = Mode.INSERT
 ) : DialogWrapper(project) {
@@ -181,7 +183,7 @@ class QuarkdownImageDialog(
         modeGroup.add(pr)
         modeGroup.add(fsr)
         modePanel.add(pr)
-        modePanel.add(javax.swing.Box.createHorizontalStrut(16))
+        modePanel.add(Box.createHorizontalStrut(16))
         modePanel.add(fsr)
         panel.add(modeLabel, GridConstraints(row, 0, 1, 1,
             GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE,
@@ -385,7 +387,7 @@ class QuarkdownImageDialog(
 
     private fun toRelativePath(rawPath: String): String {
         val dir = currentFileDir ?: return rawPath
-            val directoryPath = com.intellij.openapi.vfs.VfsUtilCore.virtualToIoFile(dir).absolutePath
+            val directoryPath = VfsUtilCore.virtualToIoFile(dir).absolutePath
             return try {
                 val imagePath = Paths.get(rawPath)
                 if (!imagePath.isAbsolute) return rawPath

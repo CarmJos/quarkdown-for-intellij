@@ -1,10 +1,11 @@
-package cc.carm.plugin.intellij.quarkdown.action
+package cc.carm.plugin.intellij.quarkdown.action.text
 
 import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.command.WriteCommandAction
+import com.intellij.openapi.editor.Caret
 import com.intellij.openapi.editor.Document
 import com.intellij.openapi.project.DumbAware
 
@@ -34,7 +35,7 @@ abstract class BaseToggleAction : AnAction(), DumbAware {
         }
     }
 
-    private fun toggleSelection(document: Document, caret: com.intellij.openapi.editor.Caret) {
+    private fun toggleSelection(document: Document, caret: Caret) {
         val start = caret.selectionStart
         val end = caret.selectionEnd
         val selected = document.text.substring(start, end)
@@ -53,7 +54,7 @@ abstract class BaseToggleAction : AnAction(), DumbAware {
         }
     }
 
-    private fun insertWrappers(document: Document, caret: com.intellij.openapi.editor.Caret) {
+    private fun insertWrappers(document: Document, caret: Caret) {
         val wrapper = getWrapper()
         document.insertString(caret.offset, wrapper + wrapper)
         caret.moveCaretRelatively(wrapper.length, 0, false, false)

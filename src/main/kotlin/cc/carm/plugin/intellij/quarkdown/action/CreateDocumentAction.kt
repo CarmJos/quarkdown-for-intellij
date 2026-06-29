@@ -7,7 +7,7 @@ import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiDirectory
 
-class NewQuarkdownDocumentAction : CreateFileFromTemplateAction(
+class CreateDocumentAction : CreateFileFromTemplateAction(
     "Quarkdown Document",
     "Create a new Quarkdown document file",
     QuarkdownIcons.FILE

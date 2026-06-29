@@ -76,7 +76,7 @@
 - [ ] Gutter icons marking image, table, and reference locations in editor margin.
 - [ ] Spell checking for prose/paragraph text.
 - [ ] Word count and line count in status bar.
-- [ ] TODO / FIXME highlighting in comments, integrated with IDE TODO panel.
+- [x] TODO / FIXME highlighting in comments, integrated with IDE TODO panel.
 - [x] Drag & drop image files into editor, auto-generating image syntax.
 - [x] Paste image from clipboard, auto-save file and generate reference.
 - [x] Image path validity check (warn on non-existent paths).
