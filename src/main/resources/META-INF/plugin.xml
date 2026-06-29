@@ -36,6 +36,12 @@
                 language="Quarkdown"
                 implementationClass="cc.carm.plugin.intellij.quarkdown.lang.annotator.QuarkdownAnnotator"/>
 
+        <!-- Image path validity check (warn on non-existent paths) -->
+        <annotator
+                language="Quarkdown"
+                implementationClass="cc.carm.plugin.intellij.quarkdown.lang.annotator.QuarkdownImagePathAnnotator"
+                order="after QuarkdownAnnotator"/>
+
         <!-- Syntax highlighting -->
         <lang.syntaxHighlighterFactory
                 language="Quarkdown"
@@ -71,6 +77,20 @@
         <fileDropHandler
                 implementation="cc.carm.plugin.intellij.quarkdown.action.QuarkdownImageDropHandler"
                 order="first"/>
+
+        <!-- Breadcrumbs navigation showing heading hierarchy -->
+        <breadcrumbsInfoProvider
+                implementation="cc.carm.plugin.intellij.quarkdown.lang.breadcrumbs.QuarkdownBreadcrumbsProvider"/>
+
+        <!-- Structure View (Alt+7) showing document heading outline -->
+        <lang.psiStructureViewFactory
+                language="Quarkdown"
+                implementationClass="cc.carm.plugin.intellij.quarkdown.lang.structure.QuarkdownStructureViewFactory"/>
+
+        <!-- Code folding for sections, code blocks, and tables -->
+        <lang.foldingBuilder
+                language="Quarkdown"
+                implementationClass="cc.carm.plugin.intellij.quarkdown.lang.fold.QuarkdownFoldingBuilder"/>
     </extensions>
 
     <actions>

@@ -8,32 +8,75 @@ import com.intellij.psi.tree.IElementType
 import cc.carm.plugin.intellij.quarkdown.lang.lexer.QuarkdownTokenTypes as TT
 
 /**
- * Minimal parser that builds a flat PSI tree at the file level.
- * For a custom language, a "dumb" parser that just wraps all tokens under
- * the file node is sufficient for basic syntax highlighting and reference
- * support to work. More sophisticated parsing (structure view, folding, etc.)
- * can be added incrementally.
+ * Parser that builds a semi-structured PSI tree with heading hierarchy.
+ *
+ * Heading lines (e.g., `## My Title`) are grouped into [QuarkdownTypes.HEADING]
+ * composite nodes. Content between a heading and the next heading of same
+ * or higher level is nested under that heading. This enables breadcrumbs
+ * navigation, structure view, and code folding.
+ *
+ * Example tree:
+ * ```
+ * File
+ * ├── HEADING (L1: "Chapter 1")
+ * │   ├── HEADING_MARKER
+ * │   ├── TEXT ("Chapter 1")
+ * │   ├── NEWLINE
+ * │   ├── TEXT ("some text")
+ * │   ├── NEWLINE
+ * │   ├── HEADING (L2: "Section 1.1")
+ * │   │   ├── HEADING_MARKER
+ * │   │   ├── TEXT ("Section 1.1")
+ * │   │   ├── NEWLINE
+ * │   │   └── TEXT ("subsection text")
+ * │   └── NEWLINE
+ * └── NEWLINE
+ * ```
  */
 class QuarkdownPsiParser : PsiParser {
 
     override fun parse(root: IElementType, builder: PsiBuilder): ASTNode {
         builder.setDebugMode(false)
 
-        val marker = builder.mark()
+        val fileMarker = builder.mark()
+        // Stack of (marker, level) for open heading nodes — content after a
+        // heading is nested inside it until a heading of same or higher level.
+        val headingStack = mutableListOf<Pair<PsiBuilder.Marker, Int>>()
 
-        // Consume all tokens as children of the file node
         while (!builder.eof()) {
             val tokenType = builder.tokenType
-            if (tokenType != null) {
-                builder.advanceLexer()
+
+            if (tokenType == TT.HEADING_MARKER) {
+                val level = builder.tokenText?.count { it == '#' } ?: 1
+
+                // Close headings at same or higher level
+                while (headingStack.isNotEmpty() && headingStack.last().second >= level) {
+                    headingStack.removeAt(headingStack.lastIndex).first.done(QuarkdownTypes.HEADING)
+                }
+
+                // Open new heading — all subsequent tokens belong to it
+                val marker = builder.mark()
+                builder.advanceLexer() // consume HEADING_MARKER
+
+                // Consume heading text tokens until NEWLINE / EOF
+                while (!builder.eof()) {
+                    val tt = builder.tokenType ?: break
+                    if (tt == TT.NEWLINE) break
+                    builder.advanceLexer()
+                }
+
+                headingStack.add(marker to level)
             } else {
-                // Shouldn't happen, but guard against null
                 builder.advanceLexer()
             }
         }
 
-        marker.done(root)
+        // Close any remaining open headings in reverse order (deepest first)
+        for (i in headingStack.indices.reversed()) {
+            headingStack[i].first.done(QuarkdownTypes.HEADING)
+        }
 
+        fileMarker.done(root)
         return builder.treeBuilt
     }
 }

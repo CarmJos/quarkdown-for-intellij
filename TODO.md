@@ -70,18 +70,17 @@
     - Add a panel to edit the table in a spreadsheet-like interface.
     - Add a side button to change lines, columns, and alignment.
 - [ ] Auto-close paired symbols (`{}`, `[]`, `""`, etc.) on typing.
-- [ ] Structure View (`Alt+7`) showing document outline (chapters, tables, images).
-- [ ] Breadcrumbs navigation showing current position in document hierarchy.
-- [ ] Code folding for sections, code blocks, and tables (similar to IntelliJ Markdown plugin).
+- [x] Structure View (`Alt+7`) showing document outline (chapters, tables, images).
+- [x] Breadcrumbs navigation showing current position in document hierarchy.
+- [x] Code folding for sections, code blocks, and tables (similar to IntelliJ Markdown plugin).
 - [ ] Gutter icons marking image, table, and reference locations in editor margin.
 - [ ] Spell checking for prose/paragraph text.
 - [ ] Word count and line count in status bar.
 - [ ] TODO / FIXME highlighting in comments, integrated with IDE TODO panel.
-- [ ] Drag & drop image files into editor, auto-generating image syntax.
-- [ ] Paste image from clipboard, auto-save file and generate reference.
-- [ ] Image path validity check (warn on non-existent paths).
-- [ ] Image size quick adjustment via drag/slider for `width` and `height`.
-- [ ] Image hover preview inline on path.
+- [x] Drag & drop image files into editor, auto-generating image syntax.
+- [x] Paste image from clipboard, auto-save file and generate reference.
+- [x] Image path validity check (warn on non-existent paths).
+- [X] Image size quick adjustment via drag/slider for `width` and `height`.
 - [ ] External content import prompt: provide file suggestions when typing `.include`, `.css`, `.code`, etc.
 
 ## Keyboard Shortcuts
@@ -121,5 +120,3 @@
 ## Quality
 
 - [ ] Internationalization (i18n): English / Chinese bilingual UI support.
-
-

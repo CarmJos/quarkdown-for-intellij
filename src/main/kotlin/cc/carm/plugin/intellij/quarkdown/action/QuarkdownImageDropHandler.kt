@@ -9,6 +9,7 @@ import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.fileEditor.TextEditor
 import com.intellij.openapi.fileEditor.impl.EditorWindow
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.vfs.VirtualFile
 import java.awt.datatransfer.DataFlavor
 import java.awt.datatransfer.Transferable
 import java.io.File
@@ -24,6 +25,22 @@ import java.io.File
  * opens the image in a new editor tab.
  */
 class QuarkdownImageDropHandler : FileDropHandler, EditorDropHandler {
+
+    companion object {
+        val IMAGE_EXTENSIONS = setOf(
+            ".png", ".jpg", ".jpeg", ".gif", ".bmp", ".svg", ".webp", ".ico", ".tiff", ".tif"
+        )
+
+        fun isImageFile(file: File): Boolean {
+            val name = file.name.lowercase()
+            return IMAGE_EXTENSIONS.any { name.endsWith(it) }
+        }
+
+        fun isImageFile(file: VirtualFile): Boolean {
+            val name = file.name.lowercase()
+            return IMAGE_EXTENSIONS.any { name.endsWith(it) }
+        }
+    }
 
     // ========================
     // EditorDropHandler — intercepts AWT drops on the editor component
@@ -92,7 +109,7 @@ class QuarkdownImageDropHandler : FileDropHandler, EditorDropHandler {
     private fun showDialogAndInsert(
         project: Project,
         editor: com.intellij.openapi.editor.Editor,
-        docFile: com.intellij.openapi.vfs.VirtualFile,
+        docFile: VirtualFile,
         imageFile: File,
     ): Boolean {
         val dialog = QuarkdownImageDialog(project, QuarkdownImageDialog.Mode.INSERT)
@@ -107,12 +124,5 @@ class QuarkdownImageDropHandler : FileDropHandler, EditorDropHandler {
             editor.document.insertString(offset, syntax)
         }
         return true
-    }
-
-    private fun isImageFile(file: File): Boolean {
-        val name = file.name.lowercase()
-        return name.endsWith(".png") || name.endsWith(".jpg") || name.endsWith(".jpeg")
-                || name.endsWith(".gif") || name.endsWith(".bmp") || name.endsWith(".svg")
-                || name.endsWith(".webp")
     }
 }

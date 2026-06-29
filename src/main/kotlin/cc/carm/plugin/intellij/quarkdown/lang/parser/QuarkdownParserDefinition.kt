@@ -3,6 +3,8 @@ package cc.carm.plugin.intellij.quarkdown.lang.parser
 import cc.carm.plugin.intellij.quarkdown.QuarkdownLanguage
 import cc.carm.plugin.intellij.quarkdown.lang.lexer.QuarkdownLexer
 import cc.carm.plugin.intellij.quarkdown.lang.lexer.QuarkdownTokenTypes
+import cc.carm.plugin.intellij.quarkdown.lang.psi.QuarkdownHeading
+import cc.carm.plugin.intellij.quarkdown.lang.psi.QuarkdownTypes
 import com.intellij.lang.ASTNode
 import com.intellij.lang.ParserDefinition
 import com.intellij.lang.PsiParser
@@ -31,7 +33,10 @@ class QuarkdownParserDefinition : ParserDefinition {
         QuarkdownPsiFile(viewProvider)
 
     override fun createElement(node: ASTNode): PsiElement {
-        return com.intellij.extapi.psi.ASTWrapperPsiElement(node)
+        return when (node.elementType) {
+            QuarkdownTypes.HEADING -> QuarkdownHeading(node)
+            else -> com.intellij.extapi.psi.ASTWrapperPsiElement(node)
+        }
     }
 
     companion object {
