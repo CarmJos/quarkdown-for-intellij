@@ -3,6 +3,7 @@ package cc.carm.plugin.intellij.quarkdown.action.image
 import cc.carm.plugin.intellij.quarkdown.QuarkdownFileType
 import com.intellij.openapi.actionSystem.DataContext
 import com.intellij.openapi.command.WriteCommandAction
+import com.intellij.openapi.editor.Caret
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.actionSystem.EditorActionHandler
 import com.intellij.openapi.fileEditor.FileDocumentManager
@@ -28,18 +29,17 @@ import java.io.File
  * When the clipboard does NOT contain an image, or the current file is not a `.qd` file,
  * the paste is delegated to the original handler.
  */
-@Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
 class ImagePasteHandler(
     private val originalHandler: EditorActionHandler,
 ) : EditorActionHandler() {
 
-    override fun execute(editor: Editor, dataContext: DataContext?) {
+    override fun doExecute(editor: Editor, caret: Caret?, dataContext: DataContext?) {
         val project = editor.project
         val docFile = FileDocumentManager.getInstance().getFile(editor.document)
 
         // Only intercept paste in Quarkdown (.qd) files
         if (project == null || docFile == null || docFile.fileType !is QuarkdownFileType) {
-            originalHandler.execute(editor, dataContext)
+            originalHandler.execute(editor, caret, dataContext)
             return
         }
 
@@ -60,7 +60,7 @@ class ImagePasteHandler(
         }
 
         // 3. No image in clipboard — delegate to original paste handler
-        originalHandler.execute(editor, dataContext)
+        originalHandler.execute(editor, caret, dataContext)
     }
 
     // ========================
@@ -189,4 +189,3 @@ class ImagePasteHandler(
         return ProjectFileIndex.getInstance(project).isInContent(virtualFile)
     }
 }
-
