@@ -47,7 +47,7 @@
 - [ ] Diagnostics: real-time syntax checking, type errors, undefined references.
 - [ ] Completion: code completion via LSP for function names and parameters.
 - [ ] Hover: `Ctrl+Q` documentation tooltips for directives and functions.
-- [x] Go to Definition: jump to `.ref {id}` definition, `.include` file target, etc.
+- [x] Go to Definition: jump to `.ref {id}` definition, `.include`/`.read` file target with variable resolution, etc.
 - [ ] Find References: find all usages of a `.ref {id}` label.
 - [ ] Rename refactoring: rename label/id and auto-update all references.
 - [ ] Signature Help: parameter hints while typing function arguments.
@@ -64,6 +64,7 @@
 - [ ] Code reformatting for Quarkdown files, also for code blocks based on its languages formatting rules.
 - [ ] Syntax error highlighting for invalid directives, missing parameters, etc.
 - [x] File completion and navigation for `.include` `.css` `.code`, etc. Also for cross-references `.ref {id}`.
+- [x] File path navigation for `.include {path}` and `.read {path}` with variable resolution (e.g. `{.version/file.qd}` resolves `.version` variable value).
 - [x] File path completion and navigation for images `!(100%)[](path "label")` and tables.
 - [ ] For images, add a panel to preview the image, and give a multiplier sliders and size inputs for width and height.
 - [ ] For tables:
