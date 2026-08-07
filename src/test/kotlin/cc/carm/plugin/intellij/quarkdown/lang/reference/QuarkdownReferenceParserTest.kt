@@ -57,6 +57,24 @@ class QuarkdownReferenceParserTest {
     }
 
     @Test
+    fun `detects include path anchors with unquoted path`() {
+        val text = ".include {docs/intro.qd}"
+        val anchors = QuarkdownReferenceParser.computeAnchors(text)
+        val fileAnchors = anchors.filter { it.referenceType == "include" }
+        assertEquals(1, fileAnchors.size)
+        assertEquals("docs/intro.qd", fileAnchors[0].referenceText)
+    }
+
+    @Test
+    fun `detects read path anchors with unquoted path`() {
+        val text = ".read {data/file.qd}"
+        val anchors = QuarkdownReferenceParser.computeAnchors(text)
+        val fileAnchors = anchors.filter { it.referenceType == "read" }
+        assertEquals(1, fileAnchors.size)
+        assertEquals("data/file.qd", fileAnchors[0].referenceText)
+    }
+
+    @Test
     fun `detects image path segments`() {
         val text = "!(50%)[logo](assets/logo.png)"
         val anchors = QuarkdownReferenceParser.computeAnchors(text)

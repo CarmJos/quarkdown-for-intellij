@@ -1,5 +1,7 @@
 package cc.carm.plugin.intellij.quarkdown.lang.reference
 
+import cc.carm.plugin.intellij.quarkdown.QuarkdownFileType
+import cc.carm.plugin.intellij.quarkdown.lang.function.QuarkdownCallParser
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.TextRange
 import com.intellij.openapi.vfs.VirtualFile
@@ -148,14 +150,55 @@ class QuarkdownReference(
 
     // ---- Resolve file path ----
     private fun resolveFile(project: Project, sourceFile: VirtualFile): PsiElement? {
-        val vf = QuarkdownPathUtil.resolveToVirtualFile(project, sourceFile, referenceText) ?: return null
+        // Resolve variable references in the path (e.g., {.version/file.qd} -> abc/file.qd)
+        val resolvedPath = resolvePathVariables(sourceFile, referenceText)
+        val vf = QuarkdownPathUtil.resolveToVirtualFile(project, sourceFile, resolvedPath) ?: return null
         if (vf.isDirectory) return null
         return PsiManager.getInstance(project).findFile(vf) ?: element
     }
 
+    /**
+     * Resolves variable references in a path string.
+     * Variable references are in the form `.varName` and should be replaced with their values.
+     * For example, if `.version` is defined as `version = abc`, then `{.version/file.qd}` 
+     * should resolve to `abc/file.qd`.
+     */
+    private fun resolvePathVariables(sourceFile: VirtualFile, path: String): String {
+        // Pattern to match variable references: .varName (not preceded by a letter/digit/underscore)
+        val varRefPattern = Regex("""(?<!\w)\.([a-zA-Z][a-zA-Z0-9]*)""")
+        
+        // Find all variable declarations in the source file
+        val sourcePsiFile = PsiManager.getInstance(element.project).findFile(sourceFile) ?: return path
+        val varDeclarations = QuarkdownCallParser.findVarDeclarations(sourcePsiFile.text)
+        
+        // Replace variable references with their values
+        return varRefPattern.replace(path) { match ->
+            val varName = match.groupValues[1].lowercase()
+            // Get the variable value from declarations
+            if (varName in varDeclarations) {
+                // Find the value argument of the .var declaration
+                val value = findVarValue(sourcePsiFile.text, varName)
+                value ?: match.value  // If not found, keep the original reference
+            } else {
+                match.value  // Not a declared variable, keep original
+            }
+        }
+    }
+
+    /**
+     * Finds the value of a variable declared with `.var {name} {value}`.
+     */
+    private fun findVarValue(fileText: String, varName: String): String? {
+        val varPattern = Regex("""\.var\s*\{\s*$varName\s*\}\s*\{([^}]+)\}""", RegexOption.IGNORE_CASE)
+        val match = varPattern.find(fileText) ?: return null
+        return match.groupValues[1].trim()
+    }
+
     // ---- Resolve directory path (for image path folder segments) ----
     private fun resolveDirectory(project: Project, sourceFile: VirtualFile): PsiElement? {
-        val vf = QuarkdownPathUtil.resolveToVirtualFile(project, sourceFile, referenceText) ?: return null
+        // Resolve variable references in the path
+        val resolvedPath = resolvePathVariables(sourceFile, referenceText)
+        val vf = QuarkdownPathUtil.resolveToVirtualFile(project, sourceFile, resolvedPath) ?: return null
         val pm = PsiManager.getInstance(project)
         return if (vf.isDirectory) pm.findDirectory(vf) else pm.findFile(vf)
     }
