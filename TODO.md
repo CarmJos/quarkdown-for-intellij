@@ -76,7 +76,7 @@
 - [x] Code folding for sections, code blocks, and tables (similar to IntelliJ Markdown plugin).
 - [ ] Gutter icons marking image, table, and reference locations in editor margin.
 - [ ] Spell checking for prose/paragraph text.
-- [ ] Word count and line count in status bar.
+- [x] Word count and paragraph count in status bar (excluding function calls and code blocks).
 - [x] TODO / FIXME highlighting in comments, integrated with IDE TODO panel.
 - [x] Drag & drop image files into editor, auto-generating image syntax.
 - [x] Paste image from clipboard, auto-save file and generate reference.
