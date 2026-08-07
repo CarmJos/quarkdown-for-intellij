@@ -30,7 +30,7 @@ object QuarkdownReferenceParser {
     private val varRefPattern = Regex("""\.([a-zA-Z][a-zA-Z0-9]*)\b""")
     private val refBlockPattern = Regex("""\.ref\s*\{\s*([^}]+?)\s*\}""", RegexOption.IGNORE_CASE)
     private val labelPattern = Regex("""\{#([a-zA-Z0-9_-]+)}""")
-    private val filePattern = Regex("""\.(read|include|css|code)\s*\{\s*"([^"]+)"\s*\}""", RegexOption.IGNORE_CASE)
+    private val filePattern = Regex("""\.(read|include|css|code)\s*\{\s*(?:"([^"]+)"|([^{}"]+?))\s*\}""", RegexOption.IGNORE_CASE)
 
     /**
      * Pattern matching Quarkdown image syntax:
@@ -75,12 +75,13 @@ object QuarkdownReferenceParser {
             anchors.add(Anchor(start, end, contentText, "ref"))
         }
 
-        // ---- .read / .include / .css / .code { "path" } ----
+        // ---- .read / .include / .css / .code { "path" } or { path } ----
         for (match in filePattern.findAll(fileText)) {
-            val pathText = match.groupValues[2].trim()
+            val pathText = (match.groupValues[2].ifEmpty { match.groupValues[3] }).trim()
             if (pathText.isEmpty()) continue
-            val start = match.groups[2]!!.range.first
-            val end = match.groups[2]!!.range.last + 1
+            val groupIndex = if (match.groupValues[2].isNotEmpty()) 2 else 3
+            val start = match.groups[groupIndex]!!.range.first
+            val end = match.groups[groupIndex]!!.range.last + 1
             anchors.add(Anchor(start, end, pathText, match.groupValues[1].lowercase()))
         }
 

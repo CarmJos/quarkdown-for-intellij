@@ -47,7 +47,7 @@
 - [ ] Diagnostics: real-time syntax checking, type errors, undefined references.
 - [ ] Completion: code completion via LSP for function names and parameters.
 - [ ] Hover: `Ctrl+Q` documentation tooltips for directives and functions.
-- [ ] Go to Definition: jump to `.ref {id}` definition, `.include` file target, etc.
+- [x] Go to Definition: jump to `.ref {id}` definition, `.include` file target, etc.
 - [ ] Find References: find all usages of a `.ref {id}` label.
 - [ ] Rename refactoring: rename label/id and auto-update all references.
 - [ ] Signature Help: parameter hints while typing function arguments.
