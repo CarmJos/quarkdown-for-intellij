@@ -35,7 +35,10 @@ class QuarkdownParserDefinition : ParserDefinition {
     override fun createElement(node: ASTNode): PsiElement {
         return when (node.elementType) {
             QuarkdownTypes.HEADING -> QuarkdownHeading(node)
-            else -> com.intellij.extapi.psi.ASTWrapperPsiElement(node)
+            // All other elements implement ContributedReferenceHost so the platform's
+            // PsiReferenceService consults our PsiReferenceContributor (required for
+            // Ctrl+Click, Go-to-declaration and Find Usages).
+            else -> QuarkdownPsiElement(node)
         }
     }
 

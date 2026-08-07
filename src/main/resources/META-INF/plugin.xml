@@ -35,7 +35,20 @@
                 language="Quarkdown"
                 implementationClass="cc.carm.plugin.intellij.quarkdown.lang.completion.CodeBlockLanguageCompletionContributor"/>
 
+        <!-- Allow the completion popup to appear in .qd files (do not skip autopopup) -->
+        <completion.confidence
+                language="Quarkdown"
+                implementationClass="cc.carm.plugin.intellij.quarkdown.lang.completion.QuarkdownCompletionConfidence"/>
+
+        <!-- Quick Documentation (Ctrl+Q / hover) for function calls and completion items -->
+        <lang.documentationProvider
+                language="Quarkdown"
+                implementationClass="cc.carm.plugin.intellij.quarkdown.lang.documentation.QuarkdownDocumentationProvider"/>
+
         <typedHandler implementation="cc.carm.plugin.intellij.quarkdown.lang.QuarkdownTypedHandlerDelegate"/>
+
+        <!-- Enter in Quarkdown files: after a `\` continuation, indent the new line -->
+        <enterHandlerDelegate implementation="cc.carm.plugin.intellij.quarkdown.lang.QuarkdownEnterHandlerDelegate"/>
 
         <annotator
                 language="Quarkdown"
@@ -65,10 +78,37 @@
                 language="Quarkdown"
                 implementationClass="cc.carm.plugin.intellij.quarkdown.lang.parser.QuarkdownParserDefinition"/>
 
+        <!-- Creates ContributedReferenceHost leaf elements so PsiReferenceService consults
+             our PsiReferenceContributor (Ctrl+Click / Find Usages see .ref/.var references) -->
+        <lang.ast.factory
+                language="Quarkdown"
+                implementationClass="cc.carm.plugin.intellij.quarkdown.lang.parser.QuarkdownASTFactory"/>
+
         <!-- Gutter icon for image lines -->
         <codeInsight.lineMarkerProvider
                 language="Quarkdown"
                 implementationClass="cc.carm.plugin.intellij.quarkdown.lang.marker.QuarkdownImageLineMarkerProvider"/>
+
+        <!-- Go-to-declaration / find-usages for .ref {id}, .var {name} and file/image paths -->
+        <psi.referenceContributor
+                language="Quarkdown"
+                implementation="cc.carm.plugin.intellij.quarkdown.lang.reference.QuarkdownReferenceContributor"/>
+
+        <!-- Find Usages (Alt+F7) support for Quarkdown elements -->
+        <lang.findUsagesProvider
+                language="Quarkdown"
+                implementationClass="cc.carm.plugin.intellij.quarkdown.lang.reference.QuarkdownFindUsagesProvider"/>
+
+        <!-- Provides a searchable word for Quarkdown text leaves so the word-based
+             reference search can discover .ref/.var usages -->
+        <elementDescriptionProvider
+                implementation="cc.carm.plugin.intellij.quarkdown.lang.reference.QuarkdownElementDescriptionProvider"
+                order="first"/>
+
+        <!-- Find Usages for plain-text Quarkdown elements (the default CachesBasedRefSearcher
+             only searches by word for PsiNamedElement targets; our leaves are not named) -->
+        <referencesSearch
+                implementation="cc.carm.plugin.intellij.quarkdown.lang.reference.QuarkdownReferencesSearcher"/>
 
         <!-- Drag-and-drop image files into Quarkdown editor -->
         <fileDropHandler

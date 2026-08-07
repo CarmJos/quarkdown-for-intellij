@@ -2,10 +2,14 @@ package cc.carm.plugin.intellij.quarkdown.lang.reference
 
 import cc.carm.plugin.intellij.quarkdown.QuarkdownFileType
 import cc.carm.plugin.intellij.quarkdown.QuarkdownLanguage
+import com.intellij.openapi.util.Key
+import com.intellij.openapi.util.TextRange
 import com.intellij.patterns.PlatformPatterns
 import com.intellij.psi.*
+import com.intellij.psi.util.CachedValue
+import com.intellij.psi.util.CachedValueProvider
+import com.intellij.psi.util.CachedValuesManager
 import com.intellij.util.ProcessingContext
-import com.intellij.openapi.util.TextRange
 
 class QuarkdownReferenceContributor : PsiReferenceContributor() {
 
@@ -28,141 +32,63 @@ class QuarkdownReferenceContributor : PsiReferenceContributor() {
                 return PsiReference.EMPTY_ARRAY
             }
 
-            val text = element.text
-            val offset = element.textRange.startOffset
-            val fileText = psiFile.text
+            // Anchors are computed once per file and cached; each anchor is a
+            // (start, end, text, type) tuple in document coordinates.
+            val anchors = anchorsOf(psiFile)
 
-            // ---- .ref { <id> } ----
-            for (match in REF_BLOCK_PATTERN.findAll(fileText)) {
-                val contentText = match.groupValues[1].trim()
-                if (contentText.isEmpty()) continue
+            if (element is PsiFile) {
+                // File-level references carry the FULL id/path range (document coords).
+                // findReferenceAt prefers these so the whole `button-start-action`
+                // is underlined/navigable, even though the lexer splits it into leaves.
+                return anchors
+                    .map { QuarkdownReference(element, it.referenceText, it.referenceType, TextRange(it.start, it.end)) }
+                    .toTypedArray()
+            }
 
-                val contentStartInDoc = match.groups[1]!!.range.first
-                val contentEndInDoc = match.groups[1]!!.range.last + 1
+            val elemStart = element.textRange.startOffset
+            val elemEnd = elemStart + element.textLength
 
-                if (offset in contentStartInDoc until contentEndInDoc) {
-                    val localStart = offset - contentStartInDoc
-                    val localEnd = minOf(localStart + text.length, contentText.length)
-                    if (localEnd <= localStart) continue
-
-                    return arrayOf(
-                        QuarkdownReference(
-                            element, contentText, "ref",
-                            TextRange(localStart, localEnd)
+            // Leaf-level references (for Find Usages) are attached to the leaf that
+            // overlaps the anchor, with the range mapped into leaf-local coordinates.
+            val result = anchors
+                .filter { it.overlaps(elemStart, elemEnd) }
+                .map { anchor ->
+                    QuarkdownReference(
+                        element,
+                        anchor.referenceText,
+                        anchor.referenceType,
+                        TextRange(
+                            maxOf(elemStart, anchor.start) - elemStart,
+                            minOf(elemEnd, anchor.end) - elemStart
                         )
                     )
                 }
-            }
-
-            // ---- .read / .include / .css / .code { "path" } ----
-            for (match in FILE_PATTERN.findAll(fileText)) {
-                val pathText = match.groupValues[2].trim()
-                if (pathText.isEmpty()) continue
-
-                val pathStartInDoc = match.groups[2]!!.range.first
-                val pathEndInDoc = match.groups[2]!!.range.last + 1
-
-                if (offset in pathStartInDoc until pathEndInDoc) {
-                    val localStart = offset - pathStartInDoc
-                    val localEnd = minOf(localStart + text.length, pathText.length)
-                    if (localEnd <= localStart) continue
-
-                    return arrayOf(
-                        QuarkdownReference(
-                            element, pathText, match.groupValues[1].lowercase(),
-                            TextRange(localStart, localEnd)
-                        )
-                    )
-                }
-            }
-
-            // ---- Image paths ![](<path>) and ![size](<path>) ----
-            val refs = mutableListOf<PsiReference>()
-            for (match in IMG_PATH_PATTERN.findAll(fileText)) {
-                val pathText = match.groupValues[1].trim()
-                if (pathText.isEmpty()) continue
-
-                val pathStartInDoc = match.groups[1]!!.range.first
-                val pathEndInDoc = match.groups[1]!!.range.last + 1
-
-                if (offset >= pathEndInDoc || offset + text.length <= pathStartInDoc) continue
-
-                for (seg in computePathSegments(pathText, pathStartInDoc)) {
-                    if (offset + text.length <= seg.startInDoc || offset >= seg.endInDoc) continue
-
-                    val localStart = maxOf(0, offset - seg.startInDoc)
-                    val localEnd = minOf(text.length, seg.endInDoc - offset)
-                    if (localEnd <= localStart) continue
-
-                    refs.add(
-                        QuarkdownReference(
-                            element, seg.cumulativePath,
-                            if (seg.isLast) "image" else "image-dir",
-                            TextRange(localStart, localEnd)
-                        )
-                    )
-                }
-            }
-
-            return refs.toTypedArray()
+                .toList()
+            return result.toTypedArray()
         }
 
-        // --------------------------------------------------------------------
-        // Path segment helpers (used for image path navigation)
-        // --------------------------------------------------------------------
+        // ------------------------------------------------------------------
+        // Per-file cached anchor computation (delegates to the pure parser)
+        // ------------------------------------------------------------------
 
-        private data class PathSegment(
-            val text: String,
-            val startInDoc: Int,
-            val endInDoc: Int,
-            val cumulativePath: String,
-            val isLast: Boolean
-        )
-
-        private fun computePathSegments(
-            pathText: String,
-            pathStartInDoc: Int
-        ): List<PathSegment> {
-            val result = mutableListOf<PathSegment>()
-            var pos = 0
-
-            while (pos < pathText.length) {
-                val slashIdx = pathText.indexOf('/', pos)
-                val segEnd = if (slashIdx < 0) pathText.length else slashIdx
-                val seg = pathText.substring(pos, segEnd)
-
-                if (seg.isNotEmpty()) {
-                    val segStartInDoc = pathStartInDoc + pos
-                    val segEndInDoc = pathStartInDoc + segEnd
-                    val cumulative = pathText.substring(0, segEnd)
-                    result.add(
-                        PathSegment(
-                            text = seg,
-                            startInDoc = segStartInDoc,
-                            endInDoc = segEndInDoc,
-                            cumulativePath = cumulative,
-                            isLast = slashIdx < 0
-                        )
-                    )
-                }
-
-                if (slashIdx < 0) break
-                pos = slashIdx + 1
-            }
-
-            return result
+        private companion object {
+            private val ANCHORS_KEY: Key<CachedValue<List<QuarkdownReferenceParser.Anchor>>> =
+                Key.create("quarkdown.reference.anchors")
         }
 
-        companion object {
-            // Match content inside .ref { ... } braces
-            private val REF_BLOCK_PATTERN = Regex("""\.ref\s*\{\s*([^}]+?)\s*\}""", RegexOption.IGNORE_CASE)
-
-            // Match .read/.include/.css/.code { "path" }
-            private val FILE_PATTERN = Regex("""\.(read|include|css|code)\s*\{\s*"([^"]+)"\s*\}""", RegexOption.IGNORE_CASE)
-
-            // Match image paths: !(size)[alt](path) — the Quarkdown image syntax
-            // The (size) group is optional to also support ! [alt](path) as fallback
-            private val IMG_PATH_PATTERN = Regex("""!\s*(?:\([^)]*\)\s*)?\[[^\]]*\]\s*\(\s*([^)\s]+)""")
+        private fun anchorsOf(psiFile: PsiFile): List<QuarkdownReferenceParser.Anchor> {
+            val manager = CachedValuesManager.getManager(psiFile.project)
+            return manager.getCachedValue(
+                psiFile,
+                ANCHORS_KEY,
+                CachedValueProvider {
+                    CachedValueProvider.Result.create(
+                        QuarkdownReferenceParser.computeAnchors(psiFile.text),
+                        psiFile // invalidate when the file's PSI changes
+                    )
+                },
+                false
+            )
         }
     }
 }

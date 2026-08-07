@@ -25,7 +25,21 @@ class QuarkdownTypedHandlerDelegate : TypedHandlerDelegate() {
         }
 
         if (c == '.') {
+            // Auto-popup the function-name completion as soon as `.` is typed.
             AutoPopupController.getInstance(project).scheduleAutoPopup(editor)
+        } else if (c.isLetter()) {
+            // If the user is typing a function name after `.` (e.g. `.cen`), keep the
+            // auto-popup active even if it was cancelled/closed on the bare dot.
+            val chars = editor.document.charsSequence
+            val offset = editor.caretModel.offset
+            if (offset > 0 && chars[offset - 1].isLetter()) {
+                // check the char before the current identifier run — is it a `.`?
+                var i = offset - 1
+                while (i > 0 && (chars[i].isLetterOrDigit() || chars[i] == '_')) i--
+                if (i >= 0 && chars[i] == '.') {
+                    AutoPopupController.getInstance(project).scheduleAutoPopup(editor)
+                }
+            }
         } else if (c == '"') {
             return handleDoubleQuote(editor)
         } else if (c == '`') {

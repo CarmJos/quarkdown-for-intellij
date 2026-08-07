@@ -1,0 +1,36 @@
+.docname {Example Quarkdown Doc}
+.doclang {en}
+.doctype {paged}
+.docauthor {CarmJos}
+.theme {paperwhite} layout:{latex}
+.css {.read {style.css}}
+.pageformat size:{a4} margin:{2.54cm 3.18cm 2.54cm 3.18cm}
+.numbering merge:{true}
+    - headings: 1.1.1
+    - figures: Figure 1.1.1
+    - tables: Table 1.1.1
+    - equations: (1)
+    - code: Code (1)
+.noautopagebreak
+
+.center
+    # Example {#first}
+
+    Write your content here.
+
+    !(100%)[img](img.png) {#TEST1}
+
+
+    .ref {first}
+    .ref {first}
+    .ref {table}
+
+
+| Header 1 | Header 2 | Header 3 | Header 4 | Header 5 |
+| -------- | -------- | -------- | -------- | -------- |
+|          |          |          |          |          |
+|          |          |          |          |          |
+{#TABLE}
+
+
+
