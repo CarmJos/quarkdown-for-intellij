@@ -139,4 +139,78 @@ class QuarkdownCompletionPlatformTest : BasePlatformTestCase() {
         System.out.println("shouldSkipAutopopup('.qd') = $result")
         assertTrue("Quarkdown files must allow auto-popup", result == com.intellij.util.ThreeState.NO)
     }
+
+    // ------------------------------------------------------------------
+    // File-path completion for `.include` / `.read` / `.css` / `.code`
+    // ------------------------------------------------------------------
+
+    fun `test include path completion suggests sibling directory`() {
+        myFixture.addFileToProject("docs/intro.qd", "intro")
+        myFixture.addFileToProject("docs/install.qd", "install")
+        myFixture.addFileToProject("images/logo.png", "logo")
+
+        val completions = directCompletions(".include {doc<caret>}")
+        System.out.println("include completions for 'doc': $completions")
+        assertTrue("should suggest the docs/ directory", completions.contains("docs/"))
+    }
+
+    fun `test include path completion filters inside a subdirectory`() {
+        myFixture.addFileToProject("docs/intro.qd", "intro")
+        myFixture.addFileToProject("docs/install.qd", "install")
+        myFixture.addFileToProject("docs/manual.qd", "manual")
+
+        val completions = directCompletions(".include {docs/ins<caret>}")
+        System.out.println("include completions for 'docs/ins': $completions")
+        assertTrue("should suggest install.qd", completions.contains("install.qd"))
+        assertTrue("should not suggest intro.qd", !completions.contains("intro.qd"))
+        assertTrue("should not suggest manual.qd", !completions.contains("manual.qd"))
+    }
+
+    fun `test include quoted path completion`() {
+        myFixture.addFileToProject("docs/intro.qd", "intro")
+
+        val completions = directCompletions(".include {\"doc<caret>\"}")
+        System.out.println("quoted include completions: $completions")
+        assertTrue("should suggest docs/ inside quotes", completions.contains("docs/"))
+    }
+
+    fun `test read path completion`() {
+        myFixture.addFileToProject("data/file.qd", "data")
+
+        val completions = directCompletions(".read {data/fi<caret>}")
+        System.out.println("read completions: $completions")
+        assertTrue("should suggest file.qd", completions.contains("file.qd"))
+    }
+
+    fun `test css and code path completion`() {
+        myFixture.addFileToProject("main.css", "")
+        myFixture.addFileToProject("main.js", "")
+
+        assertTrue(
+            ".css should suggest main.css",
+            directCompletions(".css {main<caret>}").contains("main.css")
+        )
+        assertTrue(
+            ".code should suggest main.js",
+            directCompletions(".code {main<caret>}").contains("main.js")
+        )
+    }
+
+    fun `test include path completion falls back to nearest existing directory`() {
+        myFixture.addFileToProject("docs/images/logo.png", "logo")
+
+        val completions = directCompletions(".include {docs/ima<caret>}")
+        System.out.println("fallback completions for 'docs/ima': $completions")
+        assertTrue("should suggest images/ from within docs/", completions.contains("images/"))
+    }
+
+    fun `test no file completion for non-path functions`() {
+        myFixture.addFileToProject("docs/intro.qd", "intro")
+
+        val completions = directCompletions(".pagemargin {doc<caret>}")
+        assertTrue(
+            "no path completion should appear for .pagemargin, got: $completions",
+            completions.none { it == "docs/" }
+        )
+    }
 }

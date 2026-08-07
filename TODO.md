@@ -82,7 +82,7 @@
 - [x] Paste image from clipboard, auto-save file and generate reference.
 - [x] Image path validity check (warn on non-existent paths).
 - [X] Image size quick adjustment via drag/slider for `width` and `height`.
-- [ ] External content import prompt: provide file suggestions when typing `.include`, `.css`, `.code`, etc.
+- [x] External content import prompt: provide file suggestions when typing `.include`, `.css`, `.code`, etc.
 
 ## Keyboard Shortcuts
 
