@@ -5,12 +5,8 @@ import com.intellij.psi.impl.source.tree.LeafPsiElement
 import com.intellij.psi.tree.IElementType
 
 /**
- * Leaf PSI element for Quarkdown token types.
- *
- * Implements [ContributedReferenceHost] so the platform's [com.intellij.psi.PsiReferenceService]
- * consults [com.intellij.psi.PsiReferenceContributor]s for leaf tokens. Without this marker,
- * references attached through `PsiReferenceContributor` (our `.ref` / `.var` / path references)
- * are invisible to Ctrl+Click, Go-to-declaration and Find Usages.
+ * Leaf PSI element. Implements [ContributedReferenceHost] so the platform consults our
+ * [com.intellij.psi.PsiReferenceContributor] (required for Ctrl+Click / Find Usages).
  */
 class QuarkdownLeafPsiElement(type: IElementType, text: CharSequence) :
     LeafPsiElement(type, text), ContributedReferenceHost

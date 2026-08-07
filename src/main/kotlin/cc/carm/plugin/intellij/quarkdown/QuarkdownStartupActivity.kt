@@ -23,8 +23,8 @@ class QuarkdownStartupActivity : ProjectActivity {
 
     override suspend fun execute(project: Project) {
         // Completion/typed-handler extensions are declared declaratively in plugin.xml
-        // and must NOT be instantiated/registered programmatically (see
-        // QuarkdownCompletionRegistrar). No service bootstrapping is needed here.
+        // and must NOT be registered programmatically (a manually constructed EP has a
+        // null plugin descriptor, which crashes the IDE). No bootstrapping is needed here.
 
         installPasteHandlerIfNeeded()
 

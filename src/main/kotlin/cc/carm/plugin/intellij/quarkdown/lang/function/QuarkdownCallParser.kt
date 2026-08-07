@@ -71,11 +71,7 @@ object QuarkdownCallParser {
         val isChained: Boolean = false,
         /** Name of the function the chain started from (when [isChained]). */
         val chainRoot: String? = null
-    ) {
-        /** Range of the dot/`::` + name (for highlighting the whole call). */
-        val nameRangeStart: Int get() = start
-        val nameRangeEnd: Int get() = nameEnd
-    }
+    )
 
     /**
      * Finds the nearest function-call start at or before [offset], for completion/editing

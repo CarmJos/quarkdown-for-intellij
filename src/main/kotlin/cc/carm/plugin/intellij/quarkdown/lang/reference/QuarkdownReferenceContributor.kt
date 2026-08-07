@@ -2,13 +2,9 @@ package cc.carm.plugin.intellij.quarkdown.lang.reference
 
 import cc.carm.plugin.intellij.quarkdown.QuarkdownFileType
 import cc.carm.plugin.intellij.quarkdown.QuarkdownLanguage
-import com.intellij.openapi.util.Key
 import com.intellij.openapi.util.TextRange
 import com.intellij.patterns.PlatformPatterns
 import com.intellij.psi.*
-import com.intellij.psi.util.CachedValue
-import com.intellij.psi.util.CachedValueProvider
-import com.intellij.psi.util.CachedValuesManager
 import com.intellij.util.ProcessingContext
 
 class QuarkdownReferenceContributor : PsiReferenceContributor() {
@@ -34,7 +30,7 @@ class QuarkdownReferenceContributor : PsiReferenceContributor() {
 
             // Anchors are computed once per file and cached; each anchor is a
             // (start, end, text, type) tuple in document coordinates.
-            val anchors = anchorsOf(psiFile)
+            val anchors = QuarkdownReferenceAnchors.of(psiFile)
 
             if (element is PsiFile) {
                 // File-level references carry the FULL id/path range (document coords).
@@ -65,30 +61,6 @@ class QuarkdownReferenceContributor : PsiReferenceContributor() {
                 }
                 .toList()
             return result.toTypedArray()
-        }
-
-        // ------------------------------------------------------------------
-        // Per-file cached anchor computation (delegates to the pure parser)
-        // ------------------------------------------------------------------
-
-        private companion object {
-            private val ANCHORS_KEY: Key<CachedValue<List<QuarkdownReferenceParser.Anchor>>> =
-                Key.create("quarkdown.reference.anchors")
-        }
-
-        private fun anchorsOf(psiFile: PsiFile): List<QuarkdownReferenceParser.Anchor> {
-            val manager = CachedValuesManager.getManager(psiFile.project)
-            return manager.getCachedValue(
-                psiFile,
-                ANCHORS_KEY,
-                CachedValueProvider {
-                    CachedValueProvider.Result.create(
-                        QuarkdownReferenceParser.computeAnchors(psiFile.text),
-                        psiFile // invalidate when the file's PSI changes
-                    )
-                },
-                false
-            )
         }
     }
 }
