@@ -75,7 +75,7 @@ class QuarkdownSettingsConfigurable(private val project: Project) :
                     }
                 }
                 row {
-                    label("Cache: " + project.service<FunctionRegistry>().getCacheInfo())
+                    label("Function cache: " + project.service<FunctionRegistry>().getCacheInfo())
                         .applyToComponent { cacheInfoLabel = this }
                 }
                 row {
@@ -87,10 +87,10 @@ class QuarkdownSettingsConfigurable(private val project: Project) :
                         if (QuarkdownPathDetector.isValidQuarkdownHome(path)) {
                             val registry = project.service<FunctionRegistry>()
                             refreshCacheButton?.isEnabled = false
-                            cacheInfoLabel?.text = "Cache: Refreshing..."
+                            cacheInfoLabel?.text = "Function cache: Refreshing..."
                             registry.refreshAsync(path, force = true) { _ ->
                                 refreshCacheButton?.isEnabled = true
-                                cacheInfoLabel?.text = "Cache: " + registry.getCacheInfo()
+                                cacheInfoLabel?.text = "Function cache: " + registry.getCacheInfo()
                             }
                         }
                     }.applyToComponent {

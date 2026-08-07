@@ -1,7 +1,6 @@
 package cc.carm.plugin.intellij.quarkdown
 
 import cc.carm.plugin.intellij.quarkdown.action.image.ImagePasteHandler
-import cc.carm.plugin.intellij.quarkdown.lang.completion.QuarkdownCompletionRegistrar
 import cc.carm.plugin.intellij.quarkdown.lang.function.FunctionRegistry
 import cc.carm.plugin.intellij.quarkdown.settings.QuarkdownPathDetector
 import cc.carm.plugin.intellij.quarkdown.settings.QuarkdownSettings
@@ -23,8 +22,9 @@ class QuarkdownStartupActivity : ProjectActivity {
     }
 
     override suspend fun execute(project: Project) {
-        ApplicationManager.getApplication()
-            .getService(QuarkdownCompletionRegistrar::class.java)
+        // Completion/typed-handler extensions are declared declaratively in plugin.xml
+        // and must NOT be instantiated/registered programmatically (see
+        // QuarkdownCompletionRegistrar). No service bootstrapping is needed here.
 
         installPasteHandlerIfNeeded()
 

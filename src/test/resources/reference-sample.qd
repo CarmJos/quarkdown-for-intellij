@@ -1,0 +1,58 @@
+.docname {《农业物联网工程综合设计》实训报告}
+.doclang {zh-CN}
+.doctype {paged}
+.docauthor {刘星宇}
+.theme {paperwhite} layout:{latex}
+.css {.read {style.css}}
+.pageformat size:{a4} margin:{2.54cm 3.18cm 2.54cm 3.18cm}
+.numbering merge:{true}
+    - headings: 1.1.1
+    - figures: 图 1.1.1
+    - tables: 表 1.1.1
+    - equations: 式 (1)
+    - code: 代码 (1)
+.noautopagebreak
+
+.pageformat pages:{..1} margin:{0}
+
+.container fullwidth:{yes} margin:{0}
+    !(100%)[Cover](../figure/_cover_12.jpg)
+
+.var {version} {version-12}
+
+<<<
+
+<<<
+
+.tableofcontents \
+    title:{**目 录**} maxdepth:{3} \
+    indexheading:{false} numberheading:{false} breakpage:{true}
+
+<<<
+
+.resetpagenumber start:{1}
+.pagemargin {bottomcenter}
+    .currentpage
+
+.include {01-basement.qd}
+
+<<<
+
+.include {03-task.qd}
+.include {.version/03.02-hardware.qd}
+.include {.version/03.03-sensors.qd}
+.include {.version/03.04-plc.qd}
+.include {.version/03.05-monitor.qd}
+.include {.version/03.06-cloud.qd}
+
+<<<
+
+.include {.version/04-debug.qd}
+
+<<<
+
+.include {.version/05-problems.qd}
+
+<<<
+
+.include {.version/06-summary.qd}
