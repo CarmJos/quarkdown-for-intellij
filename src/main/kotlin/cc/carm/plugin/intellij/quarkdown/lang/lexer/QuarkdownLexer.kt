@@ -240,7 +240,21 @@ class QuarkdownLexer : LexerBase() {
             ']' -> return emit(QuarkdownTokenTypes.BRACKET_CLOSE, 1)
             '(' -> return emit(QuarkdownTokenTypes.PAREN_OPEN, 1)
             ')' -> return emit(QuarkdownTokenTypes.PAREN_CLOSE, 1)
-            '{' -> return emit(QuarkdownTokenTypes.BRACE_OPEN, 1)
+            '{' -> {
+                // Check if this is an ID tag: {#...}
+                if (ch(start + 1) == '#') {
+                    // Scan until closing }
+                    var len = 2 // '{' + '#'
+                    while (start + len < endOffset && ch(start + len) != '}') {
+                        len++
+                    }
+                    if (start + len < endOffset && ch(start + len) == '}') {
+                        len++ // include the closing }
+                        return emit(QuarkdownTokenTypes.ID_TAG, len)
+                    }
+                }
+                return emit(QuarkdownTokenTypes.BRACE_OPEN, 1)
+            }
             '}' -> return emit(QuarkdownTokenTypes.BRACE_CLOSE, 1)
         }
 

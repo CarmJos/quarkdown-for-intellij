@@ -57,6 +57,8 @@ class QuarkdownColorSettingsPage : ColorSettingsPage {
             AttributesDescriptor("Function Name", QuarkdownSyntaxHighlighter.FUNCTION_NAME),
             AttributesDescriptor("Function Parameters", QuarkdownSyntaxHighlighter.FUNCTION_PARAMS),
 
+            AttributesDescriptor("Element ID Tag", QuarkdownSyntaxHighlighter.ID_TAG),
+
             AttributesDescriptor("HTML Comment", QuarkdownSyntaxHighlighter.HTML_COMMENT),
 
             AttributesDescriptor("Front Matter Delimiter", QuarkdownSyntaxHighlighter.FRONT_MATTER_DELIMITER),

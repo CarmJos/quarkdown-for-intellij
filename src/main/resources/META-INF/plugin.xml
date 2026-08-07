@@ -25,6 +25,12 @@
                 instance="cc.carm.plugin.intellij.quarkdown.settings.QuarkdownSettingsConfigurable"
                 displayName="Quarkdown"/>
 
+        <projectConfigurable
+                parentId="Settings.Language.Quarkdown"
+                id="Settings.Language.Quarkdown.EditorAppearance"
+                instance="cc.carm.plugin.intellij.quarkdown.lang.editor.QuarkdownEditorAppearanceConfigurable"
+                displayName="Editor Appearance"/>
+
         <postStartupActivity implementation="cc.carm.plugin.intellij.quarkdown.QuarkdownStartupActivity"/>
 
         <completion.contributor

@@ -79,6 +79,11 @@ object QuarkdownTokenTypes {
     val FUNCTION_PARAMS = createToken("FUNCTION_PARAMS")  // content inside {}
 
     // -------------------------------------------------------------------------
+    // Element ID tag  {#id-name}
+    // -------------------------------------------------------------------------
+    val ID_TAG = createToken("ID_TAG")                    // {#actual-screen-a}
+
+    // -------------------------------------------------------------------------
     // HTML
     // -------------------------------------------------------------------------
     val HTML_TAG = createToken("HTML_TAG")
