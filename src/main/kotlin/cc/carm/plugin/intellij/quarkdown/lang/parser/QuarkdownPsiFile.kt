@@ -3,7 +3,7 @@ package cc.carm.plugin.intellij.quarkdown.lang.parser
 import cc.carm.plugin.intellij.quarkdown.QuarkdownFileType
 import cc.carm.plugin.intellij.quarkdown.QuarkdownLanguage
 import cc.carm.plugin.intellij.quarkdown.lang.reference.QuarkdownReference
-import cc.carm.plugin.intellij.quarkdown.lang.reference.QuarkdownReferenceParser
+import cc.carm.plugin.intellij.quarkdown.lang.reference.QuarkdownReferenceAnchors
 import com.intellij.extapi.psi.PsiFileBase
 import com.intellij.openapi.fileTypes.FileType
 import com.intellij.openapi.util.TextRange
@@ -61,7 +61,7 @@ class QuarkdownPsiFile(viewProvider: FileViewProvider) : PsiFileBase(viewProvide
         val fileText = text
         if (fileText.isEmpty()) return PsiReference.EMPTY_ARRAY
 
-        return QuarkdownReferenceParser.computeAnchors(fileText)
+        return QuarkdownReferenceAnchors.of(this)
             .map { QuarkdownReference(this, it.referenceText, it.referenceType, TextRange(it.start, it.end)) }
             .toTypedArray()
     }

@@ -73,8 +73,6 @@ class FunctionRegistry(private val project: Project) {
         return if (matching.size == 1) matching.first() else null
     }
 
-    fun isLoaded(): Boolean = getFunctions().isNotEmpty()
-
     fun refresh(homePath: String, force: Boolean = false) {
         logger.info("Refreshing function registry from: $homePath (force=$force)")
         if (homePath.isEmpty()) {

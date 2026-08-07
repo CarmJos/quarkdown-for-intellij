@@ -31,7 +31,15 @@ object QuarkdownReferenceParser {
     private val refBlockPattern = Regex("""\.ref\s*\{\s*([^}]+?)\s*\}""", RegexOption.IGNORE_CASE)
     private val labelPattern = Regex("""\{#([a-zA-Z0-9_-]+)}""")
     private val filePattern = Regex("""\.(read|include|css|code)\s*\{\s*"([^"]+)"\s*\}""", RegexOption.IGNORE_CASE)
-    private val imgPathPattern = Regex("""!\s*(?:\([^)]*\)\s*)?\[[^\]]*\]\s*\(\s*([^)\s]+)""")
+
+    /**
+     * Pattern matching Quarkdown image syntax:
+     *   `![alt](path)`, `!(100%)[alt](path)`, `! [alt](path "title")`.
+     * Group 1 captures the path value (before any space/title/close-paren).
+     */
+    const val IMG_PATH_PATTERN_STRING = """!\s*(?:\([^)]*\)\s*)?\[[^\]]*\]\s*\(\s*([^)\s]+)"""
+
+    private val imgPathPattern = Regex(IMG_PATH_PATTERN_STRING)
 
     /** Computes all reference anchors for the given document text. */
     fun computeAnchors(fileText: String): List<Anchor> {
