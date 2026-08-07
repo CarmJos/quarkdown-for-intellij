@@ -144,6 +144,11 @@
         <lang.braceMatcher
                 language="Quarkdown"
                 implementationClass="cc.carm.plugin.intellij.quarkdown.lang.QuarkdownBraceMatcher"/>
+
+        <!-- Word & paragraph count in the status bar for .qd files -->
+        <statusBarWidgetFactory
+                id="QuarkdownStats"
+                implementation="cc.carm.plugin.intellij.quarkdown.statusbar.QuarkdownStatsWidgetFactory"/>
     </extensions>
 
     <actions>
