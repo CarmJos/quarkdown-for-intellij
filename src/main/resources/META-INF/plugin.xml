@@ -95,6 +95,17 @@
                 language="Quarkdown"
                 implementationClass="cc.carm.plugin.intellij.quarkdown.lang.marker.QuarkdownImageLineMarkerProvider"/>
 
+        <!-- Gutter icon for table blocks -->
+        <codeInsight.lineMarkerProvider
+                language="Quarkdown"
+                implementationClass="cc.carm.plugin.intellij.quarkdown.lang.marker.QuarkdownTableLineMarkerProvider"/>
+
+        <!-- Floating table editor buttons (+row, +col, alignment) -->
+        <codeInsight.inlayProvider
+                language="Quarkdown"
+                implementationClass="cc.carm.plugin.intellij.quarkdown.lang.editor.QuarkdownTableEditorProvider"/>
+
+
         <!-- Go-to-declaration / find-usages for .ref {id}, .var {name} and file/image paths -->
         <psi.referenceContributor
                 language="Quarkdown"
@@ -159,7 +170,97 @@
             <add-to-group group-id="NewGroup" anchor="last"/>
         </action>
 
-        <group id="Quarkdown.EditorActions" popup="true" text="Quarkdown">
+        <!-- Floating toolbars for row/column operations on Quarkdown tables.
+             MUST be in <actions>, not <extensions>, or ActionManager cannot resolve them. -->
+        <group id="Quarkdown.TableActions" compact="true" class="cc.carm.plugin.intellij.quarkdown.lang.editor.QuarkdownTableActionsGroup">
+            <group id="Quarkdown.TableRowActions" compact="true">
+                <action id="Quarkdown.Table.SwapRows.SwapWithAbove"
+                        class="cc.carm.plugin.intellij.quarkdown.lang.editor.QuarkdownSwapRowsAction$SwapWithAbove"
+                        icon="AllIcons.Actions.PreviousOccurence"
+                        text="Move Row Up"
+                        description="Move the row up"/>
+                <action id="Quarkdown.Table.SwapRows.SwapWithBelow"
+                        class="cc.carm.plugin.intellij.quarkdown.lang.editor.QuarkdownSwapRowsAction$SwapWithBelow"
+                        icon="AllIcons.Actions.NextOccurence"
+                        text="Move Row Down"
+                        description="Move the row down"/>
+                <separator/>
+                <action id="Quarkdown.Table.InsertRow.InsertAbove"
+                        class="cc.carm.plugin.intellij.quarkdown.lang.editor.QuarkdownInsertRowAction$InsertAbove"
+                        icon="cc.carm.plugin.intellij.quarkdown.QuarkdownIcons.ADD_ROW_ABOVE"
+                        text="Insert Row Above"
+                        description="Insert a row above"/>
+                <action id="Quarkdown.Table.InsertRow.InsertBelow"
+                        class="cc.carm.plugin.intellij.quarkdown.lang.editor.QuarkdownInsertRowAction$InsertBelow"
+                        icon="cc.carm.plugin.intellij.quarkdown.QuarkdownIcons.ADD_ROW_BELOW"
+                        text="Insert Row Below"
+                        description="Insert a row below"/>
+                <separator/>
+                <action id="Quarkdown.Table.SelectRow"
+                        class="cc.carm.plugin.intellij.quarkdown.lang.editor.QuarkdownSelectRowAction"
+                        icon="AllIcons.Actions.InSelection"
+                        text="Select Row"
+                        description="Select the row"/>
+                <separator/>
+                <action id="Quarkdown.Table.RemoveCurrentRow"
+                        class="cc.carm.plugin.intellij.quarkdown.lang.editor.QuarkdownRemoveCurrentRowAction"
+                        icon="AllIcons.Actions.GC"
+                        text="Remove Row"
+                        description="Remove the row"/>
+            </group>
+            <group id="Quarkdown.TableColumnActions" compact="true">
+                <action id="Quarkdown.Table.SwapColumns.SwapWithLeftColumn"
+                        class="cc.carm.plugin.intellij.quarkdown.lang.editor.QuarkdownSwapColumnsAction$SwapWithLeft"
+                        icon="AllIcons.Actions.Back"
+                        text="Move Column Left"
+                        description="Move the column left"/>
+                <action id="Quarkdown.Table.SwapColumns.SwapWithRightColumn"
+                        class="cc.carm.plugin.intellij.quarkdown.lang.editor.QuarkdownSwapColumnsAction$SwapWithRight"
+                        icon="AllIcons.Actions.Forward"
+                        text="Move Column Right"
+                        description="Move the column right"/>
+                <separator/>
+                <action id="Quarkdown.Table.InsertTableColumn.InsertBefore"
+                        class="cc.carm.plugin.intellij.quarkdown.lang.editor.QuarkdownInsertTableColumnAction$InsertBefore"
+                        icon="cc.carm.plugin.intellij.quarkdown.QuarkdownIcons.ADD_COLUMN_LEFT"
+                        text="Insert Column Left"
+                        description="Insert a column to the left"/>
+                <action id="Quarkdown.Table.InsertTableColumn.InsertAfter"
+                        class="cc.carm.plugin.intellij.quarkdown.lang.editor.QuarkdownInsertTableColumnAction$InsertAfter"
+                        icon="cc.carm.plugin.intellij.quarkdown.QuarkdownIcons.ADD_COLUMN_RIGHT"
+                        text="Insert Column Right"
+                        description="Insert a column to the right"/>
+                <separator/>
+                <action id="Quarkdown.Table.SelectCurrentColumn"
+                        class="cc.carm.plugin.intellij.quarkdown.lang.editor.QuarkdownSelectCurrentColumnAction"
+                        icon="AllIcons.Actions.InSelection"
+                        text="Select Column"
+                        description="Select the column"/>
+                <separator/>
+                <group id="Quarkdown.Table.ColumnAlignmentActions"
+                       compact="true"
+                       class="cc.carm.plugin.intellij.quarkdown.lang.editor.QuarkdownTableColumnAlignmentActionsGroup">
+                    <action id="Quarkdown.Table.SetColumnAlignment.Left"
+                            class="cc.carm.plugin.intellij.quarkdown.lang.editor.QuarkdownSetColumnAlignmentAction$Left"
+                            icon="cc.carm.plugin.intellij.quarkdown.QuarkdownIcons.ALIGN_LEFT"
+                            text="Align Column Left"
+                            description="Align the column left"/>
+                    <action id="Quarkdown.Table.SetColumnAlignment.Center"
+                            class="cc.carm.plugin.intellij.quarkdown.lang.editor.QuarkdownSetColumnAlignmentAction$Center"
+                            icon="cc.carm.plugin.intellij.quarkdown.QuarkdownIcons.ALIGN_CENTER"
+                            text="Align Column Center"
+                            description="Align the column center"/>
+                    <action id="Quarkdown.Table.SetColumnAlignment.Right"
+                            class="cc.carm.plugin.intellij.quarkdown.lang.editor.QuarkdownSetColumnAlignmentAction$Right"
+                            icon="cc.carm.plugin.intellij.quarkdown.QuarkdownIcons.ALIGN_RIGHT"
+                            text="Align Column Right"
+                            description="Align the column right"/>
+                </group>
+            </group>
+        </group>
+
+        <group id="Quarkdown.EditorActions" popup="true" text="Insert" description="Insert Quarkdown elements"
+               class="cc.carm.plugin.intellij.quarkdown.action.QuarkdownEditorActionsGroup">
             <add-to-group group-id="EditorPopupMenu" anchor="last"/>
             <action id="Quarkdown.ToggleBold"
                     class="cc.carm.plugin.intellij.quarkdown.action.text.BoldToggleAction"

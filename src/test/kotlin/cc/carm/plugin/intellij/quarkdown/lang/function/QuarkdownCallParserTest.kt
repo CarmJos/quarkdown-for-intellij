@@ -112,7 +112,7 @@ class QuarkdownCallParserTest {
 
     @Test
     fun `dot inside a continuation line associates with the parent call`() {
-        val text = ".tableofcontents \\\n    title:{**目 录**} maxdepth:{3} \\\n    indexheading:{false} numberheading:{false}"
+        val text = ".tableofcontents \\\n    title:{**Contents**} maxdepth:{3} \\\n    indexheading:{false} numberheading:{false}"
         // caret inside the last continuation line (at the `indexheading` value)
         val caret = text.indexOf("indexheading") + 3
         val start = QuarkdownCallParser.findCallStart(text, caret)
