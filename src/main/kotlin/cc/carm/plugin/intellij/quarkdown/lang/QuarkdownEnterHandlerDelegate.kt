@@ -17,7 +17,7 @@ import com.intellij.psi.PsiFile
  *
  * ```
  * .tableofcontents \
- *     title:{**目 录**} maxdepth:{3} \
+ *     title:{**Table of Contents**} maxdepth:{3} \
  *     indexheading:{false} numberheading:{false} breakpage:{true}
  * ```
  *

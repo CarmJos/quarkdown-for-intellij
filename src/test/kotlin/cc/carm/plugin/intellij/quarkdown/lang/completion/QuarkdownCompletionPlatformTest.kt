@@ -117,7 +117,7 @@ class QuarkdownCompletionPlatformTest : BasePlatformTestCase() {
     fun `test dot inside a continuation line stays in the parent call`() {
         // After `.tableofcontents \` the continuation belongs to the call, so typing
         // inside a continuation should offer that call's parameters.
-        val collected = directCompletions(".tableofcontents \\\n    title:{**目 录**} maxdepth:{3} \\\n    <caret>")
+        val collected = directCompletions(".tableofcontents \\\n    title:{**Contents**} maxdepth:{3} \\\n    <caret>")
         System.out.println("completions in continuation: ${collected.take(20)}")
         // The continuation is inside the call → next-argument completion.
         assertTrue("expected parameter completions in continuation, got: $collected", collected.isNotEmpty())

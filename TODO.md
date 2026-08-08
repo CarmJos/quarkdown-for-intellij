@@ -21,7 +21,7 @@
 - [x] Create customizable Color Settings Page for `.qd` syntax.
 - [x] Support `Ctrl+/` comment/uncomment using Quarkdown comment syntax. 
 ```markdown
-<!-- 这是一个注释，用于添加备注 -->
+<!-- This is a comment, used for adding notes -->
 ```
 
 ## Basement
@@ -66,10 +66,11 @@
 - [x] File completion and navigation for `.include` `.css` `.code`, etc. Also for cross-references `.ref {id}`.
 - [x] File path navigation for `.include {path}` and `.read {path}` with variable resolution (e.g. `{.version/file.qd}` resolves `.version` variable value).
 - [x] File path completion and navigation for images `!(100%)[](path "label")` and tables.
-- [ ] For images, add a panel to preview the image, and give a multiplier sliders and size inputs for width and height.
-- [ ] For tables:
-    - Add a panel to edit the table in a spreadsheet-like interface.
-    - Add a side button to change lines, columns, and alignment.
+- [x] For tables:
+    - Floating bars matching the IntelliJ Markdown plugin: horizontal bars above each column separator, vertical bars at the left edge of every row.
+    - Clicking a bar opens a floating toolbar: insert/remove/move/select rows or columns, and set column alignment (left/center/right).
+    - Double-clicking a bar selects the whole row/column with multiple carets.
+    - Clicking the gutter icon re-aligns / formats the table.
 - [x] Auto-close paired symbols (`{}`, `[]`, `""`, code block, etc.) on typing.
 - [x] Structure View (`Alt+7`) showing document outline (chapters, tables, images).
 - [x] Breadcrumbs navigation showing current position in document hierarchy.
