@@ -53,8 +53,8 @@
 - [X] Signature Help: parameter hints while typing function arguments.
 - [X] Document Symbols: structured symbol list for Structure View.
 - [X] Folding Ranges: code folding via LSP.
-- [ ] Semantic Tokens: enhanced semantic-level syntax highlighting.
-- [ ] Inlay Hints: inline parameter name annotations.
+- [x] Semantic Tokens: enhanced semantic-level syntax highlighting (known functions, variable references, valid enum values, parameter names).
+- [x] Inlay Hints: inline parameter name annotations for positional arguments.
 - [X] Document Links: clickable links for `.include`, image paths, etc.
 
 ## Editor
@@ -114,7 +114,6 @@
 
 - [ ] Quarkdown tool window integrating: Preview.
 - [ ] Sidebar action icons on `.qd` files in project tree.
-- [ ] Status bar widget showing current document's doctype and Quarkdown version.
 - [ ] Notification system for Quarkdown version updates.
 
 ## Quality

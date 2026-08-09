@@ -60,6 +60,16 @@
                 language="Quarkdown"
                 implementationClass="cc.carm.plugin.intellij.quarkdown.lang.annotator.QuarkdownAnnotator"/>
 
+        <!-- Semantic-level syntax highlighting (known functions, variables, enum values) -->
+        <annotator
+                language="Quarkdown"
+                implementationClass="cc.carm.plugin.intellij.quarkdown.lang.annotator.QuarkdownSemanticAnnotator"/>
+
+        <!-- Inlay hints: inline parameter name annotations for positional arguments -->
+        <codeInsight.inlayProvider
+                language="Quarkdown"
+                implementationClass="cc.carm.plugin.intellij.quarkdown.lang.inlay.QuarkdownParameterNameInlayProvider"/>
+
         <!-- Image path validity check (warn on non-existent paths) -->
         <annotator
                 language="Quarkdown"

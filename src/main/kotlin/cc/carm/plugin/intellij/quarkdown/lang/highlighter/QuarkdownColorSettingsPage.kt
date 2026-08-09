@@ -60,6 +60,11 @@ class QuarkdownColorSettingsPage : ColorSettingsPage {
             AttributesDescriptor("Function Braces { }", QuarkdownSyntaxHighlighter.FUNCTION_BRACE),
             AttributesDescriptor("Function Parameters", QuarkdownSyntaxHighlighter.FUNCTION_PARAMS),
 
+            AttributesDescriptor("Semantic: Known Function", QuarkdownSyntaxHighlighter.SEMANTIC_KNOWN_FUNCTION),
+            AttributesDescriptor("Semantic: Variable Reference", QuarkdownSyntaxHighlighter.SEMANTIC_VARIABLE_REF),
+            AttributesDescriptor("Semantic: Valid Enum Value", QuarkdownSyntaxHighlighter.SEMANTIC_VALID_ENUM),
+            AttributesDescriptor("Semantic: Parameter Name", QuarkdownSyntaxHighlighter.SEMANTIC_PARAMETER),
+
             AttributesDescriptor("Element ID Tag", QuarkdownSyntaxHighlighter.ID_TAG),
 
             AttributesDescriptor("HTML Comment", QuarkdownSyntaxHighlighter.HTML_COMMENT),
