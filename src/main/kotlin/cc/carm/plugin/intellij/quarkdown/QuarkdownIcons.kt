@@ -36,6 +36,10 @@ object QuarkdownIcons {
     @JvmField
     val EQUATION_MARKER: Icon = IconLoader.getIcon("/icons/marker/equation.svg", QuarkdownIcons::class.java)
 
+    /** Gutter icon for headings (`# Title {#id}` … `###### Title {#id}`) */
+    @JvmField
+    val HEADING_MARKER: Icon = IconLoader.getIcon("/icons/marker/heading.svg", QuarkdownIcons::class.java)
+
     // ------------------------------------------------------------------
     // Action domain — table
     // ------------------------------------------------------------------

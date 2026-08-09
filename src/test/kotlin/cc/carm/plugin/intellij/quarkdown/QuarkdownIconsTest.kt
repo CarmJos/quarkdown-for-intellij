@@ -59,5 +59,6 @@ class QuarkdownIconsTest {
         assertTrue(QuarkdownIcons.TABLE_MARKER.iconWidth > 0)
         assertTrue(QuarkdownIcons.CODE_MARKER.iconWidth > 0)
         assertTrue(QuarkdownIcons.EQUATION_MARKER.iconWidth > 0)
+        assertTrue(QuarkdownIcons.HEADING_MARKER.iconWidth > 0)
     }
 }

@@ -10,6 +10,7 @@
 - Floating formatting toolbar shown when selecting text in a `.qd` file (mirrors the Markdown plugin): Bold, Italic, Strikethrough, Inline Code and Link buttons appear above the selection. Each button has its own icon color; the Link button places the caret inside `()` for immediate URL input; the toolbar is suppressed over non-prose content (function arguments, image paths, inline code, front matter).
 - Gutter icon for code blocks (fenced ` ```lang "caption" {#id}` and `.code lang:{…} caption:{…} ref:{…}`): clicking it opens a dialog to edit the block's language, caption and cross-reference id.
 - Gutter icon for equations (inline `$ … $ {#id}` and fenced `$$$ {#id}`): clicking it opens a dialog to edit the cross-reference id.
+- Gutter icon for headings (`# … ###### {#id}`): clicking it opens a dialog to edit the heading level, content and cross-reference id, with a "快速提取" button that derives a default id from the heading content.
 
 ## [0.1.0] - 2026-05-29
 
