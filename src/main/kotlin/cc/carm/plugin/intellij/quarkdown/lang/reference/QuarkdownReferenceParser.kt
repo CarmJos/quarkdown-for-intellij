@@ -66,6 +66,16 @@ object QuarkdownReferenceParser {
             }
         }
 
+        // ---- `.var { <name> }` declarations (so the declaration itself is navigable) ----
+        val varDeclPattern = Regex("""\.var\s*\{\s*([a-zA-Z][a-zA-Z0-9]*)\s*\}""", RegexOption.IGNORE_CASE)
+        for (match in varDeclPattern.findAll(fileText)) {
+            val name = match.groupValues[1]
+            if (name.isEmpty()) continue
+            val start = match.groups[1]!!.range.first
+            val end = match.groups[1]!!.range.last + 1
+            anchors.add(Anchor(start, end, name, "var-decl"))
+        }
+
         // ---- .ref { <id> } ----
         for (match in refBlockPattern.findAll(fileText)) {
             val contentText = match.groupValues[1].trim()

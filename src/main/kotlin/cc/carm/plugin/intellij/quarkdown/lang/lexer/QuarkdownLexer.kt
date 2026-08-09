@@ -253,6 +253,34 @@ class QuarkdownLexer : LexerBase() {
                         return emit(QuarkdownTokenTypes.ID_TAG, len)
                     }
                 }
+                
+                // Check if this brace is immediately after a function name (e.g., .ref, .var)
+                // Look backwards for a dot followed by letters
+                var lookBack = start - 1
+                // Skip spaces
+                while (lookBack >= 0 && (ch(lookBack) == ' ' || ch(lookBack) == '\t')) {
+                    lookBack--
+                }
+                // Check for function name (letters)
+                if (lookBack >= 0 && ch(lookBack).isLetter()) {
+                    var nameStart = lookBack
+                    while (nameStart >= 0 && ch(nameStart).isLetter()) {
+                        nameStart--
+                    }
+                    // Check for dot before the name
+                    if (nameStart >= 0 && ch(nameStart) == '.') {
+                        // This is a function call, scan entire {content} as one token
+                        var len = 1 // the {
+                        while (start + len < endOffset && ch(start + len) != '}') {
+                            len++
+                        }
+                        if (start + len < endOffset && ch(start + len) == '}') {
+                            len++ // include }
+                            return emit(QuarkdownTokenTypes.FUNCTION_PARAMS, len)
+                        }
+                    }
+                }
+                
                 return emit(QuarkdownTokenTypes.BRACE_OPEN, 1)
             }
             '}' -> return emit(QuarkdownTokenTypes.BRACE_CLOSE, 1)

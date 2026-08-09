@@ -4,7 +4,13 @@ import cc.carm.plugin.intellij.quarkdown.QuarkdownFileType
 import cc.carm.plugin.intellij.quarkdown.QuarkdownLanguage
 import com.intellij.openapi.util.TextRange
 import com.intellij.patterns.PlatformPatterns
-import com.intellij.psi.*
+import com.intellij.psi.PsiElement
+import com.intellij.psi.PsiFile
+import com.intellij.psi.PsiReference
+import com.intellij.psi.PsiReferenceContributor
+import com.intellij.psi.PsiReferenceProvider
+import com.intellij.psi.PsiReferenceRegistrar
+import com.intellij.psi.impl.source.tree.LeafPsiElement
 import com.intellij.util.ProcessingContext
 
 class QuarkdownReferenceContributor : PsiReferenceContributor() {
@@ -28,18 +34,18 @@ class QuarkdownReferenceContributor : PsiReferenceContributor() {
                 return PsiReference.EMPTY_ARRAY
             }
 
-            // Anchors are computed once per file and cached; each anchor is a
-            // (start, end, text, type) tuple in document coordinates.
-            val anchors = QuarkdownReferenceAnchors.of(psiFile)
-
+            // CRITICAL: Only provide references for leaf elements (and the file itself).
+            // Composite elements (e.g. HEADING) span whole paragraphs and overlap every
+            // anchor, which would make EVERY piece of text navigable (Ctrl+Click underline).
             if (element is PsiFile) {
-                // File-level references carry the FULL id/path range (document coords).
-                // findReferenceAt prefers these so the whole `button-start-action`
-                // is underlined/navigable, even though the lexer splits it into leaves.
+                val anchors = QuarkdownReferenceAnchors.of(psiFile)
                 return anchors
                     .map { QuarkdownReference(element, it.referenceText, it.referenceType, TextRange(it.start, it.end)) }
                     .toTypedArray()
             }
+            if (element !is LeafPsiElement) return PsiReference.EMPTY_ARRAY
+
+            val anchors = QuarkdownReferenceAnchors.of(psiFile)
 
             val elemStart = element.textRange.startOffset
             val elemEnd = elemStart + element.textLength

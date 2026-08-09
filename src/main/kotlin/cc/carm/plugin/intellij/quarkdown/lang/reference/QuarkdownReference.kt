@@ -2,12 +2,16 @@ package cc.carm.plugin.intellij.quarkdown.lang.reference
 
 import cc.carm.plugin.intellij.quarkdown.QuarkdownFileType
 import cc.carm.plugin.intellij.quarkdown.lang.function.QuarkdownCallParser
+import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.TextRange
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiElement
+import com.intellij.psi.PsiElementResolveResult
 import com.intellij.psi.PsiManager
-import com.intellij.psi.PsiReferenceBase
+import com.intellij.psi.PsiPolyVariantReferenceBase
+import com.intellij.psi.PsiReference
+import com.intellij.psi.ResolveResult
 import com.intellij.psi.search.FileTypeIndex
 import com.intellij.psi.search.GlobalSearchScope
 
@@ -16,7 +20,7 @@ import com.intellij.psi.search.GlobalSearchScope
  *
  * Supported types:
  *   "ref"        → `{#id}` label declaration or heading anchor
- *   "label"      → first `.ref { id }` usage of the label (go-to-usage)
+ *   "label"      → every `.ref { id }` usage of the label (go-to-usage / multi resolve)
  *   "var"        → .var { name } declaration
  *   "read/include/css/code" → file path resolved relative to source file
  *   "image"      → image filename segment (resolves to PsiFile)
@@ -26,8 +30,8 @@ class QuarkdownReference(
     anchorElement: PsiElement,
     private val referenceText: String,
     private val referenceType: String,
-    private val rangeInElement: TextRange
-) : PsiReferenceBase<PsiElement>(anchorElement, rangeInElement) {
+    rangeInElement: TextRange
+) : PsiPolyVariantReferenceBase<PsiElement>(anchorElement, rangeInElement) {
 
     override fun resolve(): PsiElement? {
         val project = element.project
@@ -36,23 +40,55 @@ class QuarkdownReference(
             "ref" -> resolveRef(project, virtualFile)
             "label" -> resolveFirstUsage(project, virtualFile)
             "var" -> resolveVar(project, virtualFile)
+            "var-decl" -> resolveFirstVarUsage(project, virtualFile)
             "read", "include", "css", "code", "image" -> resolveFile(project, virtualFile)
             "image-dir" -> resolveDirectory(project, virtualFile)
             else -> null
         }
     }
 
-    override fun isReferenceTo(element: PsiElement): Boolean {
-        val resolved = resolve() ?: return false
-        if (resolved == element || resolved.isEquivalentTo(element)) return true
+    /**
+     * Resolves to ALL possible targets. For a `{#id}` label declaration this returns
+     * every `.ref { id }` usage, so Ctrl+Click pops up the list of usages (like Java).
+     * For `.ref { id }` usages it returns the (single) label declaration.
+     */
+    override fun multiResolve(incompleteCode: Boolean): Array<ResolveResult> {
+        val project = element.project
+        val virtualFile = element.containingFile?.virtualFile ?: return emptyArray()
+        return when (referenceType) {
+            "label" -> findAllRefUsages(project, virtualFile)
+                .map { PsiElementResolveResult(it) }
+                .toTypedArray()
+            "ref" -> resolveRef(project, virtualFile)
+                ?.let { arrayOf(PsiElementResolveResult(it)) }
+                ?: emptyArray()
+            "var" -> resolveVar(project, virtualFile)
+                ?.let { arrayOf(PsiElementResolveResult(it)) }
+                ?: emptyArray()
+            "var-decl" -> findAllVarUsages(project, virtualFile)
+                .map { PsiElementResolveResult(it) }
+                .toTypedArray()
+            else -> resolve()
+                ?.let { arrayOf(PsiElementResolveResult(it)) }
+                ?: emptyArray()
+        }
+    }
 
-        // Hyphenated ids (e.g. `button-start-action`) are split across several leaf
-        // elements by the lexer, so resolve() returns the first leaf. For Find Usages,
-        // any element inside the resolved declaration's id range is a valid target.
-        val resolvedFile = resolved.containingFile ?: return false
-        if (resolvedFile != element.containingFile) return false
-        val idRange = declarationIdRange(resolvedFile, referenceText.trim().lowercase()) ?: return false
-        return element.textRange.intersects(idRange)
+    override fun isReferenceTo(element: PsiElement): Boolean {
+        val targetFile = element.containingFile ?: return false
+        if (targetFile.fileType != QuarkdownFileType.INSTANCE) return false
+
+        val id = referenceText.trim()
+        if (id.isEmpty()) return false
+
+        // Find the anchor overlapping the candidate element and compare ids.
+        // This works regardless of how the lexer splits a hyphenated id.
+        val anchors = QuarkdownReferenceAnchors.of(targetFile)
+        val targetRange = element.textRange
+        return anchors.any { anchor ->
+            anchor.referenceText.trim().equals(id, ignoreCase = true) &&
+                TextRange(anchor.start, anchor.end).intersects(targetRange)
+        }
     }
 
     /**
@@ -74,6 +110,26 @@ class QuarkdownReference(
         return TextRange(g.range.first, g.range.last + 1)
     }
 
+    // ---- `{#id}` label → every `.ref { id }` usage ----
+    private fun findAllRefUsages(project: Project, sourceFile: VirtualFile): List<PsiElement> {
+        val id = referenceText.trim().lowercase()
+        if (id.isEmpty()) return emptyList()
+        val pattern = Regex("""\.ref\s*\{\s*([^}]+?)\s*\}""", RegexOption.IGNORE_CASE)
+        val result = mutableListOf<PsiElement>()
+        val psiManager = PsiManager.getInstance(project)
+        val scope = GlobalSearchScope.projectScope(project)
+        val qdFiles = FileTypeIndex.getFiles(QuarkdownFileType.INSTANCE, scope).mapNotNull { psiManager.findFile(it) }
+        for (psiFile in qdFiles) {
+            for (match in pattern.findAll(psiFile.text)) {
+                if (match.groupValues[1].trim().lowercase() != id) continue
+                val contentStart = match.range.first + match.value.indexOf('{') + 1
+                val leaf = psiFile.findElementAt(contentStart)
+                result.add(leaf ?: psiFile)
+            }
+        }
+        return result
+    }
+
     // ---- `{#id}` label → first `.ref { id }` usage ----
     private fun resolveFirstUsage(project: Project, sourceFile: VirtualFile): PsiElement? {
         val id = referenceText.trim().lowercase()
@@ -82,6 +138,35 @@ class QuarkdownReference(
         return findElementInQdFiles(project, sourceFile, pattern, sourceFileFirst = false) { match ->
             match.groupValues[1].trim().lowercase() == id
         }
+    }
+
+    // ---- `.var {name}` declaration → first `.name` usage ----
+    private fun resolveFirstVarUsage(project: Project, sourceFile: VirtualFile): PsiElement? {
+        val name = referenceText.trim().lowercase()
+        if (name.isEmpty()) return null
+        val pattern = Regex("""\.([a-zA-Z][a-zA-Z0-9]*)\b""")
+        return findElementInQdFiles(project, sourceFile, pattern, sourceFileFirst = false) { match ->
+            match.groupValues[1].lowercase() == name
+        }
+    }
+
+    // ---- `.var {name}` declaration → every `.name` usage ----
+    private fun findAllVarUsages(project: Project, sourceFile: VirtualFile): List<PsiElement> {
+        val name = referenceText.trim().lowercase()
+        if (name.isEmpty()) return emptyList()
+        val pattern = Regex("""\.([a-zA-Z][a-zA-Z0-9]*)\b""")
+        val result = mutableListOf<PsiElement>()
+        val psiManager = PsiManager.getInstance(project)
+        val scope = GlobalSearchScope.projectScope(project)
+        val qdFiles = FileTypeIndex.getFiles(QuarkdownFileType.INSTANCE, scope).mapNotNull { psiManager.findFile(it) }
+        for (psiFile in qdFiles) {
+            for (match in pattern.findAll(psiFile.text)) {
+                if (match.groupValues[1].lowercase() != name) continue
+                val leaf = psiFile.findElementAt(match.groups[1]!!.range.first)
+                result.add(leaf ?: psiFile)
+            }
+        }
+        return result
     }
 
     // ---- .name → .var { name } declaration (document scoped) ----
@@ -122,9 +207,38 @@ class QuarkdownReference(
         return null
     }
 
-    override fun handleElementRename(newElementName: String): PsiElement = element
-    override fun bindToElement(element: PsiElement): PsiElement = element
+    override fun handleElementRename(newElementName: String): PsiElement {
+        // Replace the reference text inside the current element with the new name.
+        val file = element.containingFile ?: return element
+        val document = file.viewProvider?.document ?: return element
+        if (!element.isValid) return element
+
+        val absoluteStart = element.textRange.startOffset + rangeInElement.startOffset
+        val absoluteEnd = element.textRange.startOffset + rangeInElement.endOffset
+        if (absoluteEnd <= absoluteStart || absoluteEnd > document.textLength) return element
+
+        // Skip if the range already holds the new name (e.g. the declaration was already
+        // renamed via setName and this usage overlaps the same position).
+        val currentText = document.getText(TextRange(absoluteStart, absoluteEnd))
+        if (currentText == newElementName) return element
+
+        WriteCommandAction.runWriteCommandAction(element.project) {
+            document.replaceString(absoluteStart, absoluteEnd, newElementName)
+            com.intellij.psi.PsiDocumentManager.getInstance(element.project).commitDocument(document)
+        }
+        return element
+    }
+      
+    override fun bindToElement(targetElement: PsiElement): PsiElement {
+        // Text-based references cannot be rebound to an arbitrary element.
+        return element
+    }
+      
     override fun getVariants(): Array<Any> = emptyArray()
+
+    /** Creates a reference for the given anchor (used by Find Usages / rename). */
+    fun withAnchor(anchorElement: PsiElement, range: TextRange): QuarkdownReference =
+        QuarkdownReference(anchorElement, referenceText, referenceType, range)
 
     // ---- .ref { id } → `{#id}` label declaration or heading anchor ----
     private fun resolveRef(project: Project, sourceFile: VirtualFile): PsiElement? {

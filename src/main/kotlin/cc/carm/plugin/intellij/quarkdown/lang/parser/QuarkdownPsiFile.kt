@@ -35,21 +35,27 @@ class QuarkdownPsiFile(viewProvider: FileViewProvider) : PsiFileBase(viewProvide
     override fun findReferenceAt(offset: Int): PsiReference? {
         var element = findElementAt(offset) ?: return null
         val service = com.intellij.psi.PsiReferenceService.getService()
-        var best: PsiReference? = null
-        var bestLength = -1
+
+        // Collect every reference that covers the offset (leaf-local and file-level).
+        // The widest range is preferred (so the whole hyphenated id is one unit), but
+        // if the widest reference cannot resolve (e.g. a missing include path), fall
+        // back to a narrower one that can (e.g. the `.version` variable inside it).
+        val candidates = mutableListOf<PsiReference>()
         while (element != null) {
             for (ref in service.getReferences(element, com.intellij.psi.PsiReferenceService.Hints.NO_HINTS)) {
                 val range = ref.getRangeInElement()
                 val local = offset - element.textRange.startOffset
-                if (range.contains(local) && range.length > bestLength) {
-                    bestLength = range.length
-                    best = ref
+                if (range.contains(local)) {
+                    candidates.add(ref)
                 }
             }
             if (element is PsiFile) break
             element = element.parent
         }
-        return best
+
+        candidates.sortByDescending { it.getRangeInElement().length }
+        return candidates.firstOrNull { it.resolve() != null }
+            ?: candidates.firstOrNull()
     }
 
     /**

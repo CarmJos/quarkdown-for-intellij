@@ -123,6 +123,32 @@
                 language="Quarkdown"
                 implementationClass="cc.carm.plugin.intellij.quarkdown.lang.reference.QuarkdownFindUsagesProvider"/>
 
+        <!-- Standard Find Usages / Show Usages handler for .ref {id} / {#id} / .var -->
+        <findUsagesHandlerFactory
+                implementation="cc.carm.plugin.intellij.quarkdown.lang.reference.QuarkdownFindUsagesHandlerFactory"
+                order="first"/>
+
+        <!-- Rename refactoring (Shift+F6) for .ref {id} / {#id} labels -->
+        <renamePsiElementProcessor
+                implementation="cc.carm.plugin.intellij.quarkdown.lang.reference.QuarkdownRenameProcessor"/>
+
+        <!-- Accept Quarkdown ids (with hyphens) in the Rename dialog validation -->
+        <renameInputValidator
+                implementation="cc.carm.plugin.intellij.quarkdown.lang.reference.QuarkdownRenameInputValidator"/>
+
+        <!-- Pre-fill the Rename dialog with the bare id (leaves are not PsiNamedElement) -->
+        <nameSuggestionProvider
+                implementation="cc.carm.plugin.intellij.quarkdown.lang.reference.QuarkdownNameSuggestionProvider"/>
+
+        <!-- Ctrl+Click on a {#id} label pops up all .ref usages -->
+        <gotoDeclarationHandler
+                implementation="cc.carm.plugin.intellij.quarkdown.lang.reference.QuarkdownGotoDeclarationHandler"/>
+
+        <!-- Show the custom Show Usages popup on Ctrl+Click over a label declaration -->
+        <editorFactoryMouseListener
+                implementation="cc.carm.plugin.intellij.quarkdown.lang.reference.QuarkdownEditorMouseListener"
+                order="first"/>
+
         <!-- Provides a searchable word for Quarkdown text leaves so the word-based
              reference search can discover .ref/.var usages -->
         <elementDescriptionProvider
