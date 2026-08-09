@@ -105,6 +105,11 @@
                 language="Quarkdown"
                 implementationClass="cc.carm.plugin.intellij.quarkdown.lang.marker.QuarkdownCodeBlockLineMarkerProvider"/>
 
+        <!-- Gutter icon for equations (inline and fenced) -->
+        <codeInsight.lineMarkerProvider
+                language="Quarkdown"
+                implementationClass="cc.carm.plugin.intellij.quarkdown.lang.marker.QuarkdownEquationLineMarkerProvider"/>
+
         <!-- Floating table editor buttons (+row, +col, alignment) -->
         <codeInsight.inlayProvider
                 language="Quarkdown"

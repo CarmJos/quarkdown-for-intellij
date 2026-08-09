@@ -32,6 +32,10 @@ object QuarkdownIcons {
     @JvmField
     val CODE_MARKER: Icon = IconLoader.getIcon("/icons/marker/code.svg", QuarkdownIcons::class.java)
 
+    /** Gutter icon for equations (inline `$...$` and fenced `$$$`) */
+    @JvmField
+    val EQUATION_MARKER: Icon = IconLoader.getIcon("/icons/marker/equation.svg", QuarkdownIcons::class.java)
+
     // ------------------------------------------------------------------
     // Action domain — table
     // ------------------------------------------------------------------
