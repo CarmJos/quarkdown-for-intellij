@@ -18,7 +18,7 @@ import java.io.File
 /**
  * Handles drag-and-drop of image files onto a Quarkdown editor.
  * When an image file (.png, .jpg, .svg, .webp, etc.) is dropped,
- * opens the QuarkdownImageDialog with the path pre-filled.
+ * opens the ImageDialog with the path pre-filled.
  *
  * Implements BOTH [EditorDropHandler] (EP: com.intellij.editorDropHandler, order="first")
  * and [FileDropHandler] (EP: com.intellij.fileDropHandler, order="first") to intercept

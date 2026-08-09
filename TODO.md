@@ -37,9 +37,9 @@
 - [x] Compile parameters configuration (CLI args, output directory, etc.).
 - [x] Preview parameters configuration (CLI args, output directory, etc.).
 - [X] Editor appearance settings for `.qd` files (font family, size, line height, line wrap; per-component: headings, code blocks, tables, etc.).
-- [ ] Completion behavior settings (case sensitivity, auto-insert brackets, etc.).
-- [ ] Code formatting settings (indent size, max line width, etc.).
-- [ ] Dedicated color scheme configuration for Quarkdown syntax.
+- [X] Completion behavior settings (case sensitivity, auto-insert brackets, etc.).
+- [X] Code formatting settings (indent size, max line width, etc.).
+- [X] Dedicated color scheme configuration for Quarkdown syntax.
 
 ## LSP Integration
 
@@ -60,9 +60,9 @@
 
 ## Editor
 
-- [ ] Auto Code Completion for function names and parameters.
-- [ ] Code reformatting for Quarkdown files, also for code blocks based on its languages formatting rules.
-- [ ] Syntax error highlighting for invalid directives, missing parameters, etc.
+- [X] Auto Code Completion for function names and parameters.
+- [X] Code reformatting for Quarkdown files, also for code blocks based on its languages formatting rules.
+- [X] Syntax error highlighting for invalid directives, missing parameters, etc.
 - [x] File completion and navigation for `.include` `.css` `.code`, etc. Also for cross-references `.ref {id}`.
 - [x] File path navigation for `.include {path}` and `.read {path}` with variable resolution (e.g. `{.version/file.qd}` resolves `.version` variable value).
 - [x] File path completion and navigation for images `!(100%)[](path "label")` and tables.
@@ -76,7 +76,6 @@
 - [x] Breadcrumbs navigation showing current position in document hierarchy.
 - [x] Code folding for sections, code blocks, and tables (similar to IntelliJ Markdown plugin).
 - [ ] Gutter icons marking image, table, and reference locations in editor margin.
-- [ ] Spell checking for prose/paragraph text.
 - [x] Word count and paragraph count in status bar (excluding function calls and code blocks).
 - [x] TODO / FIXME highlighting in comments, integrated with IDE TODO panel.
 - [x] Drag & drop image files into editor, auto-generating image syntax.

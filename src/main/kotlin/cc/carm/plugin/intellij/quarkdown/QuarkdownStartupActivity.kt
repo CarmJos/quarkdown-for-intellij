@@ -55,9 +55,9 @@ class QuarkdownStartupActivity : ProjectActivity {
             val actionId = IdeActions.ACTION_EDITOR_PASTE
             val originalHandler = manager.getActionHandler(actionId)
             manager.setActionHandler(actionId, ImagePasteHandler(originalHandler))
-            logger.info("Installed QuarkdownImagePasteHandler for $actionId")
+            logger.info("Installed ImagePasteHandler for $actionId")
         } catch (e: Exception) {
-            logger.warn("Failed to install QuarkdownImagePasteHandler", e)
+            logger.warn("Failed to install ImagePasteHandler", e)
             pasteHandlerInstalled.set(false)
         }
     }

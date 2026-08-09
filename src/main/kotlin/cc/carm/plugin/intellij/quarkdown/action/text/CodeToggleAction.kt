@@ -4,4 +4,3 @@ class CodeToggleAction : BaseToggleAction() {
 
     override fun getWrapper(): String = "`"
 }
-

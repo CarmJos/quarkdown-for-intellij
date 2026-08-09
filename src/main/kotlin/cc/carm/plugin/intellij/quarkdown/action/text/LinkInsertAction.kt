@@ -22,16 +22,19 @@ class LinkInsertAction : AnAction(), DumbAware {
         WriteCommandAction.runWriteCommandAction(e.project) {
             val primaryCaret = editor.caretModel.primaryCaret
             if (primaryCaret.hasSelection()) {
-                val selected = primaryCaret.selectedText
+                // Wrap the selected text as the link label, then place the caret
+                // inside the parentheses, ready to type the URL.
+                val selected = primaryCaret.selectedText.orEmpty()
                 val start = primaryCaret.selectionStart
                 val end = primaryCaret.selectionEnd
-                val wrapped = "[$selected](url)"
+                val wrapped = "[$selected]()"
                 editor.document.replaceString(start, end, wrapped)
-                primaryCaret.moveToOffset(start + wrapped.length)
+                primaryCaret.moveToOffset(start + wrapped.length - 1)
             } else {
-                editor.document.insertString(editor.caretModel.offset, "[text](url)")
-                val pos = editor.caretModel.offset
-                primaryCaret.setSelection(pos + 1, pos + 5)
+                // No selection: insert `[]()` and place the caret inside the parens.
+                val offset = editor.caretModel.offset
+                editor.document.insertString(offset, "[]()")
+                primaryCaret.moveToOffset(offset + 3)
             }
         }
     }
