@@ -183,7 +183,6 @@ object FunctionCallTokenizer {
         // Otherwise: new statement when the dot is the first non-space char of its line.
         var j = dot - 1
         while (j >= 0 && (text[j] == ' ' || text[j] == '\t')) j--
-        if (j < 0) return true
-        return text[j] == '\n' || text[j] == '\r'
+        return j < 0 || text[j] == '\n' || text[j] == '\r'
     }
 }

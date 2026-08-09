@@ -1,10 +1,13 @@
 package cc.carm.plugin.intellij.quarkdown.lang.codeblock
+
 import com.intellij.lang.Language
+
 object QuarkdownLanguageMapper {
     fun resolve(id: String): Language? {
         val key = id.lowercase().trim()
         return LANGUAGE_MAP[key] ?: ALIAS_MAP[key]
     }
+
     private val LANGUAGE_MAP: Map<String, Language> = run {
         val ids = mapOf(
             "java" to "JAVA", "kotlin" to "kotlin", "scala" to "Scala",

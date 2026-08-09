@@ -14,12 +14,7 @@ import java.awt.event.ActionEvent
 import java.awt.event.KeyEvent
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
-import javax.swing.AbstractAction
-import javax.swing.Action
-import javax.swing.JComponent
-import javax.swing.JPanel
-import javax.swing.KeyStroke
-import javax.swing.SwingUtilities
+import javax.swing.*
 import kotlin.math.floor
 
 /**

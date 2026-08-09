@@ -1,8 +1,8 @@
 package cc.carm.plugin.intellij.quarkdown.lang.reference
 
 import cc.carm.plugin.intellij.quarkdown.QuarkdownFileType
-import com.intellij.psi.codeStyle.SuggestedNameInfo
 import com.intellij.psi.PsiElement
+import com.intellij.psi.codeStyle.SuggestedNameInfo
 import com.intellij.refactoring.rename.NameSuggestionProvider
 
 /**

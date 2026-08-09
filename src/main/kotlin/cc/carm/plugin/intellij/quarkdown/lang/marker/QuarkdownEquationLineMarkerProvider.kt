@@ -108,6 +108,7 @@ class QuarkdownEquationLineMarkerProvider : LineMarkerProvider {
                     val info = QuarkdownEquationSyntax.parseInlineEquationLine(line) ?: return
                     dialog.parseInline(info)
                 }
+
                 QuarkdownEquationSyntax.Kind.FENCED -> {
                     val info = QuarkdownEquationSyntax.parseFenceEquationLine(line) ?: return
                     dialog.parseFence(info)

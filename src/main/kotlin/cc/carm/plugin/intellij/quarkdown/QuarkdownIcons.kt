@@ -50,15 +50,18 @@ object QuarkdownIcons {
 
     /** Move the row down (table toolbar) */
     @JvmField
-    val TABLE_MOVE_ROW_DOWN: Icon = IconLoader.getIcon("/icons/action/table/move_row_down.svg", QuarkdownIcons::class.java)
+    val TABLE_MOVE_ROW_DOWN: Icon =
+        IconLoader.getIcon("/icons/action/table/move_row_down.svg", QuarkdownIcons::class.java)
 
     /** Move the column to the left (table toolbar) */
     @JvmField
-    val TABLE_MOVE_COLUMN_LEFT: Icon = IconLoader.getIcon("/icons/action/table/move_column_left.svg", QuarkdownIcons::class.java)
+    val TABLE_MOVE_COLUMN_LEFT: Icon =
+        IconLoader.getIcon("/icons/action/table/move_column_left.svg", QuarkdownIcons::class.java)
 
     /** Move the column to the right (table toolbar) */
     @JvmField
-    val TABLE_MOVE_COLUMN_RIGHT: Icon = IconLoader.getIcon("/icons/action/table/move_column_right.svg", QuarkdownIcons::class.java)
+    val TABLE_MOVE_COLUMN_RIGHT: Icon =
+        IconLoader.getIcon("/icons/action/table/move_column_right.svg", QuarkdownIcons::class.java)
 
     /** Select the clicked row/column (table toolbar) */
     @JvmField
@@ -74,7 +77,8 @@ object QuarkdownIcons {
 
     /** Align column to the center (table toolbar) */
     @JvmField
-    val TABLE_ALIGN_CENTER: Icon = IconLoader.getIcon("/icons/action/table/align_center.svg", QuarkdownIcons::class.java)
+    val TABLE_ALIGN_CENTER: Icon =
+        IconLoader.getIcon("/icons/action/table/align_center.svg", QuarkdownIcons::class.java)
 
     /** Align column to the right (table toolbar) */
     @JvmField
@@ -82,19 +86,23 @@ object QuarkdownIcons {
 
     /** Insert a row above (table toolbar) */
     @JvmField
-    val TABLE_ADD_ROW_ABOVE: Icon = IconLoader.getIcon("/icons/action/table/add_row_above.svg", QuarkdownIcons::class.java)
+    val TABLE_ADD_ROW_ABOVE: Icon =
+        IconLoader.getIcon("/icons/action/table/add_row_above.svg", QuarkdownIcons::class.java)
 
     /** Insert a row below (table toolbar) */
     @JvmField
-    val TABLE_ADD_ROW_BELOW: Icon = IconLoader.getIcon("/icons/action/table/add_row_below.svg", QuarkdownIcons::class.java)
+    val TABLE_ADD_ROW_BELOW: Icon =
+        IconLoader.getIcon("/icons/action/table/add_row_below.svg", QuarkdownIcons::class.java)
 
     /** Insert a column to the left (table toolbar) */
     @JvmField
-    val TABLE_ADD_COLUMN_LEFT: Icon = IconLoader.getIcon("/icons/action/table/add_column_left.svg", QuarkdownIcons::class.java)
+    val TABLE_ADD_COLUMN_LEFT: Icon =
+        IconLoader.getIcon("/icons/action/table/add_column_left.svg", QuarkdownIcons::class.java)
 
     /** Insert a column to the right (table toolbar) */
     @JvmField
-    val TABLE_ADD_COLUMN_RIGHT: Icon = IconLoader.getIcon("/icons/action/table/add_column_right.svg", QuarkdownIcons::class.java)
+    val TABLE_ADD_COLUMN_RIGHT: Icon =
+        IconLoader.getIcon("/icons/action/table/add_column_right.svg", QuarkdownIcons::class.java)
 
     /** Re-align / format the whole table (table toolbar) */
     @JvmField
@@ -114,7 +122,8 @@ object QuarkdownIcons {
 
     /** Toggle strikethrough text (floating toolbar) */
     @JvmField
-    val TEXT_STRIKETHROUGH: Icon = IconLoader.getIcon("/icons/action/text/strikethrough.svg", QuarkdownIcons::class.java)
+    val TEXT_STRIKETHROUGH: Icon =
+        IconLoader.getIcon("/icons/action/text/strikethrough.svg", QuarkdownIcons::class.java)
 
     /** Toggle inline code (floating toolbar) */
     @JvmField

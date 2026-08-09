@@ -26,11 +26,11 @@ class QuarkdownEditorMouseListener : EditorMouseListener {
 
     override fun mouseReleased(event: EditorMouseEvent) {
         if (event.isConsumed) return
-        val mouseEvent = event.mouseEvent ?: return
+        val mouseEvent = event.mouseEvent
         if (!mouseEvent.isControlDown) return
         if (mouseEvent.clickCount != 1) return
 
-        val editor = event.editor ?: return
+        val editor = event.editor
         val project = editor.project ?: return
         if (project.isDisposed) return
         val file = PsiDocumentManager.getInstance(project).getPsiFile(editor.document) ?: return

@@ -30,7 +30,7 @@ class QuarkdownDocElement(
 
     override fun getContainingFile(): PsiFile = contextFile
 
-    override fun getChildren(): Array<PsiElement> = PsiElement.EMPTY_ARRAY
+    override fun getChildren(): Array<PsiElement> = EMPTY_ARRAY
 
     override fun getParent(): PsiElement? = null
 

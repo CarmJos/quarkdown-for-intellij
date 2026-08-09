@@ -4,7 +4,6 @@ import cc.carm.plugin.intellij.quarkdown.QuarkdownLanguage
 import com.intellij.codeInsight.daemon.LineMarkerProviders
 import com.intellij.codeInsight.hints.InlayHintsProviderExtension
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
-import org.junit.Assert.assertTrue
 
 /**
  * Verifies the floating table editor (inlay provider) and the table gutter marker are

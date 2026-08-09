@@ -1,8 +1,6 @@
 package cc.carm.plugin.intellij.quarkdown.ui.floating
 
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertTrue
 
 /**
  * Verifies the floating toolbar's "is non-prose context" heuristics:

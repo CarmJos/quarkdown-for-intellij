@@ -173,11 +173,7 @@ object QuarkdownStatsParser {
 
             // Fenced code blocks are excluded from the word count and act as a boundary.
             if (line.startsWith("```") || line.startsWith("~~~")) {
-                if (inCodeBlock) {
-                    inCodeBlock = false
-                } else {
-                    inCodeBlock = true
-                }
+                inCodeBlock = !inCodeBlock
                 if (inParagraph) {
                     paragraphCount++
                     inParagraph = false

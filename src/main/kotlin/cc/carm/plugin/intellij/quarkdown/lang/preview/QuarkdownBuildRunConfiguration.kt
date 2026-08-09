@@ -1,12 +1,7 @@
 package cc.carm.plugin.intellij.quarkdown.lang.preview
 
 import com.intellij.execution.Executor
-import com.intellij.execution.configurations.CommandLineState
-import com.intellij.execution.configurations.GeneralCommandLine
-import com.intellij.execution.configurations.LocatableConfigurationBase
-import com.intellij.execution.configurations.LocatableRunConfigurationOptions
-import com.intellij.execution.configurations.RunProfileState
-import com.intellij.execution.configurations.RunConfiguration
+import com.intellij.execution.configurations.*
 import com.intellij.execution.process.ProcessHandler
 import com.intellij.execution.process.ProcessHandlerFactory
 import com.intellij.execution.runners.ExecutionEnvironment
@@ -21,7 +16,7 @@ import com.intellij.openapi.project.Project
  */
 class QuarkdownBuildRunConfiguration(
     project: Project,
-    factory: com.intellij.execution.configurations.ConfigurationFactory,
+    factory: ConfigurationFactory,
     name: String,
 ) : LocatableConfigurationBase<QuarkdownBuildRunConfiguration.QuarkdownBuildOptions>(project, factory, name) {
 

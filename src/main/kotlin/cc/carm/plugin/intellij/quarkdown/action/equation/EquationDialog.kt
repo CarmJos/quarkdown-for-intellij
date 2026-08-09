@@ -60,14 +60,22 @@ class EquationDialog(
         val idLabel = JBLabel("ID:")
         val idf = JBTextField()
         idField = idf
-        panel.add(idLabel, GridConstraints(0, 0, 1, 1,
-            GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE,
-            GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED,
-            null, null, null))
-        panel.add(idf, GridConstraints(0, 1, 1, 1,
-            GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL,
-            GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED,
-            null, null, null))
+        panel.add(
+            idLabel, GridConstraints(
+                0, 0, 1, 1,
+                GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE,
+                GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED,
+                null, null, null
+            )
+        )
+        panel.add(
+            idf, GridConstraints(
+                0, 1, 1, 1,
+                GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL,
+                GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED,
+                null, null, null
+            )
+        )
 
         // Keep a comfortable width, matching the code block dialog.
         val natural = panel.preferredSize
@@ -82,6 +90,7 @@ class EquationDialog(
         return when (kind) {
             QuarkdownEquationSyntax.Kind.INLINE ->
                 QuarkdownEquationSyntax.buildInlineLine(originalLine, id)
+
             QuarkdownEquationSyntax.Kind.FENCED ->
                 QuarkdownEquationSyntax.buildFenceLine(originalLine, id)
         }

@@ -42,7 +42,8 @@ class QuarkdownPreviewToggleAction : ToggleAction(
         e.presentation.isEnabled = service.previewFile != null
         val running = service.state != QuarkdownPreviewService.State.STOPPED
         e.presentation.icon = if (running) QuarkdownIcons.PREVIEW_STOP else QuarkdownIcons.PREVIEW_PLAY
-        e.presentation.text = QuarkdownBundle.message(if (running) "quarkdown.preview.stop" else "quarkdown.preview.start")
+        e.presentation.text =
+            QuarkdownBundle.message(if (running) "quarkdown.preview.stop" else "quarkdown.preview.start")
         e.presentation.description =
             QuarkdownBundle.message(if (running) "quarkdown.preview.stop.description" else "quarkdown.preview.start.description")
     }

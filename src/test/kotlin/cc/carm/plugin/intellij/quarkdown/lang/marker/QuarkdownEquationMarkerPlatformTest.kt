@@ -7,8 +7,6 @@ import com.intellij.codeInsight.daemon.LineMarkerInfo
 import com.intellij.codeInsight.daemon.LineMarkerProviders
 import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
 
 /**
  * Verifies the equation gutter marker is registered on the platform for the Quarkdown
@@ -29,10 +27,10 @@ class QuarkdownEquationMarkerPlatformTest : BasePlatformTestCase() {
         myFixture.configureByText(
             "c.qd",
             "$ E = mc^2 $ {#energy}\n" +
-                "\n" +
-                "$$$\n" +
-                "E = mc^2\n" +
-                "$$$\n"
+                    "\n" +
+                    "$$$\n" +
+                    "E = mc^2\n" +
+                    "$$$\n"
         )
         val elements = PsiTreeUtil.collectElements(myFixture.file) { true }.toMutableList()
         val result = mutableListOf<LineMarkerInfo<*>>()

@@ -91,8 +91,12 @@ class QuarkdownTableModificationOpsTest {
             m[1] = tmp
             return m
         }
+
         val result = QuarkdownTableParser.build(
-            table.copy(headers = swap(table.headers), alignments = swap(table.alignments), rows = table.rows.map { swap(it) })
+            table.copy(
+                headers = swap(table.headers),
+                alignments = swap(table.alignments),
+                rows = table.rows.map { swap(it) })
         )
         val reparsed = QuarkdownTableParser.parse(result)!!
         assertEquals(listOf("B", "A"), reparsed.headers)

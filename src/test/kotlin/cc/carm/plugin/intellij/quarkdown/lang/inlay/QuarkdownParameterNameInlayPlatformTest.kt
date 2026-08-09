@@ -4,13 +4,12 @@ import cc.carm.plugin.intellij.quarkdown.lang.function.FunctionMetadata
 import cc.carm.plugin.intellij.quarkdown.lang.function.ParameterMetadata
 import com.intellij.codeInsight.hints.BlockConstraints
 import com.intellij.codeInsight.hints.HorizontalConstraints
-import com.intellij.codeInsight.hints.InlayHintsSink
 import com.intellij.codeInsight.hints.InlayHintsProviderExtension
+import com.intellij.codeInsight.hints.InlayHintsSink
 import com.intellij.codeInsight.hints.presentation.InlayPresentation
 import com.intellij.codeInsight.hints.presentation.RootInlayPresentation
 import com.intellij.psi.PsiFile
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
-import org.junit.Assert.assertTrue
 
 /**
  * Verifies the parameter-name inlay hints:
@@ -58,11 +57,20 @@ class QuarkdownParameterNameInlayPlatformTest : BasePlatformTestCase() {
         ) {
         }
 
-        override fun addInlineElement(offset: Int, presentation: RootInlayPresentation<*>, constraints: HorizontalConstraints?) {
+        override fun addInlineElement(
+            offset: Int,
+            presentation: RootInlayPresentation<*>,
+            constraints: HorizontalConstraints?
+        ) {
             inlineElements += offset
         }
 
-        override fun addBlockElement(logicalLine: Int, showAbove: Boolean, presentation: RootInlayPresentation<*>, constraints: BlockConstraints?) {
+        override fun addBlockElement(
+            logicalLine: Int,
+            showAbove: Boolean,
+            presentation: RootInlayPresentation<*>,
+            constraints: BlockConstraints?
+        ) {
         }
     }
 
@@ -80,10 +88,16 @@ class QuarkdownParameterNameInlayPlatformTest : BasePlatformTestCase() {
         val sink = RecordingSink()
         collector.collect(myFixture.file as PsiFile, myFixture.editor, sink)
 
-        assertTrue("expected 1 hint for a single positional arg, got ${sink.inlineElements.size}", sink.inlineElements.size == 1)
+        assertTrue(
+            "expected 1 hint for a single positional arg, got ${sink.inlineElements.size}",
+            sink.inlineElements.size == 1
+        )
         // The hint is placed right before the opening brace `{` of the argument.
         val expectedOffset = ".pagemargin ".length
-        assertTrue("hint should be at the opening brace, got ${sink.inlineElements[0]}", sink.inlineElements[0] == expectedOffset)
+        assertTrue(
+            "hint should be at the opening brace, got ${sink.inlineElements[0]}",
+            sink.inlineElements[0] == expectedOffset
+        )
     }
 
     fun `test hint only for positional args, not named`() {
@@ -107,7 +121,10 @@ class QuarkdownParameterNameInlayPlatformTest : BasePlatformTestCase() {
         assertTrue("expected 2 hints, got ${sink.inlineElements.size}", sink.inlineElements.size == 2)
         val firstBrace = ".multiply ".length
         val secondBrace = ".multiply {6} ".length
-        assertTrue("hints should sit before each opening brace", sink.inlineElements[0] == firstBrace && sink.inlineElements[1] == secondBrace)
+        assertTrue(
+            "hints should sit before each opening brace",
+            sink.inlineElements[0] == firstBrace && sink.inlineElements[1] == secondBrace
+        )
     }
 
     fun `test no hints for unknown functions`() {

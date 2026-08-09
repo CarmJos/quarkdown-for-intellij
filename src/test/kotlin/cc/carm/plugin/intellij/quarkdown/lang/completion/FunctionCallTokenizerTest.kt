@@ -1,9 +1,6 @@
 package cc.carm.plugin.intellij.quarkdown.lang.completion
 
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertTrue
+import org.junit.Assert.*
 import org.junit.Test
 
 class FunctionCallTokenizerTest {
@@ -90,7 +87,7 @@ class FunctionCallTokenizerTest {
         assertTrue(ctx.hasCall)
         assertNotNull(ctx.currentArg)
         assertTrue(ctx.currentArg!!.isNamed)
-        assertEquals("position", ctx.currentArg!!.paramName)
+        assertEquals("position", ctx.currentArg.paramName)
         assertEquals("bottom", ctx.valuePrefix)
     }
 

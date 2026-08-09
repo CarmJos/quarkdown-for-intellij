@@ -137,7 +137,6 @@
                 implementation="cc.carm.plugin.intellij.quarkdown.ui.floating.FloatingToolbarGroupProvider"/>
 
 
-
         <!-- Go-to-declaration / find-usages for .ref {id}, .var {name} and file/image paths -->
         <psi.referenceContributor
                 language="Quarkdown"
@@ -227,7 +226,8 @@
                 icon="cc.carm.plugin.intellij.quarkdown.QuarkdownIcons.FILE"/>
 
         <!-- "Quarkdown Build" run configuration type (executes quarkdown compile with PDF export through the IDE Run tool window) -->
-        <configurationType implementation="cc.carm.plugin.intellij.quarkdown.lang.preview.QuarkdownBuildConfigurationType"/>
+        <configurationType
+                implementation="cc.carm.plugin.intellij.quarkdown.lang.preview.QuarkdownBuildConfigurationType"/>
 
         <notificationGroup id="Quarkdown" displayType="BALLOON"/>
     </extensions>
@@ -241,7 +241,8 @@
         </action>
 
         <!-- Toolbar of the Quarkdown preview tool window -->
-        <group id="Quarkdown.PreviewActions" compact="true" text="Quarkdown Preview" description="Quarkdown preview actions">
+        <group id="Quarkdown.PreviewActions" compact="true" text="Quarkdown Preview"
+               description="Quarkdown preview actions">
             <action id="Quarkdown.Preview.Toggle"
                     class="cc.carm.plugin.intellij.quarkdown.action.preview.QuarkdownPreviewToggleAction"
                     icon="cc.carm.plugin.intellij.quarkdown.QuarkdownIcons.PREVIEW_PLAY"
@@ -291,7 +292,8 @@
                 icon="cc.carm.plugin.intellij.quarkdown.QuarkdownIcons.TABLE_FORMAT"
                 text="Format Table"
                 description="Re-align the table"/>
-        <group id="Quarkdown.TableActions" compact="true" class="cc.carm.plugin.intellij.quarkdown.action.table.TableActionsGroup">
+        <group id="Quarkdown.TableActions" compact="true"
+               class="cc.carm.plugin.intellij.quarkdown.action.table.TableActionsGroup">
             <group id="Quarkdown.TableRowActions" compact="true">
                 <reference ref="Quarkdown.Table.FormatTable"/>
                 <separator/>

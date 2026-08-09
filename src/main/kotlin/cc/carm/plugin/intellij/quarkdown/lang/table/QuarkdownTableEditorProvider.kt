@@ -1,20 +1,17 @@
 ﻿@file:Suppress("UnstableApiUsage")
+
 package cc.carm.plugin.intellij.quarkdown.lang.table
+
 import cc.carm.plugin.intellij.quarkdown.QuarkdownFileType
-import com.intellij.codeInsight.hints.ChangeListener
-import com.intellij.codeInsight.hints.FactoryInlayHintsCollector
-import com.intellij.codeInsight.hints.ImmediateConfigurable
-import com.intellij.codeInsight.hints.InlayHintsCollector
-import com.intellij.codeInsight.hints.InlayHintsProvider
-import com.intellij.codeInsight.hints.InlayHintsSink
-import com.intellij.codeInsight.hints.NoSettings
-import com.intellij.codeInsight.hints.SettingsKey
+import com.intellij.codeInsight.hints.*
 import com.intellij.openapi.editor.Editor
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
 import javax.swing.JComponent
 import javax.swing.JPanel
+
 private val QUARKDOWN_TABLE_EDITOR_KEY = SettingsKey<NoSettings>("quarkdown.table.editor")
+
 /**
  * Inlay-hint based floating table editor for Quarkdown documents (mirrors the IntelliJ
  * Markdown plugin):
@@ -33,15 +30,18 @@ class QuarkdownTableEditorProvider : InlayHintsProvider<NoSettings> {
     ): InlayHintsCollector? {
         return if (file.fileType is QuarkdownFileType) Collector(editor) else null
     }
+
     override fun createSettings(): NoSettings = NoSettings()
     override val key: SettingsKey<NoSettings> = QUARKDOWN_TABLE_EDITOR_KEY
     override val name: String = "Quarkdown table editor"
-    override val previewText: String? =
+    override val previewText: String =
         "| Header 1 | Header 2 |\n|:---------|---------:|\n| Cell 1   | Cell 2   |"
+
     override fun createConfigurable(settings: NoSettings): ImmediateConfigurable =
         object : ImmediateConfigurable {
             override fun createComponent(listener: ChangeListener): JComponent = JPanel()
         }
+
     internal class CollectorForTest(private val editor: Editor) : Collector(editor)
 
     internal open class Collector(private val editor: Editor) : FactoryInlayHintsCollector(editor) {

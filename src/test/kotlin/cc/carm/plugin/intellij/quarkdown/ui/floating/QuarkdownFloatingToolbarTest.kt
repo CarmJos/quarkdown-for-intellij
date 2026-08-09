@@ -3,9 +3,6 @@ package cc.carm.plugin.intellij.quarkdown.ui.floating
 import com.intellij.openapi.actionSystem.ActionGroup
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertTrue
 
 /**
  * Verifies the floating formatting toolbar group is registered with the ActionManager and

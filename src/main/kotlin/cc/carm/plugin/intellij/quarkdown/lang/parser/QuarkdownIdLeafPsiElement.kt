@@ -24,7 +24,7 @@ class QuarkdownIdLeafPsiElement(type: IElementType, text: CharSequence) :
     LeafPsiElement(type, text), ContributedReferenceHost, PsiNamedElement {
 
     override fun getName(): String? {
-        val t = this.text ?: return null
+        val t = this.text
         return when {
             t.startsWith("{#") && t.endsWith("}") -> t.substring(2, t.length - 1)
             t.startsWith("{") && t.endsWith("}") -> t.substring(1, t.length - 1)
@@ -33,7 +33,7 @@ class QuarkdownIdLeafPsiElement(type: IElementType, text: CharSequence) :
     }
 
     override fun setName(name: String): PsiElement {
-        val t = this.text ?: return this
+        val t = this.text
         val newText = when {
             t.startsWith("{#") && t.endsWith("}") -> "{#$name}"
             t.startsWith("{") && t.endsWith("}") -> "{$name}"

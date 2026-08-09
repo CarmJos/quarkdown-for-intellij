@@ -1,4 +1,5 @@
 @file:Suppress("UnstableApiUsage")
+
 package cc.carm.plugin.intellij.quarkdown.lang.inlay
 
 import cc.carm.plugin.intellij.quarkdown.QuarkdownFileType
@@ -6,14 +7,7 @@ import cc.carm.plugin.intellij.quarkdown.lang.function.FunctionMetadata
 import cc.carm.plugin.intellij.quarkdown.lang.function.FunctionRegistry
 import cc.carm.plugin.intellij.quarkdown.lang.function.QuarkdownCallParser
 import cc.carm.plugin.intellij.quarkdown.lang.function.QuarkdownCallValidator
-import com.intellij.codeInsight.hints.ChangeListener
-import com.intellij.codeInsight.hints.FactoryInlayHintsCollector
-import com.intellij.codeInsight.hints.ImmediateConfigurable
-import com.intellij.codeInsight.hints.InlayHintsCollector
-import com.intellij.codeInsight.hints.InlayHintsProvider
-import com.intellij.codeInsight.hints.InlayHintsSink
-import com.intellij.codeInsight.hints.NoSettings
-import com.intellij.codeInsight.hints.SettingsKey
+import com.intellij.codeInsight.hints.*
 import com.intellij.codeInsight.hints.presentation.SequencePresentation
 import com.intellij.openapi.editor.Editor
 import com.intellij.psi.PsiElement
@@ -49,7 +43,7 @@ class QuarkdownParameterNameInlayProvider : InlayHintsProvider<NoSettings> {
     override fun createSettings(): NoSettings = NoSettings()
     override val key: SettingsKey<NoSettings> = QUARKDOWN_PARAMETER_NAME_KEY
     override val name: String = "Quarkdown parameter name hints"
-    override val previewText: String? =
+    override val previewText: String =
         ".pagemargin {bottomcenter}\n.multiply {6} by:{3}\n.row {.col {content}}"
 
     override fun createConfigurable(settings: NoSettings): ImmediateConfigurable =

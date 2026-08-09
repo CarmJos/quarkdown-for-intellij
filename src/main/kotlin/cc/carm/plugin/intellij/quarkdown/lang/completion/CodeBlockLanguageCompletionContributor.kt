@@ -1,7 +1,7 @@
 package cc.carm.plugin.intellij.quarkdown.lang.completion
 
-import cc.carm.plugin.intellij.quarkdown.lang.codeblock.CodeBlockLanguageProvider
 import cc.carm.plugin.intellij.quarkdown.QuarkdownFileType
+import cc.carm.plugin.intellij.quarkdown.lang.codeblock.CodeBlockLanguageProvider
 import com.intellij.codeInsight.completion.*
 import com.intellij.codeInsight.lookup.LookupElementBuilder
 import com.intellij.patterns.PlatformPatterns

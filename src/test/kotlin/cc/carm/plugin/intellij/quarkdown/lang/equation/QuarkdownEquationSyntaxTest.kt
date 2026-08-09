@@ -1,8 +1,6 @@
 package cc.carm.plugin.intellij.quarkdown.lang.equation
 
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
+import org.junit.Assert.*
 import org.junit.Test
 
 class QuarkdownEquationSyntaxTest {

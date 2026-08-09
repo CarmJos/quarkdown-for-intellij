@@ -5,7 +5,6 @@ import cc.carm.plugin.intellij.quarkdown.lang.function.FunctionRegistry
 import cc.carm.plugin.intellij.quarkdown.settings.QuarkdownPathDetector
 import cc.carm.plugin.intellij.quarkdown.settings.QuarkdownSettings
 import com.intellij.openapi.actionSystem.IdeActions
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.editor.actionSystem.EditorActionManager

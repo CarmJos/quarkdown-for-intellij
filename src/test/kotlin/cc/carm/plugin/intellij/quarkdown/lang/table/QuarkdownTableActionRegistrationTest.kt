@@ -5,8 +5,6 @@ import com.intellij.openapi.actionSystem.ActionGroup
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
-import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertTrue
 
 /**
  * Verifies the floating-toolbar action groups are actually registered with the
@@ -44,7 +42,7 @@ class QuarkdownTableActionRegistrationTest : BasePlatformTestCase() {
 
     fun `test format table is the first button in row actions`() {
         val group = ActionManager.getInstance().getAction("Quarkdown.TableRowActions") as ActionGroup
-        val first = group.getChildren(null).firstNotNullOfOrNull { it as? AnAction }
+        val first = group.getChildren(null).firstNotNullOfOrNull { it }
         assertTrue(
             "row group should start with FormatTableAction, got: $first",
             first is FormatTableAction
@@ -53,7 +51,7 @@ class QuarkdownTableActionRegistrationTest : BasePlatformTestCase() {
 
     fun `test format table is the first button in column actions`() {
         val group = ActionManager.getInstance().getAction("Quarkdown.TableColumnActions") as ActionGroup
-        val first = group.getChildren(null).firstNotNullOfOrNull { it as? AnAction }
+        val first = group.getChildren(null).firstNotNullOfOrNull { it }
         assertTrue(
             "column group should start with FormatTableAction, got: $first",
             first is FormatTableAction

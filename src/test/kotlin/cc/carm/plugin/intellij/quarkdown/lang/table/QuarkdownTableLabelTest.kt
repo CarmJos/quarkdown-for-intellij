@@ -2,10 +2,6 @@ package cc.carm.plugin.intellij.quarkdown.lang.table
 
 import cc.carm.plugin.intellij.quarkdown.action.table.TableDialog
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
 
 /**
  * Verifies parsing/building of a Quarkdown table's trailing `"label" {#id}` line.
@@ -13,8 +9,8 @@ import org.junit.Assert.assertTrue
 class QuarkdownTableLabelTest : BasePlatformTestCase() {
 
     private val plainTable = "| Device | IP Address    |\n" +
-        "|:------:|:-------------:|\n" +
-        "| PC     | 192.168.1.100 |\n"
+            "|:------:|:-------------:|\n" +
+            "| PC     | 192.168.1.100 |\n"
 
     fun `test table without label line has null label`() {
         val block = QuarkdownTableModificationUtils.findTableBlocks(plainTable).first()
@@ -27,7 +23,7 @@ class QuarkdownTableLabelTest : BasePlatformTestCase() {
         val block = QuarkdownTableModificationUtils.findTableBlocks(text).first()
         assertNotNull(block.labelLine)
         assertTrue(block.labelLine!!.contains("Device IP Table"))
-        assertTrue(block.labelLine!!.contains("#device-ip-table"))
+        assertTrue(block.labelLine.contains("#device-ip-table"))
     }
 
     fun `test label line shares indentation`() {

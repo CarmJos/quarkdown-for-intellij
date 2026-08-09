@@ -6,12 +6,7 @@ import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.TextRange
 import com.intellij.openapi.vfs.VirtualFile
-import com.intellij.psi.PsiElement
-import com.intellij.psi.PsiElementResolveResult
-import com.intellij.psi.PsiManager
-import com.intellij.psi.PsiPolyVariantReferenceBase
-import com.intellij.psi.PsiReference
-import com.intellij.psi.ResolveResult
+import com.intellij.psi.*
 import com.intellij.psi.search.FileTypeIndex
 import com.intellij.psi.search.GlobalSearchScope
 
@@ -59,15 +54,19 @@ class QuarkdownReference(
             "label" -> findAllRefUsages(project, virtualFile)
                 .map { PsiElementResolveResult(it) }
                 .toTypedArray()
+
             "ref" -> resolveRef(project, virtualFile)
                 ?.let { arrayOf(PsiElementResolveResult(it)) }
                 ?: emptyArray()
+
             "var" -> resolveVar(project, virtualFile)
                 ?.let { arrayOf(PsiElementResolveResult(it)) }
                 ?: emptyArray()
+
             "var-decl" -> findAllVarUsages(project, virtualFile)
                 .map { PsiElementResolveResult(it) }
                 .toTypedArray()
+
             else -> resolve()
                 ?.let { arrayOf(PsiElementResolveResult(it)) }
                 ?: emptyArray()
@@ -87,7 +86,7 @@ class QuarkdownReference(
         val targetRange = element.textRange
         return anchors.any { anchor ->
             anchor.referenceText.trim().equals(id, ignoreCase = true) &&
-                TextRange(anchor.start, anchor.end).intersects(targetRange)
+                    TextRange(anchor.start, anchor.end).intersects(targetRange)
         }
     }
 
@@ -96,7 +95,7 @@ class QuarkdownReference(
      * according to this reference's type. This lets Find Usages match any leaf of a
      * multi-leaf (hyphenated) id.
      */
-    private fun declarationIdRange(file: com.intellij.psi.PsiFile, id: String): TextRange? {
+    private fun declarationIdRange(file: PsiFile, id: String): TextRange? {
         if (id.isEmpty()) return null
         val escaped = Regex.escape(id)
         val pattern = when (referenceType) {
@@ -193,7 +192,7 @@ class QuarkdownReference(
     ): PsiElement? {
         val psiManager = PsiManager.getInstance(project)
         val scope = GlobalSearchScope.projectScope(project)
-        val fileType = cc.carm.plugin.intellij.quarkdown.QuarkdownFileType.INSTANCE
+        val fileType = QuarkdownFileType.INSTANCE
         val qdFiles = FileTypeIndex.getFiles(fileType, scope).mapNotNull { psiManager.findFile(it) }
         val orderedFiles = if (sourceFileFirst) listOfNotNull(psiManager.findFile(sourceFile)) + qdFiles else qdFiles
 
@@ -210,7 +209,7 @@ class QuarkdownReference(
     override fun handleElementRename(newElementName: String): PsiElement {
         // Replace the reference text inside the current element with the new name.
         val file = element.containingFile ?: return element
-        val document = file.viewProvider?.document ?: return element
+        val document = file.viewProvider.document ?: return element
         if (!element.isValid) return element
 
         val absoluteStart = element.textRange.startOffset + rangeInElement.startOffset
@@ -224,16 +223,16 @@ class QuarkdownReference(
 
         WriteCommandAction.runWriteCommandAction(element.project) {
             document.replaceString(absoluteStart, absoluteEnd, newElementName)
-            com.intellij.psi.PsiDocumentManager.getInstance(element.project).commitDocument(document)
+            PsiDocumentManager.getInstance(element.project).commitDocument(document)
         }
         return element
     }
-      
+
     override fun bindToElement(targetElement: PsiElement): PsiElement {
         // Text-based references cannot be rebound to an arbitrary element.
         return element
     }
-      
+
     override fun getVariants(): Array<Any> = emptyArray()
 
     /** Creates a reference for the given anchor (used by Find Usages / rename). */
@@ -258,7 +257,7 @@ class QuarkdownReference(
             val headingText = hMatch.groupValues[1].trim()
             // explicit label on the heading: `# Heading {#id}`, or slug fallback
             Regex("""\{#\s*$escapedId\s*}""", RegexOption.IGNORE_CASE).find(headingText) != null ||
-                headingText.lowercase().replace(Regex("""[^a-z0-9]+"""), "-").trim('-') == slugTarget
+                    headingText.lowercase().replace(Regex("""[^a-z0-9]+"""), "-").trim('-') == slugTarget
         }
     }
 
@@ -280,11 +279,11 @@ class QuarkdownReference(
     private fun resolvePathVariables(sourceFile: VirtualFile, path: String): String {
         // Pattern to match variable references: .varName (not preceded by a letter/digit/underscore)
         val varRefPattern = Regex("""(?<!\w)\.([a-zA-Z][a-zA-Z0-9]*)""")
-        
+
         // Find all variable declarations in the source file
         val sourcePsiFile = PsiManager.getInstance(element.project).findFile(sourceFile) ?: return path
         val varDeclarations = QuarkdownCallParser.findVarDeclarations(sourcePsiFile.text)
-        
+
         // Replace variable references with their values
         return varRefPattern.replace(path) { match ->
             val varName = match.groupValues[1].lowercase()

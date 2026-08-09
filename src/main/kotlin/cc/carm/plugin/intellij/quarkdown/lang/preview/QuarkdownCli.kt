@@ -208,6 +208,7 @@ object QuarkdownCli {
                     tokens.add(current.toString())
                     current.setLength(0)
                 }
+
                 else -> current.append(c)
             }
         }

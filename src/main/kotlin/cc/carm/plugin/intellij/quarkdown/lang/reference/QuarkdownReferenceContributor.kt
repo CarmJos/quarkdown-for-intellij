@@ -4,12 +4,7 @@ import cc.carm.plugin.intellij.quarkdown.QuarkdownFileType
 import cc.carm.plugin.intellij.quarkdown.QuarkdownLanguage
 import com.intellij.openapi.util.TextRange
 import com.intellij.patterns.PlatformPatterns
-import com.intellij.psi.PsiElement
-import com.intellij.psi.PsiFile
-import com.intellij.psi.PsiReference
-import com.intellij.psi.PsiReferenceContributor
-import com.intellij.psi.PsiReferenceProvider
-import com.intellij.psi.PsiReferenceRegistrar
+import com.intellij.psi.*
 import com.intellij.psi.impl.source.tree.LeafPsiElement
 import com.intellij.util.ProcessingContext
 
@@ -40,7 +35,14 @@ class QuarkdownReferenceContributor : PsiReferenceContributor() {
             if (element is PsiFile) {
                 val anchors = QuarkdownReferenceAnchors.of(psiFile)
                 return anchors
-                    .map { QuarkdownReference(element, it.referenceText, it.referenceType, TextRange(it.start, it.end)) }
+                    .map {
+                        QuarkdownReference(
+                            element,
+                            it.referenceText,
+                            it.referenceType,
+                            TextRange(it.start, it.end)
+                        )
+                    }
                     .toTypedArray()
             }
             if (element !is LeafPsiElement) return PsiReference.EMPTY_ARRAY

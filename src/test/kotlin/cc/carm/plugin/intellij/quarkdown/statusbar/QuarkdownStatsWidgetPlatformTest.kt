@@ -1,11 +1,8 @@
 package cc.carm.plugin.intellij.quarkdown.statusbar
 
-import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.wm.StatusBarWidget
 import com.intellij.openapi.wm.StatusBarWidgetFactory
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
 
 /**
  * Verifies the Quarkdown word & paragraph status-bar widget is registered on the

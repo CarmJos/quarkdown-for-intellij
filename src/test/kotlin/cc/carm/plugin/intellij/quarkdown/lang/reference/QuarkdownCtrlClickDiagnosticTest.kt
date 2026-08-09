@@ -118,13 +118,15 @@ class QuarkdownCtrlClickDiagnosticTest : BasePlatformTestCase() {
         val target = myFixture.file.findElementAt(labelStart)
         assertNotNull("no leaf at label", target)
 
-        val factory = cc.carm.plugin.intellij.quarkdown.lang.reference.QuarkdownFindUsagesHandlerFactory()
+        val factory = QuarkdownFindUsagesHandlerFactory()
         assertTrue("factory should handle the label element", factory.canFindUsages(target!!))
 
         val handler = factory.createFindUsagesHandler(target, false)
         assertNotNull("handler should be created", handler)
-        assertTrue("handler should be QuarkdownFindUsagesHandler",
-            handler is cc.carm.plugin.intellij.quarkdown.lang.reference.QuarkdownFindUsagesHandler)
+        assertTrue(
+            "handler should be QuarkdownFindUsagesHandler",
+            handler is QuarkdownFindUsagesHandler
+        )
 
         val usages = mutableListOf<com.intellij.usageView.UsageInfo>()
         val options = com.intellij.find.findUsages.FindUsagesOptions(
@@ -138,7 +140,7 @@ class QuarkdownCtrlClickDiagnosticTest : BasePlatformTestCase() {
 
         System.out.println("handler reported ${usages.size} usages")
         for (u in usages) {
-            System.out.println("  usage at ${u.element?.textOffset} text='${u.element?.text}' range=${u.getRangeInElement()}")
+            System.out.println("  usage at ${u.element?.textOffset} text='${u.element?.text}' range=${u.rangeInElement}")
         }
         assertTrue(
             "handler should report both .ref usages + declaration, got ${usages.size}",
@@ -199,11 +201,17 @@ class QuarkdownCtrlClickDiagnosticTest : BasePlatformTestCase() {
         assertEquals("handler should return both .ref usages for the underline, got ${targets.size}", 2, targets.size)
 
         // The FindUsagesHandler backing the Show Usages popup reports both usages + declaration.
-        val factory = cc.carm.plugin.intellij.quarkdown.lang.reference.QuarkdownFindUsagesHandlerFactory()
+        val factory = QuarkdownFindUsagesHandlerFactory()
         val handler = factory.createFindUsagesHandler(labelLeaf, false)
         val usages = mutableListOf<com.intellij.usageView.UsageInfo>()
-        handler.processElementUsages(labelLeaf, com.intellij.util.Processor { usages.add(it); true },
-            com.intellij.find.findUsages.FindUsagesOptions(com.intellij.psi.search.GlobalSearchScope.projectScope(project)))
+        handler.processElementUsages(
+            labelLeaf, com.intellij.util.Processor { usages.add(it); true },
+            com.intellij.find.findUsages.FindUsagesOptions(
+                com.intellij.psi.search.GlobalSearchScope.projectScope(
+                    project
+                )
+            )
+        )
         assertTrue("Show Usages popup should list both .ref usages + declaration, got ${usages.size}", usages.size >= 3)
     }
 
@@ -243,7 +251,10 @@ class QuarkdownCtrlClickDiagnosticTest : BasePlatformTestCase() {
         assertEquals("hover should return both .ref usages (for underline), got ${results.size}", 2, results.size)
         for (r in results) {
             // Targets are the .ref id leaves (QuarkdownIdLeafPsiElement).
-            assertTrue("hover target should be a PsiElement leaf", r is com.intellij.psi.PsiElement && r.textRange.length > 0)
+            assertTrue(
+                "hover target should be a PsiElement leaf",
+                r is com.intellij.psi.PsiElement && r.textRange.length > 0
+            )
         }
     }
 
@@ -305,17 +316,23 @@ class QuarkdownCtrlClickDiagnosticTest : BasePlatformTestCase() {
         // The official ShowUsagesAction.startFindUsages resolves this handler via the
         // FindUsagesManager. It must report both .ref usages + the declaration, each with
         // a precise position so the native Show Usages window can render file/line/preview.
-        val factory = cc.carm.plugin.intellij.quarkdown.lang.reference.QuarkdownFindUsagesHandlerFactory()
+        val factory = QuarkdownFindUsagesHandlerFactory()
         assertTrue("factory should handle the label element", factory.canFindUsages(labelLeaf!!))
 
         val handler = factory.createFindUsagesHandler(labelLeaf, false)
         val usages = mutableListOf<com.intellij.usageView.UsageInfo>()
-        handler.processElementUsages(labelLeaf, com.intellij.util.Processor { usages.add(it); true },
-            com.intellij.find.findUsages.FindUsagesOptions(com.intellij.psi.search.GlobalSearchScope.projectScope(project)))
+        handler.processElementUsages(
+            labelLeaf, com.intellij.util.Processor { usages.add(it); true },
+            com.intellij.find.findUsages.FindUsagesOptions(
+                com.intellij.psi.search.GlobalSearchScope.projectScope(
+                    project
+                )
+            )
+        )
 
         System.out.println("official handler collected ${usages.size} usages")
         for (u in usages) {
-            System.out.println("  at ${u.element?.textOffset} text='${u.element?.text}' range=${u.getRangeInElement()}")
+            System.out.println("  at ${u.element?.textOffset} text='${u.element?.text}' range=${u.rangeInElement}")
         }
         assertEquals("declaration + 2 usages", 3, usages.size)
     }
@@ -328,7 +345,7 @@ class QuarkdownCtrlClickDiagnosticTest : BasePlatformTestCase() {
         val labelLeaf = myFixture.file.findElementAt(labelStart)
         assertNotNull("no leaf at label", labelLeaf)
 
-        val factory = cc.carm.plugin.intellij.quarkdown.lang.reference.QuarkdownFindUsagesHandlerFactory()
+        val factory = QuarkdownFindUsagesHandlerFactory()
         val handler = factory.createFindUsagesHandler(labelLeaf!!, false)
 
         // The native Show Usages search runs on a pooled thread without a read action;
@@ -338,8 +355,14 @@ class QuarkdownCtrlClickDiagnosticTest : BasePlatformTestCase() {
         val done = java.util.concurrent.CountDownLatch(1)
         com.intellij.openapi.application.ApplicationManager.getApplication().executeOnPooledThread {
             try {
-                handler.processElementUsages(labelLeaf, com.intellij.util.Processor { usages.add(it); true },
-                    com.intellij.find.findUsages.FindUsagesOptions(com.intellij.psi.search.GlobalSearchScope.projectScope(project)))
+                handler.processElementUsages(
+                    labelLeaf, com.intellij.util.Processor { usages.add(it); true },
+                    com.intellij.find.findUsages.FindUsagesOptions(
+                        com.intellij.psi.search.GlobalSearchScope.projectScope(
+                            project
+                        )
+                    )
+                )
             } catch (t: Throwable) {
                 errors.add(t)
                 t.printStackTrace()
@@ -357,7 +380,7 @@ class QuarkdownCtrlClickDiagnosticTest : BasePlatformTestCase() {
         val text = "First .ref {click-label}.\nSecond .ref {click-label}.\n\n{#click-label}"
         myFixture.configureByText("click-label.qd", text)
 
-        val listener = cc.carm.plugin.intellij.quarkdown.lang.reference.QuarkdownEditorMouseListener()
+        val listener = QuarkdownEditorMouseListener()
 
         // Offset inside the {#click-label} declaration.
         val labelStart = text.indexOf("{#click-label}") + 2
@@ -393,7 +416,7 @@ class QuarkdownCtrlClickDiagnosticTest : BasePlatformTestCase() {
         assertEquals("title-test", longName)
 
         // The FindUsagesProvider agrees: type = "References", descriptive name = bare id.
-        val provider = cc.carm.plugin.intellij.quarkdown.lang.reference.QuarkdownFindUsagesProvider()
+        val provider = QuarkdownFindUsagesProvider()
         assertEquals("References", provider.getType(labelLeaf))
         assertEquals("title-test", provider.getDescriptiveName(labelLeaf))
     }

@@ -1,7 +1,7 @@
 package cc.carm.plugin.intellij.quarkdown.lang.psi
 
-import com.intellij.psi.tree.IElementType
 import cc.carm.plugin.intellij.quarkdown.QuarkdownLanguage
+import com.intellij.psi.tree.IElementType
 
 object QuarkdownTypes {
 

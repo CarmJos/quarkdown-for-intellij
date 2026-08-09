@@ -14,9 +14,9 @@ import com.intellij.psi.PsiFile
  * auto-expansion. The tree is built from [QuarkdownStructureTreeElement]
  * nodes that walk the PSI heading hierarchy.
  */
-class QuarkdownStructureViewModel(psiFile: PsiFile, editor: Editor?)
-    : StructureViewModelBase(psiFile, editor, QuarkdownStructureTreeElement(psiFile)),
-      StructureViewModel.ElementInfoProvider {
+class QuarkdownStructureViewModel(psiFile: PsiFile, editor: Editor?) :
+    StructureViewModelBase(psiFile, editor, QuarkdownStructureTreeElement(psiFile)),
+    StructureViewModel.ElementInfoProvider {
 
     override fun isAlwaysShowsPlus(structureViewTreeElement: StructureViewTreeElement): Boolean {
         // Show "+" expand icon when there are nested headings

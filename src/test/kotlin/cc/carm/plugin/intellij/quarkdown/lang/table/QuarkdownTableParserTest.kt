@@ -2,10 +2,7 @@ package cc.carm.plugin.intellij.quarkdown.lang.table
 
 import cc.carm.plugin.intellij.quarkdown.lang.table.QuarkdownTableParser.Alignment
 import cc.carm.plugin.intellij.quarkdown.lang.table.QuarkdownTableParser.Table
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
+import org.junit.Assert.*
 import org.junit.Test
 
 class QuarkdownTableParserTest {

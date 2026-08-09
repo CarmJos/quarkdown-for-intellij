@@ -1,15 +1,12 @@
 ﻿package cc.carm.plugin.intellij.quarkdown.lang.table
 
-import cc.carm.plugin.intellij.quarkdown.QuarkdownLanguage
-import com.intellij.codeInsight.hints.FactoryInlayHintsCollector
-import com.intellij.codeInsight.hints.InlayHintsSink
 import com.intellij.codeInsight.hints.BlockConstraints
 import com.intellij.codeInsight.hints.HorizontalConstraints
+import com.intellij.codeInsight.hints.InlayHintsSink
 import com.intellij.codeInsight.hints.presentation.InlayPresentation
 import com.intellij.codeInsight.hints.presentation.RootInlayPresentation
 import com.intellij.psi.PsiFile
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
-import org.junit.Assert.assertTrue
 
 /**
  * Directly drives the table inlay collector against a real Quarkdown document to verify
@@ -21,7 +18,12 @@ class QuarkdownInlayIntegrationTest : BasePlatformTestCase() {
         val inlineElements = mutableListOf<Int>()
         val blockElements = mutableListOf<Pair<Int, InlayPresentation>>()
 
-        override fun addInlineElement(offset: Int, relatesToPrecedingText: Boolean, presentation: InlayPresentation, visible: Boolean) {
+        override fun addInlineElement(
+            offset: Int,
+            relatesToPrecedingText: Boolean,
+            presentation: InlayPresentation,
+            visible: Boolean
+        ) {
             inlineElements += offset
         }
 
@@ -35,11 +37,20 @@ class QuarkdownInlayIntegrationTest : BasePlatformTestCase() {
             blockElements += offset to presentation
         }
 
-        override fun addInlineElement(offset: Int, presentation: RootInlayPresentation<*>, constraints: HorizontalConstraints?) {
+        override fun addInlineElement(
+            offset: Int,
+            presentation: RootInlayPresentation<*>,
+            constraints: HorizontalConstraints?
+        ) {
             inlineElements += offset
         }
 
-        override fun addBlockElement(logicalLine: Int, showAbove: Boolean, presentation: RootInlayPresentation<*>, constraints: BlockConstraints?) {
+        override fun addBlockElement(
+            logicalLine: Int,
+            showAbove: Boolean,
+            presentation: RootInlayPresentation<*>,
+            constraints: BlockConstraints?
+        ) {
             blockElements += logicalLine to presentation
         }
     }
@@ -53,8 +64,14 @@ class QuarkdownInlayIntegrationTest : BasePlatformTestCase() {
         val file = myFixture.file as PsiFile
         collector.collect(file, editor, sink)
 
-        assertTrue("should produce a horizontal block bar, got ${sink.blockElements.size}", sink.blockElements.size == 1)
-        assertTrue("should produce vertical bars for each row (3), got ${sink.inlineElements.size}", sink.inlineElements.size == 3)
+        assertTrue(
+            "should produce a horizontal block bar, got ${sink.blockElements.size}",
+            sink.blockElements.size == 1
+        )
+        assertTrue(
+            "should produce vertical bars for each row (3), got ${sink.inlineElements.size}",
+            sink.inlineElements.size == 3
+        )
     }
 
     fun `test no bars for non-table content`() {
@@ -64,7 +81,10 @@ class QuarkdownInlayIntegrationTest : BasePlatformTestCase() {
         val sink = RecordingSink()
         collector.collect(myFixture.file as PsiFile, editor, sink)
 
-        assertTrue("no bars expected, got block=${sink.blockElements.size} inline=${sink.inlineElements.size}", sink.blockElements.isEmpty() && sink.inlineElements.isEmpty())
+        assertTrue(
+            "no bars expected, got block=${sink.blockElements.size} inline=${sink.inlineElements.size}",
+            sink.blockElements.isEmpty() && sink.inlineElements.isEmpty()
+        )
     }
 
     fun `test collector re-produces bars after document change`() {
@@ -78,7 +98,7 @@ class QuarkdownInlayIntegrationTest : BasePlatformTestCase() {
 
         // Simulate the dialog's live "Format Table" write: the table gets wider.
         com.intellij.openapi.command.WriteCommandAction.runWriteCommandAction(project) {
-            myFixture.editor.document.setText("| H1       | H2       |\n|:--------:|:--------:|\n| a        | b        |")
+            myFixture.editor.document.text = "| H1       | H2       |\n|:--------:|:--------:|\n| a        | b        |"
         }
 
         // Re-collect with the SAME collector instance (mirrors a reused inlay pass).

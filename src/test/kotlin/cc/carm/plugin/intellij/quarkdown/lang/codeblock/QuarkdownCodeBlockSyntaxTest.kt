@@ -1,9 +1,6 @@
 package cc.carm.plugin.intellij.quarkdown.lang.codeblock
 
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
+import org.junit.Assert.*
 import org.junit.Test
 
 class QuarkdownCodeBlockSyntaxTest {
@@ -86,7 +83,8 @@ class QuarkdownCodeBlockSyntaxTest {
 
     @Test
     fun `parses code function line with lang caption and ref`() {
-        val info = QuarkdownCodeBlockSyntax.parseCodeFunctionLine(".code lang:{python} caption:{Fibonacci function} ref:{example}")!!
+        val info =
+            QuarkdownCodeBlockSyntax.parseCodeFunctionLine(".code lang:{python} caption:{Fibonacci function} ref:{example}")!!
         assertEquals("", info.indent)
         assertEquals("python", info.language)
         assertEquals("Fibonacci function", info.caption)

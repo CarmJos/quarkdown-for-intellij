@@ -2,8 +2,6 @@ package cc.carm.plugin.intellij.quarkdown.lang.completion
 
 import cc.carm.plugin.intellij.quarkdown.lang.function.FunctionRegistry
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
-import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertTrue
 
 /**
  * Verifies function-name completion produces grammatically correct results.
@@ -86,7 +84,13 @@ class QuarkdownCompletionPlatformTest : BasePlatformTestCase() {
         // `.background:{}` came from PARAMETER completion. After a dot, only plain
         // function names may be offered — never `name:{}` fragments.
         assertTrue(
-            "no parameter completion should appear after a dot, got: ${collected.filter { it.contains(":") || it.contains("{") }}",
+            "no parameter completion should appear after a dot, got: ${
+                collected.filter {
+                    it.contains(":") || it.contains(
+                        "{"
+                    )
+                }
+            }",
             collected.none { it.contains(":") || it.contains("{") }
         )
     }
@@ -109,7 +113,13 @@ class QuarkdownCompletionPlatformTest : BasePlatformTestCase() {
         assertTrue("should list many functions", collected.size > 100)
         // No parameter completions (which appear as `name:{}` fragments) may leak here.
         assertTrue(
-            "no parameter completion may leak after a new-line dot, got: ${collected.filter { it.contains(":") || it.contains("{") }}",
+            "no parameter completion may leak after a new-line dot, got: ${
+                collected.filter {
+                    it.contains(":") || it.contains(
+                        "{"
+                    )
+                }
+            }",
             collected.none { it.contains(":") || it.contains("{") }
         )
     }

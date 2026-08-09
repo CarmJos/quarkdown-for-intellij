@@ -9,10 +9,10 @@ class QuarkdownTableModificationUtilsTest {
     @Test
     fun `finds a simple table block`() {
         val text = "Before\n" +
-            "| H1 | H2 |\n" +
-            "|----|----|\n" +
-            "| a  | b  |\n" +
-            "After"
+                "| H1 | H2 |\n" +
+                "|----|----|\n" +
+                "| a  | b  |\n" +
+                "After"
         val blocks = QuarkdownTableModificationUtils.findTableBlocks(text)
         assertEquals(1, blocks.size)
         val block = blocks[0]

@@ -1,8 +1,5 @@
 package cc.carm.plugin.intellij.quarkdown.lang.reference
 
-import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.util.TextRange
-import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.PsiReference
 import com.intellij.psi.impl.source.resolve.reference.ReferenceProvidersRegistry
 import com.intellij.psi.search.GlobalSearchScope
@@ -32,7 +29,7 @@ class ReferenceResolutionPlatformTest : BasePlatformTestCase() {
 
     @Suppress("DEPRECATION")
     private fun searchReferences(target: com.intellij.psi.PsiElement): Collection<PsiReference> {
-        return com.intellij.psi.search.searches.ReferencesSearch.search(target).findAll()
+        return ReferencesSearch.search(target).findAll()
     }
 
     fun `test var usage reference resolves`() {
@@ -66,7 +63,10 @@ class ReferenceResolutionPlatformTest : BasePlatformTestCase() {
         val elem = myFixture.file.findElementAt(clickOffset)
         System.out.println("clickOffset=$clickOffset elem='${elem?.text}' range=${elem?.textRange}")
         val allRefs = if (elem != null)
-            ReferenceProvidersRegistry.getReferencesFromProviders(elem, com.intellij.psi.PsiReferenceService.Hints.NO_HINTS)
+            ReferenceProvidersRegistry.getReferencesFromProviders(
+                elem,
+                com.intellij.psi.PsiReferenceService.Hints.NO_HINTS
+            )
                 .map { "${it.javaClass.simpleName}(${it.rangeInElement}) resolves=${it.resolve() != null}" }
                 .toList()
         else emptyList()
@@ -199,13 +199,15 @@ class ReferenceResolutionPlatformTest : BasePlatformTestCase() {
 
         // ReferencesSearch must find BOTH `.ref {mybutton}` usages.
         val refs = ReferencesSearch.search(target!!, GlobalSearchScope.projectScope(project)).findAll()
-        System.out.println("find-usages for multi-ref label -> ${refs.size}: " +
-            refs.joinToString { "at ${it.element.textOffset}" })
+        System.out.println(
+            "find-usages for multi-ref label -> ${refs.size}: " +
+                    refs.joinToString { "at ${it.element.textOffset}" })
         assertTrue("expected both .ref usages, got ${refs.size}", refs.size >= 2)
     }
 
     fun `test find usages on hyphenated label finds all usages`() {
-        val text = "One .ref {button-start-action} here.\nTwo .ref {button-start-action} there.\n\n{#button-start-action}"
+        val text =
+            "One .ref {button-start-action} here.\nTwo .ref {button-start-action} there.\n\n{#button-start-action}"
         val file = myFixture.addFileToProject("multi-hyphen.qd", text)
 
         // target = a leaf of the label declaration (e.g. "action")
@@ -214,8 +216,9 @@ class ReferenceResolutionPlatformTest : BasePlatformTestCase() {
         assertNotNull("no element at label id tail", target)
 
         val refs = ReferencesSearch.search(target!!, GlobalSearchScope.projectScope(project)).findAll()
-        System.out.println("find-usages for hyphenated label -> ${refs.size}: " +
-            refs.joinToString { "at ${it.element.textOffset}" })
+        System.out.println(
+            "find-usages for hyphenated label -> ${refs.size}: " +
+                    refs.joinToString { "at ${it.element.textOffset}" })
         assertTrue("expected both hyphenated .ref usages, got ${refs.size}", refs.size >= 2)
     }
 
@@ -296,7 +299,10 @@ class ReferenceResolutionPlatformTest : BasePlatformTestCase() {
 
         val newText = myFixture.file.text
         assertTrue("first .ref should be renamed", newText.contains(".ref {renamed-id}"))
-        assertFalse("old id should be gone in first ref", newText.substring(0, newText.indexOf("\n\n")).contains("rename-me"))
+        assertFalse(
+            "old id should be gone in first ref",
+            newText.substring(0, newText.indexOf("\n\n")).contains("rename-me")
+        )
     }
 
     // ---- Diagnostics: verify bare-id naming used by Find Usages / Rename ----
@@ -309,15 +315,19 @@ class ReferenceResolutionPlatformTest : BasePlatformTestCase() {
         val refIdStart = text.indexOf("{plc-symbol-output}") + 1
         val refLeaf = myFixture.file.findElementAt(refIdStart)
         assertNotNull("no leaf at ref id", refLeaf)
-        System.out.println("refLeaf class=${refLeaf!!.javaClass.simpleName} text='${refLeaf.text}' " +
-            "name=${(refLeaf as? com.intellij.psi.PsiNamedElement)?.name}")
+        System.out.println(
+            "refLeaf class=${refLeaf!!.javaClass.simpleName} text='${refLeaf.text}' " +
+                    "name=${(refLeaf as? com.intellij.psi.PsiNamedElement)?.name}"
+        )
 
         // Leaf at the {#id} label (ID_TAG -> QuarkdownIdLeafPsiElement)
         val labelStart = text.indexOf("{#plc-symbol-output}") + 2
         val labelLeaf = myFixture.file.findElementAt(labelStart)
         assertNotNull("no leaf at label id", labelLeaf)
-        System.out.println("labelLeaf class=${labelLeaf!!.javaClass.simpleName} text='${labelLeaf.text}' " +
-            "name=${(labelLeaf as? com.intellij.psi.PsiNamedElement)?.name}")
+        System.out.println(
+            "labelLeaf class=${labelLeaf!!.javaClass.simpleName} text='${labelLeaf.text}' " +
+                    "name=${(labelLeaf as? com.intellij.psi.PsiNamedElement)?.name}"
+        )
 
         // Id leaves must be PsiNamedElement (Symbol model) with the bare id as name.
         assertTrue("ref leaf must be PsiNamedElement", refLeaf is com.intellij.psi.PsiNamedElement)
@@ -342,10 +352,12 @@ class ReferenceResolutionPlatformTest : BasePlatformTestCase() {
         myFixture.editor.caretModel.moveToOffset(idStart + 3) // caret inside the id
 
         val flags = com.intellij.codeInsight.TargetElementUtil.REFERENCED_ELEMENT_ACCEPTED or
-            com.intellij.codeInsight.TargetElementUtil.ELEMENT_NAME_ACCEPTED
+                com.intellij.codeInsight.TargetElementUtil.ELEMENT_NAME_ACCEPTED
         val target = com.intellij.codeInsight.TargetElementUtil.findTargetElement(myFixture.editor, flags)
-        System.out.println("rename target=$target class=${target?.javaClass?.simpleName} " +
-            "text='${target?.text}'")
+        System.out.println(
+            "rename target=$target class=${target?.javaClass?.simpleName} " +
+                    "text='${target?.text}'"
+        )
 
         assertNotNull("TargetElementUtil should find a rename target", target)
         // The resolved target should be at the {#id} declaration.
@@ -366,8 +378,8 @@ class ReferenceResolutionPlatformTest : BasePlatformTestCase() {
 
         val processor = com.intellij.refactoring.rename.RenamePsiElementProcessor.forElement(target!!)
         assertNotNull("should find rename processor", processor)
-        assertTrue("processor should handle Quarkdown element", processor!!.canProcessElement(target))
-        assertFalse("in-place rename should be disabled", processor.isInplaceRenameSupported())
+        assertTrue("processor should handle Quarkdown element", processor.canProcessElement(target))
+        assertFalse("in-place rename should be disabled", processor.isInplaceRenameSupported)
 
         val refs = ReferencesSearch.search(target, GlobalSearchScope.projectScope(project)).findAll()
         val usages = refs.map { com.intellij.usageView.UsageInfo(it) }.toTypedArray()
@@ -378,8 +390,10 @@ class ReferenceResolutionPlatformTest : BasePlatformTestCase() {
 
         val newText = file.viewProvider.document?.text ?: file.text
         assertTrue("first .ref should be renamed", newText.contains(".ref {renamed-id}"))
-        assertTrue("second .ref should be renamed", newText.indexOf(".ref {renamed-id}") >= 0 &&
-            newText.indexOf(".ref {renamed-id}", newText.indexOf(".ref {renamed-id}") + 1) > 0)
+        assertTrue(
+            "second .ref should be renamed", newText.indexOf(".ref {renamed-id}") >= 0 &&
+                    newText.indexOf(".ref {renamed-id}", newText.indexOf(".ref {renamed-id}") + 1) > 0
+        )
         assertTrue("label should be renamed", newText.contains("{#renamed-id}"))
         assertFalse("old id should not remain", newText.contains("proc-id"))
     }
@@ -397,7 +411,7 @@ class ReferenceResolutionPlatformTest : BasePlatformTestCase() {
 
         val processor = com.intellij.refactoring.rename.RenamePsiElementProcessor.forElement(target!!)
         assertNotNull("should find rename processor", processor)
-        assertTrue(processor!!.canProcessElement(target))
+        assertTrue(processor.canProcessElement(target))
 
         val refs = ReferencesSearch.search(target, GlobalSearchScope.projectScope(project)).findAll()
         val usages = refs.map { com.intellij.usageView.UsageInfo(it) }.toTypedArray()
@@ -416,7 +430,7 @@ class ReferenceResolutionPlatformTest : BasePlatformTestCase() {
     }
 
     fun `test references search ep has executors`() {
-        val executors = com.intellij.psi.search.searches.ReferencesSearch.EP_NAME.extensionList
+        val executors = ReferencesSearch.EP_NAME.extensionList
         assertTrue("ReferencesSearch should have at least one executor", executors.isNotEmpty())
         // Our custom searcher must be among them.
         assertTrue(

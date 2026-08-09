@@ -132,7 +132,12 @@ class QuarkdownLexerTest {
         restarted.start(text, offset, text.length, state)
         val actualFromHere = mutableListOf<Pair<String, String>>()
         while (restarted.tokenType != null) {
-            actualFromHere.add(restarted.tokenType!!.toString() to text.substring(restarted.tokenStart, restarted.tokenEnd))
+            actualFromHere.add(
+                restarted.tokenType!!.toString() to text.substring(
+                    restarted.tokenStart,
+                    restarted.tokenEnd
+                )
+            )
             restarted.advance()
         }
 

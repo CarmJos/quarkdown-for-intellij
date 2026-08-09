@@ -18,14 +18,7 @@ import java.awt.BorderLayout
 import java.awt.FlowLayout
 import java.io.File
 import java.nio.file.Paths
-import javax.swing.Box
-import javax.swing.ButtonGroup
-import javax.swing.JComponent
-import javax.swing.JPanel
-import javax.swing.JSlider
-import javax.swing.SwingConstants
-import javax.swing.SwingUtilities
-import javax.swing.UIManager
+import javax.swing.*
 
 /**
  * Dialog for inserting or editing an image in Quarkdown syntax:
@@ -39,6 +32,7 @@ class ImageDialog(
     enum class Mode {
         /** Creating a new image */
         INSERT,
+
         /** Editing an existing image line */
         EDIT
     }
@@ -163,14 +157,22 @@ class ImageDialog(
         val listener = TextBrowseFolderListener(imageDescriptor, project)
         pf.addBrowseFolderListener(listener)
         pf.addPropertyChangeListener("text") { onPathChanged() }
-        panel.add(pathLabel, GridConstraints(row, 0, 1, 1,
-            GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE,
-            GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED,
-            null, null, null))
-        panel.add(pf, GridConstraints(row, 1, 1, 1,
-            GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL,
-            GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED,
-            null, null, null))
+        panel.add(
+            pathLabel, GridConstraints(
+                row, 0, 1, 1,
+                GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE,
+                GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED,
+                null, null, null
+            )
+        )
+        panel.add(
+            pf, GridConstraints(
+                row, 1, 1, 1,
+                GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL,
+                GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED,
+                null, null, null
+            )
+        )
         row++
 
         val modeLabel = JBLabel("Size Mode:")
@@ -185,28 +187,44 @@ class ImageDialog(
         modePanel.add(pr)
         modePanel.add(Box.createHorizontalStrut(16))
         modePanel.add(fsr)
-        panel.add(modeLabel, GridConstraints(row, 0, 1, 1,
-            GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE,
-            GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED,
-            null, null, null))
-        panel.add(modePanel, GridConstraints(row, 1, 1, 1,
-            GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL,
-            GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED,
-            null, null, null))
+        panel.add(
+            modeLabel, GridConstraints(
+                row, 0, 1, 1,
+                GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE,
+                GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED,
+                null, null, null
+            )
+        )
+        panel.add(
+            modePanel, GridConstraints(
+                row, 1, 1, 1,
+                GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL,
+                GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED,
+                null, null, null
+            )
+        )
         row++
 
         percentPanel = buildPercentPanel()
         fixedSizePanel = buildFixedSizePanel()
         fixedSizePanel?.isVisible = false
 
-        panel.add(percentPanel, GridConstraints(row, 0, 1, 2,
-            GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL,
-            GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED,
-            null, null, null))
-        panel.add(fixedSizePanel, GridConstraints(row, 0, 1, 2,
-            GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL,
-            GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED,
-            null, null, null))
+        panel.add(
+            percentPanel, GridConstraints(
+                row, 0, 1, 2,
+                GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL,
+                GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED,
+                null, null, null
+            )
+        )
+        panel.add(
+            fixedSizePanel, GridConstraints(
+                row, 0, 1, 2,
+                GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL,
+                GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED,
+                null, null, null
+            )
+        )
         row++
 
         pr.addActionListener { toggleSizePanels() }
@@ -215,40 +233,64 @@ class ImageDialog(
         val labelLabel = JBLabel("Label:")
         val lf = JBTextField()
         labelField = lf
-        panel.add(labelLabel, GridConstraints(row, 0, 1, 1,
-            GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE,
-            GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED,
-            null, null, null))
-        panel.add(lf, GridConstraints(row, 1, 1, 1,
-            GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL,
-            GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED,
-            null, null, null))
+        panel.add(
+            labelLabel, GridConstraints(
+                row, 0, 1, 1,
+                GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE,
+                GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED,
+                null, null, null
+            )
+        )
+        panel.add(
+            lf, GridConstraints(
+                row, 1, 1, 1,
+                GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL,
+                GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED,
+                null, null, null
+            )
+        )
         row++
 
         val altLabel = JBLabel("Alt Text:")
         val altf = JBTextField()
         altField = altf
-        panel.add(altLabel, GridConstraints(row, 0, 1, 1,
-            GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE,
-            GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED,
-            null, null, null))
-        panel.add(altf, GridConstraints(row, 1, 1, 1,
-            GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL,
-            GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED,
-            null, null, null))
+        panel.add(
+            altLabel, GridConstraints(
+                row, 0, 1, 1,
+                GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE,
+                GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED,
+                null, null, null
+            )
+        )
+        panel.add(
+            altf, GridConstraints(
+                row, 1, 1, 1,
+                GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL,
+                GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED,
+                null, null, null
+            )
+        )
         row++
 
         val anchorIdLabel = JBLabel("Anchor ID:")
         val aidf = JBTextField()
         anchorIdField = aidf
-        panel.add(anchorIdLabel, GridConstraints(row, 0, 1, 1,
-            GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE,
-            GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED,
-            null, null, null))
-        panel.add(aidf, GridConstraints(row, 1, 1, 1,
-            GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL,
-            GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED,
-            null, null, null))
+        panel.add(
+            anchorIdLabel, GridConstraints(
+                row, 0, 1, 1,
+                GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE,
+                GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED,
+                null, null, null
+            )
+        )
+        panel.add(
+            aidf, GridConstraints(
+                row, 1, 1, 1,
+                GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL,
+                GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED,
+                null, null, null
+            )
+        )
         row++
 
         return panel
@@ -278,7 +320,9 @@ class ImageDialog(
         panel.add(rightPanel, BorderLayout.EAST)
 
         slider.addChangeListener {
-            if (!slider.valueIsAdjusting) { input.text = slider.value.toString() }
+            if (!slider.valueIsAdjusting) {
+                input.text = slider.value.toString()
+            }
         }
         input.addActionListener {
             val v = input.text.replace("%", "").trim().toIntOrNull()
@@ -299,37 +343,65 @@ class ImageDialog(
         combo.selectedIndex = 0
         unitCombo = combo
 
-        panel.add(widthLabel, GridConstraints(0, 0, 1, 1,
-            GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE,
-            GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED,
-            null, null, null))
-        panel.add(wf, GridConstraints(0, 1, 1, 1,
-            GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL,
-            GridConstraints.SIZEPOLICY_CAN_SHRINK, GridConstraints.SIZEPOLICY_FIXED,
-            null, null, null))
-        panel.add(JPanel(), GridConstraints(0, 2, 1, 1,
-            GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL,
-            GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED,
-            null, null, null))
-        panel.add(combo, GridConstraints(0, 3, 1, 1,
-            GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE,
-            GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED,
-            null, null, null))
+        panel.add(
+            widthLabel, GridConstraints(
+                0, 0, 1, 1,
+                GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE,
+                GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED,
+                null, null, null
+            )
+        )
+        panel.add(
+            wf, GridConstraints(
+                0, 1, 1, 1,
+                GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL,
+                GridConstraints.SIZEPOLICY_CAN_SHRINK, GridConstraints.SIZEPOLICY_FIXED,
+                null, null, null
+            )
+        )
+        panel.add(
+            JPanel(), GridConstraints(
+                0, 2, 1, 1,
+                GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL,
+                GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED,
+                null, null, null
+            )
+        )
+        panel.add(
+            combo, GridConstraints(
+                0, 3, 1, 1,
+                GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE,
+                GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED,
+                null, null, null
+            )
+        )
 
-        panel.add(heightLabel, GridConstraints(1, 0, 1, 1,
-            GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE,
-            GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED,
-            null, null, null))
-        panel.add(hf, GridConstraints(1, 1, 1, 1,
-            GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL,
-            GridConstraints.SIZEPOLICY_CAN_SHRINK, GridConstraints.SIZEPOLICY_FIXED,
-            null, null, null))
+        panel.add(
+            heightLabel, GridConstraints(
+                1, 0, 1, 1,
+                GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE,
+                GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED,
+                null, null, null
+            )
+        )
+        panel.add(
+            hf, GridConstraints(
+                1, 1, 1, 1,
+                GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL,
+                GridConstraints.SIZEPOLICY_CAN_SHRINK, GridConstraints.SIZEPOLICY_FIXED,
+                null, null, null
+            )
+        )
         val optionalLabel = JBLabel("(optional)")
         optionalLabel.foreground = UIManager.getColor("Label.disabledForeground")
-        panel.add(optionalLabel, GridConstraints(1, 3, 1, 1,
-            GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE,
-            GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED,
-            null, null, null))
+        panel.add(
+            optionalLabel, GridConstraints(
+                1, 3, 1, 1,
+                GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE,
+                GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED,
+                null, null, null
+            )
+        )
         return panel
     }
 
@@ -387,14 +459,16 @@ class ImageDialog(
 
     private fun toRelativePath(rawPath: String): String {
         val dir = currentFileDir ?: return rawPath
-            val directoryPath = VfsUtilCore.virtualToIoFile(dir).absolutePath
-            return try {
-                val imagePath = Paths.get(rawPath)
-                if (!imagePath.isAbsolute) return rawPath
-                val baseDir = Paths.get(directoryPath)
-                baseDir.relativize(imagePath).toString().replace('\\', '/')
-            } catch (_: IllegalArgumentException) { rawPath }
+        val directoryPath = VfsUtilCore.virtualToIoFile(dir).absolutePath
+        return try {
+            val imagePath = Paths.get(rawPath)
+            if (!imagePath.isAbsolute) return rawPath
+            val baseDir = Paths.get(directoryPath)
+            baseDir.relativize(imagePath).toString().replace('\\', '/')
+        } catch (_: IllegalArgumentException) {
+            rawPath
         }
+    }
 
     private fun buildSizeString(): String {
         if (percentRadio!!.isSelected) {

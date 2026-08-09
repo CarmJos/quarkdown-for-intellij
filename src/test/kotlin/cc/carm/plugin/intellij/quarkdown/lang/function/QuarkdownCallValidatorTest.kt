@@ -4,9 +4,7 @@ import cc.carm.plugin.intellij.quarkdown.lang.function.QuarkdownCallParser.parse
 import cc.carm.plugin.intellij.quarkdown.lang.function.QuarkdownCallValidator.Issue
 import cc.carm.plugin.intellij.quarkdown.lang.function.QuarkdownCallValidator.Severity
 import cc.carm.plugin.intellij.quarkdown.lang.function.QuarkdownCallValidator.validate
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertTrue
+import org.junit.Assert.*
 import org.junit.Test
 
 class QuarkdownCallValidatorTest {
@@ -148,7 +146,7 @@ class QuarkdownCallValidatorTest {
         val fn = functions.first { it.name == "multiply" }
         val text = ".sum {10} {5}::multiply {2}"
         val start = QuarkdownCallParser.findCallStart(text, text.length - 1)
-        val call = QuarkdownCallParser.parseCall(text, start)!!
+        val call = parseCall(text, start)!!
         assertTrue(call.isChained)
         val (resolved, issues) = QuarkdownCallValidator.resolveArgs(call, fn)
         assertEquals(0, issues.size)

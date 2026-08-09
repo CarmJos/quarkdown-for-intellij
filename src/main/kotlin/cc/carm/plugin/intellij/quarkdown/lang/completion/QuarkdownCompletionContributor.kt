@@ -8,7 +8,6 @@ import cc.carm.plugin.intellij.quarkdown.lang.function.QuarkdownCallParser.Arg
 import cc.carm.plugin.intellij.quarkdown.lang.reference.QuarkdownPathUtil
 import com.intellij.codeInsight.AutoPopupController
 import com.intellij.codeInsight.completion.*
-import com.intellij.codeInsight.completion.InsertHandler
 import com.intellij.codeInsight.lookup.LookupElement
 import com.intellij.codeInsight.lookup.LookupElementBuilder
 import com.intellij.icons.AllIcons
@@ -236,7 +235,7 @@ class QuarkdownCompletionContributor : CompletionContributor() {
                 val displayText = child.name + if (isDir) "/" else ""
                 val relativePath = basePath + displayText
                 val icon = if (isDir) AllIcons.Nodes.Folder
-                else child.fileType?.icon ?: AllIcons.FileTypes.Any_type
+                else child.fileType.icon ?: AllIcons.FileTypes.Any_type
 
                 val lookup = LookupElementBuilder.create(displayText)
                     .withLookupString(relativePath)

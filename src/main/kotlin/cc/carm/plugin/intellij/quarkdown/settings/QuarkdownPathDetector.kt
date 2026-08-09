@@ -20,9 +20,7 @@ object QuarkdownPathDetector {
         if (!home.exists() || !home.isDirectory) return false
 
         val libDir = File(home, "lib")
-        if (libDir.isDirectory && libDir.listFiles { f -> f.name.endsWith(".jar") }?.isNotEmpty() == true) return true
-
-        return hasQuarkdownBinary(home)
+        return libDir.isDirectory && libDir.listFiles { f -> f.name.endsWith(".jar") }?.isNotEmpty() == true || hasQuarkdownBinary(home)
     }
 
     private fun hasQuarkdownBinary(dir: File): Boolean {

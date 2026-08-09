@@ -85,27 +85,43 @@ class CodeBlockDialog(
                 override fun changedUpdate(e: DocumentEvent) = filterLanguages()
             }
         )
-        panel.add(languageLabel, GridConstraints(row, 0, 1, 1,
-            GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE,
-            GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED,
-            null, null, null))
-        panel.add(combo, GridConstraints(row, 1, 1, 1,
-            GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL,
-            GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED,
-            null, null, null))
+        panel.add(
+            languageLabel, GridConstraints(
+                row, 0, 1, 1,
+                GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE,
+                GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED,
+                null, null, null
+            )
+        )
+        panel.add(
+            combo, GridConstraints(
+                row, 1, 1, 1,
+                GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL,
+                GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED,
+                null, null, null
+            )
+        )
         row++
 
         val captionLabel = JBLabel("Caption:")
         val cf = JBTextField()
         captionField = cf
-        panel.add(captionLabel, GridConstraints(row, 0, 1, 1,
-            GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE,
-            GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED,
-            null, null, null))
-        panel.add(cf, GridConstraints(row, 1, 1, 1,
-            GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL,
-            GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED,
-            null, null, null))
+        panel.add(
+            captionLabel, GridConstraints(
+                row, 0, 1, 1,
+                GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE,
+                GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED,
+                null, null, null
+            )
+        )
+        panel.add(
+            cf, GridConstraints(
+                row, 1, 1, 1,
+                GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL,
+                GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED,
+                null, null, null
+            )
+        )
         row++
 
         val idLabel = JBLabel(
@@ -113,14 +129,22 @@ class CodeBlockDialog(
         )
         val idf = JBTextField()
         idField = idf
-        panel.add(idLabel, GridConstraints(row, 0, 1, 1,
-            GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE,
-            GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED,
-            null, null, null))
-        panel.add(idf, GridConstraints(row, 1, 1, 1,
-            GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL,
-            GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED,
-            null, null, null))
+        panel.add(
+            idLabel, GridConstraints(
+                row, 0, 1, 1,
+                GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE,
+                GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED,
+                null, null, null
+            )
+        )
+        panel.add(
+            idf, GridConstraints(
+                row, 1, 1, 1,
+                GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL,
+                GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED,
+                null, null, null
+            )
+        )
 
         // Make the dialog a bit wider so the searchable language dropdown is comfortable.
         val natural = panel.preferredSize
@@ -137,6 +161,7 @@ class CodeBlockDialog(
         return when (kind) {
             QuarkdownCodeBlockSyntax.Kind.FENCED ->
                 QuarkdownCodeBlockSyntax.buildFenceLine(originalLine, language, caption, id)
+
             QuarkdownCodeBlockSyntax.Kind.CODE_FUNCTION ->
                 QuarkdownCodeBlockSyntax.buildCodeFunctionLine(originalLine, language, caption, id)
         }
@@ -228,7 +253,7 @@ class CodeBlockDialog(
     ) {
         if (!editor.isFocusOwner || !combo.isShowing) return
         if (filtered.isEmpty()) {
-            if (combo.isPopupVisible) combo.setPopupVisible(false)
+            if (combo.isPopupVisible) combo.isPopupVisible = false
             return
         }
         if (!combo.isPopupVisible) {

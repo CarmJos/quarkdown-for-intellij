@@ -9,12 +9,12 @@ import com.intellij.openapi.actionSystem.ActionToolbar
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.vfs.VirtualFileManager
 import com.intellij.openapi.vfs.newvfs.BulkFileListener
 import com.intellij.openapi.vfs.newvfs.events.VFileEvent
-import com.intellij.openapi.ui.ComboBox
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.jcef.JBCefApp
 import com.intellij.ui.jcef.JBCefBrowser
@@ -26,14 +26,7 @@ import org.cef.handler.CefLoadHandler
 import org.cef.network.CefRequest
 import java.awt.BorderLayout
 import java.awt.Component
-import javax.swing.DefaultComboBoxModel
-import javax.swing.DefaultListCellRenderer
-import javax.swing.JComponent
-import javax.swing.JLabel
-import javax.swing.JList
-import javax.swing.JPanel
-import javax.swing.JProgressBar
-import javax.swing.SwingConstants
+import javax.swing.*
 
 /**
  * The Quarkdown live-preview panel shown inside the `Quarkdown` tool window.
@@ -67,6 +60,7 @@ class QuarkdownPreviewPanel(private val project: Project) : Disposable {
     private val fileCombo = ComboBox<FileOption>()
 
     private var toolbar: ActionToolbar? = null
+
     @Volatile
     private var browserLoading = false
     private var updatingCombo = false
@@ -100,8 +94,8 @@ class QuarkdownPreviewPanel(private val project: Project) : Disposable {
 
         val jcefBrowser = browser
         if (jcefBrowser != null) {
-            val client = jcefBrowser.getJBCefClient()
-            val cefBrowser = jcefBrowser.getCefBrowser()
+            val client = jcefBrowser.jbCefClient
+            val cefBrowser = jcefBrowser.cefBrowser
             client.addLoadHandler(object : CefLoadHandler {
                 override fun onLoadingStateChange(
                     browser: CefBrowser,
@@ -113,7 +107,11 @@ class QuarkdownPreviewPanel(private val project: Project) : Disposable {
                     ApplicationManager.getApplication().invokeLater { updateProgressBar() }
                 }
 
-                override fun onLoadStart(browser: CefBrowser, frame: CefFrame, transitionType: CefRequest.TransitionType) = Unit
+                override fun onLoadStart(
+                    browser: CefBrowser,
+                    frame: CefFrame,
+                    transitionType: CefRequest.TransitionType
+                ) = Unit
 
                 override fun onLoadEnd(browser: CefBrowser, frame: CefFrame, httpStatusCode: Int) = Unit
 
@@ -181,13 +179,13 @@ class QuarkdownPreviewPanel(private val project: Project) : Disposable {
                 return JPanel()
             }
         toolbar = actionManager.createActionToolbar("QuarkdownPreviewToolbar", group, true)
-        toolbar?.setTargetComponent(root)
+        toolbar?.targetComponent = root
         return toolbar?.component ?: JPanel()
     }
 
     private fun createFileSelector(): JComponent {
         val label = JBLabel(QuarkdownBundle.message("quarkdown.preview.file.selector"))
-        label.border = JBUI.Borders.empty(0, 4, 0, 4)
+        label.border = JBUI.Borders.empty(0, 4)
 
         fileCombo.apply {
             isSwingPopup = true
@@ -217,7 +215,10 @@ class QuarkdownPreviewPanel(private val project: Project) : Disposable {
             return wrapper
         }
         // JCEF unavailable (headless / not supported): explain how to proceed.
-        return JBLabel(QuarkdownBundle.message("quarkdown.preview.status.jcef.unavailable"), SwingConstants.CENTER).apply {
+        return JBLabel(
+            QuarkdownBundle.message("quarkdown.preview.status.jcef.unavailable"),
+            SwingConstants.CENTER
+        ).apply {
             border = JBUI.Borders.empty(24)
         }
     }
@@ -283,10 +284,13 @@ class QuarkdownPreviewPanel(private val project: Project) : Disposable {
                 } else {
                     QuarkdownBundle.message("quarkdown.preview.status.stopped")
                 }
+
             QuarkdownPreviewService.State.STARTING ->
                 QuarkdownBundle.message("quarkdown.preview.status.starting", service.port)
+
             QuarkdownPreviewService.State.RUNNING ->
                 QuarkdownBundle.message("quarkdown.preview.status.running", service.port)
+
             QuarkdownPreviewService.State.ERROR ->
                 service.lastError ?: QuarkdownBundle.message("quarkdown.preview.status.error.generic")
         }

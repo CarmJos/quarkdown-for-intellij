@@ -1,5 +1,6 @@
 package cc.carm.plugin.intellij.quarkdown.settings
 
+import cc.carm.plugin.intellij.quarkdown.lang.function.FunctionRegistry
 import com.intellij.icons.AllIcons
 import com.intellij.ide.BrowserUtil
 import com.intellij.openapi.components.service
@@ -8,15 +9,10 @@ import com.intellij.openapi.options.BoundSearchableConfigurable
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogPanel
 import com.intellij.openapi.ui.TextFieldWithBrowseButton
-import java.nio.charset.Charset
-import com.intellij.ui.dsl.builder.AlignX
-import com.intellij.ui.dsl.builder.bindIntText
-import com.intellij.ui.dsl.builder.bindSelected
-import com.intellij.ui.dsl.builder.bindText
-import com.intellij.ui.dsl.builder.panel
-import cc.carm.plugin.intellij.quarkdown.lang.function.FunctionRegistry
 import com.intellij.ui.components.JBTextField
+import com.intellij.ui.dsl.builder.*
 import java.io.File
+import java.nio.charset.Charset
 import javax.swing.JButton
 import javax.swing.JLabel
 import javax.swing.SwingUtilities
@@ -58,7 +54,8 @@ class QuarkdownSettingsConfigurable(private val project: Project) :
                                 if (detected != null) {
                                     (textField as? JBTextField)?.emptyText?.text = "Auto-detected: $detected"
                                 } else {
-                                    (textField as? JBTextField)?.emptyText?.text = "Quarkdown Home not found, please install or select manually"
+                                    (textField as? JBTextField)?.emptyText?.text =
+                                        "Quarkdown Home not found, please install or select manually"
                                 }
                             }
                         }
@@ -211,7 +208,10 @@ class QuarkdownSettingsConfigurable(private val project: Project) :
                             val version = extractVersion(output)
                             showCheckResult(true, "Quarkdown version: $version")
                         } else {
-                            showCheckResult(false, "Command failed (exit=$exitCode): ${output.ifBlank { "<no output>" }}")
+                            showCheckResult(
+                                false,
+                                "Command failed (exit=$exitCode): ${output.ifBlank { "<no output>" }}"
+                            )
                         }
                     } finally {
                         resetCheckButton()

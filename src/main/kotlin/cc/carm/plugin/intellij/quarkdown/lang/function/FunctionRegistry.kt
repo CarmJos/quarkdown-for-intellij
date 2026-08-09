@@ -154,7 +154,10 @@ class FunctionRegistry(private val project: Project) {
         return functions
     }
 
-    private fun enrichWithDocs(fn: FunctionMetadata, docs: Map<String, QuarkdownDocParser.FunctionDoc>): FunctionMetadata {
+    private fun enrichWithDocs(
+        fn: FunctionMetadata,
+        docs: Map<String, QuarkdownDocParser.FunctionDoc>
+    ): FunctionMetadata {
         val doc = docs[fn.name.lowercase()] ?: return fn
         return fn.copy(
             description = doc.description.ifEmpty { fn.description },
@@ -383,8 +386,7 @@ class FunctionRegistry(private val project: Project) {
             } ?: return null
 
             val typeName = try {
-                val type = cls.getMethod("getType").invoke(p)
-                when (type) {
+                when (val type = cls.getMethod("getType").invoke(p)) {
                     is kotlin.reflect.KClass<*> -> type.simpleName ?: type.qualifiedName ?: "Any"
                     is Class<*> -> type.simpleName
                     else -> type.toString().substringAfterLast(".")
@@ -427,8 +429,7 @@ class FunctionRegistry(private val project: Project) {
             }
 
             val allowedValues: List<String>? = try {
-                val type = cls.getMethod("getType").invoke(p)
-                val javaClass = when (type) {
+                val javaClass = when (val type = cls.getMethod("getType").invoke(p)) {
                     is kotlin.reflect.KClass<*> -> type.java
                     is Class<*> -> type
                     else -> null

@@ -4,7 +4,6 @@ import cc.carm.plugin.intellij.quarkdown.QuarkdownFileType
 import com.intellij.openapi.application.QueryExecutorBase
 import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.util.TextRange
-import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiManager
 import com.intellij.psi.PsiReference
 import com.intellij.psi.search.FileTypeIndex

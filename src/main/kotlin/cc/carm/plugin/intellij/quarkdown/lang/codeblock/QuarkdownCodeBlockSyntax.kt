@@ -122,14 +122,17 @@ object QuarkdownCodeBlockSyntax {
                     hasLang = true
                     if (language.isNotEmpty()) parts += "lang:{$language}"
                 }
+
                 "caption" -> {
                     hasCaption = true
                     if (caption.isNotEmpty()) parts += "caption:{$caption}"
                 }
+
                 "ref" -> {
                     hasRef = true
                     if (id.isNotEmpty()) parts += "ref:{$id}"
                 }
+
                 else -> parts += "${arg.paramName}:{${arg.raw}}"
             }
         }

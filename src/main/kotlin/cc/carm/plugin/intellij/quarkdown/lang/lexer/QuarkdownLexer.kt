@@ -20,6 +20,7 @@ class QuarkdownLexer : LexerBase() {
 
     /** True when we've emitted <!-- and are scanning for --> */
     private var stateInComment = false
+
     /** True while we're lexing the same line after an image prefix. */
     private var inImageSyntax = false
 
@@ -74,7 +75,7 @@ class QuarkdownLexer : LexerBase() {
 
     private fun currentState(): Int =
         (if (atFunctionName) STATE_AT_FUNCTION_NAME else 0) or
-            (if (inFunctionCall) STATE_IN_FUNCTION_CALL else 0)
+                (if (inFunctionCall) STATE_IN_FUNCTION_CALL else 0)
 
     // --------------------------------------------------------------------
     // Helpers
@@ -92,7 +93,7 @@ class QuarkdownLexer : LexerBase() {
 
     /** Emit a token of exactly [len] characters starting at [tokenStart]. */
     private fun emit(type: IElementType, len: Int): IElementType {
-        require(len > 0) { "Zero-length token: $type at offset $tokenStart"}
+        require(len > 0) { "Zero-length token: $type at offset $tokenStart" }
         tokenEnd = tokenStart + len
         return type
     }
@@ -201,7 +202,7 @@ class QuarkdownLexer : LexerBase() {
             val spaces = countSpaces(start)
             val contentPos = start + spaces
 
-        // -------- Fenced code block start / end (``` or ~~~) --------
+            // -------- Fenced code block start / end (``` or ~~~) --------
             if (contentPos < endOffset) {
                 val fc = ch(contentPos)
                 if (fc == '`' || fc == '~') {
@@ -217,7 +218,10 @@ class QuarkdownLexer : LexerBase() {
             if (contentPos < endOffset && matchSeparatorOnly(contentPos)) {
                 val eolLen = scanToEol(contentPos)
                 val totalLen = contentPos + eolLen - start
-                return if (totalLen <= 0) emit(QuarkdownTokenTypes.TEXT, 1) else emit(QuarkdownTokenTypes.SEPARATOR, totalLen)
+                return if (totalLen <= 0) emit(QuarkdownTokenTypes.TEXT, 1) else emit(
+                    QuarkdownTokenTypes.SEPARATOR,
+                    totalLen
+                )
             }
 
             // Page break <<<
@@ -306,6 +310,7 @@ class QuarkdownLexer : LexerBase() {
                 }
                 return emit(QuarkdownTokenTypes.BRACE_OPEN, 1)
             }
+
             '}' -> return emit(QuarkdownTokenTypes.BRACE_CLOSE, 1)
         }
 
@@ -359,8 +364,12 @@ class QuarkdownLexer : LexerBase() {
         var i = 0
         while (pos + i < endOffset) {
             val ci = ch(pos + i)
-            if (ci == c) { count++; i++; continue }
-            if (ci == ' ' || ci == '\t') { i++; continue }
+            if (ci == c) {
+                count++; i++; continue
+            }
+            if (ci == ' ' || ci == '\t') {
+                i++; continue
+            }
             if (ci == '\n' || ci == '\r') break
             return false
         }

@@ -80,10 +80,12 @@ object QuarkdownDocRenderer {
                     .append(DocumentationMarkup.GRAYED_END)
             }
             if (p.isOptional) {
-                sb.append(" ").append(DocumentationMarkup.GRAYED_START).append("(optional)").append(DocumentationMarkup.GRAYED_END)
+                sb.append(" ").append(DocumentationMarkup.GRAYED_START).append("(optional)")
+                    .append(DocumentationMarkup.GRAYED_END)
             }
             if (p.isLikelyNamed) {
-                sb.append(" ").append(DocumentationMarkup.GRAYED_START).append("(named)").append(DocumentationMarkup.GRAYED_END)
+                sb.append(" ").append(DocumentationMarkup.GRAYED_START).append("(named)")
+                    .append(DocumentationMarkup.GRAYED_END)
             }
             sb.append("</dt>")
             val details = buildList {

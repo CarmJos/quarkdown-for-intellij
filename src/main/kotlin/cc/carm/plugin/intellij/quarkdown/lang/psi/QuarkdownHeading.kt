@@ -30,7 +30,7 @@ class QuarkdownHeading(node: ASTNode) : ASTWrapperPsiElement(node) {
                 // Stop at the first newline — everything after is content text, not heading
                 if (type == cc.carm.plugin.intellij.quarkdown.lang.lexer.QuarkdownTokenTypes.NEWLINE) break
                 // Stop at nested heading nodes
-                if (type == cc.carm.plugin.intellij.quarkdown.lang.psi.QuarkdownTypes.HEADING) break
+                if (type == QuarkdownTypes.HEADING) break
                 sb.append(child.text)
             }
             return sb.toString().trim()

@@ -43,7 +43,7 @@ class QuarkdownRenameProcessor : RenamePsiElementProcessor() {
         return anchors.any { it.overlaps(range.startOffset, range.endOffset) }
     }
 
-    override fun substituteElementToRename(element: PsiElement, editor: Editor?): PsiElement? {
+    override fun substituteElementToRename(element: PsiElement, editor: Editor?): PsiElement {
         return element
     }
 
@@ -71,8 +71,8 @@ class QuarkdownRenameProcessor : RenamePsiElementProcessor() {
             val refElement = usage.element
             if (refElement == null || !refElement.isValid) continue
             val file = refElement.containingFile ?: continue
-            val document = file.viewProvider?.document ?: continue
-            val range = usage.getRangeInElement() ?: continue
+            val document = file.viewProvider.document ?: continue
+            val range = usage.rangeInElement ?: continue
             val start = refElement.textRange.startOffset + range.startOffset
             val end = refElement.textRange.startOffset + range.endOffset
             if (end > start && end <= document.textLength) {
@@ -88,15 +88,17 @@ class QuarkdownRenameProcessor : RenamePsiElementProcessor() {
             val (idStart, idEnd) = when {
                 leafText.startsWith("{#") && leafText.endsWith("}") ->
                     element.textRange.startOffset + 2 to element.textRange.endOffset - 1
+
                 leafText.startsWith("{") && leafText.endsWith("}") ->
                     element.textRange.startOffset + 1 to element.textRange.endOffset - 1
+
                 else ->
                     element.textRange.startOffset to element.textRange.endOffset
             }
             if (idEnd > idStart && idEnd <= elementDocument.textLength) {
                 val alreadyCovered = replacements.any {
                     it.document === elementDocument &&
-                        it.start == idStart && it.end == idEnd
+                            it.start == idStart && it.end == idEnd
                 }
                 if (!alreadyCovered) {
                     replacements.add(Replacement(elementDocument, idStart, idEnd))

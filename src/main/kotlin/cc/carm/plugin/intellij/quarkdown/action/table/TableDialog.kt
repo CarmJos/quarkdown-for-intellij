@@ -69,27 +69,43 @@ class TableDialog(
         val labelLabel = JBLabel("Label:")
         val lf = JBTextField()
         labelField = lf
-        panel.add(labelLabel, GridConstraints(row, 0, 1, 1,
-            GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE,
-            GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED,
-            null, null, null))
-        panel.add(lf, GridConstraints(row, 1, 1, 1,
-            GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL,
-            GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED,
-            null, null, null))
+        panel.add(
+            labelLabel, GridConstraints(
+                row, 0, 1, 1,
+                GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE,
+                GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED,
+                null, null, null
+            )
+        )
+        panel.add(
+            lf, GridConstraints(
+                row, 1, 1, 1,
+                GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL,
+                GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED,
+                null, null, null
+            )
+        )
         row++
 
         val idLabel = JBLabel("ID:")
         val idf = JBTextField()
         idField = idf
-        panel.add(idLabel, GridConstraints(row, 0, 1, 1,
-            GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE,
-            GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED,
-            null, null, null))
-        panel.add(idf, GridConstraints(row, 1, 1, 1,
-            GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL,
-            GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED,
-            null, null, null))
+        panel.add(
+            idLabel, GridConstraints(
+                row, 0, 1, 1,
+                GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE,
+                GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED,
+                null, null, null
+            )
+        )
+        panel.add(
+            idf, GridConstraints(
+                row, 1, 1, 1,
+                GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL,
+                GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED,
+                null, null, null
+            )
+        )
 
         return panel
     }
@@ -104,7 +120,7 @@ class TableDialog(
         return arrayOf(
             object : AbstractAction("Format Table") {
                 init {
-                    putValue(Action.SHORT_DESCRIPTION, "Re-align the table cells")
+                    putValue(SHORT_DESCRIPTION, "Re-align the table cells")
                 }
 
                 override fun actionPerformed(e: ActionEvent) {

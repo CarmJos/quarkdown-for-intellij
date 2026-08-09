@@ -1,6 +1,5 @@
 package cc.carm.plugin.intellij.quarkdown.lang.reference
 
-import com.intellij.psi.PsiReference
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 
 /**

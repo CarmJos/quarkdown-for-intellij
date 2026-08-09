@@ -42,7 +42,11 @@ class QuarkdownEnterHandlerDelegate : EnterHandlerDelegateAdapter() {
         return EnterHandlerDelegate.Result.Default
     }
 
-    override fun postProcessEnter(file: PsiFile, editor: Editor, dataContext: DataContext): EnterHandlerDelegate.Result {
+    override fun postProcessEnter(
+        file: PsiFile,
+        editor: Editor,
+        dataContext: DataContext
+    ): EnterHandlerDelegate.Result {
         if (file.fileType != QuarkdownFileType.INSTANCE) return EnterHandlerDelegate.Result.Continue
 
         val document = editor.document

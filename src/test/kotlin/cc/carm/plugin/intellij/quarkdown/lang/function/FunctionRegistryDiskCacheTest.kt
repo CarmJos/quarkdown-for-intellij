@@ -43,7 +43,12 @@ class FunctionRegistryDiskCacheTest {
                 FunctionMetadata(
                     name = "pagemargin",
                     parameters = listOf(
-                        ParameterMetadata("position", "pagemarginposition", 0, allowedValues = listOf("bottomcenter", "topleftcorner"))
+                        ParameterMetadata(
+                            "position",
+                            "pagemarginposition",
+                            0,
+                            allowedValues = listOf("bottomcenter", "topleftcorner")
+                        )
                     )
                 )
             )

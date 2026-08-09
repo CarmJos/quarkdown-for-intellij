@@ -9,7 +9,6 @@ import com.intellij.openapi.fileTypes.FileType
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.ContributedReferenceHost
 import com.intellij.psi.FileViewProvider
-import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiReference
 
@@ -43,7 +42,7 @@ class QuarkdownPsiFile(viewProvider: FileViewProvider) : PsiFileBase(viewProvide
         val candidates = mutableListOf<PsiReference>()
         while (element != null) {
             for (ref in service.getReferences(element, com.intellij.psi.PsiReferenceService.Hints.NO_HINTS)) {
-                val range = ref.getRangeInElement()
+                val range = ref.rangeInElement
                 val local = offset - element.textRange.startOffset
                 if (range.contains(local)) {
                     candidates.add(ref)
@@ -53,7 +52,7 @@ class QuarkdownPsiFile(viewProvider: FileViewProvider) : PsiFileBase(viewProvide
             element = element.parent
         }
 
-        candidates.sortByDescending { it.getRangeInElement().length }
+        candidates.sortByDescending { it.rangeInElement.length }
         return candidates.firstOrNull { it.resolve() != null }
             ?: candidates.firstOrNull()
     }

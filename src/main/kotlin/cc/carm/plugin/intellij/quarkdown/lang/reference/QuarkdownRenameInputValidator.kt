@@ -27,5 +27,5 @@ class QuarkdownRenameInputValidator : RenameInputValidator {
         psiElement: PsiElement,
         processingContext: ProcessingContext
     ): Boolean = newName.isNotBlank() &&
-        newName.none { it == '{' || it == '}' || it == ' ' || it == '\t' || it == '\n' || it == '\r' }
+            newName.none { it == '{' || it == '}' || it == ' ' || it == '\t' || it == '\n' || it == '\r' }
 }

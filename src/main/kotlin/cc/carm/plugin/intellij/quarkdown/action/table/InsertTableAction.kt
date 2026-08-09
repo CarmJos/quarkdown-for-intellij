@@ -32,7 +32,12 @@ class InsertTableAction : AnAction(), DumbAware {
         selector.show(editor)
     }
 
-    private fun actuallyInsertTable(editor: Editor, project: com.intellij.openapi.project.Project?, rows: Int, columns: Int) {
+    private fun actuallyInsertTable(
+        editor: Editor,
+        project: com.intellij.openapi.project.Project?,
+        rows: Int,
+        columns: Int
+    ) {
         // rows includes the header; the separator is added separately.
         WriteCommandAction.runWriteCommandAction(project) {
             val offset = editor.caretModel.offset

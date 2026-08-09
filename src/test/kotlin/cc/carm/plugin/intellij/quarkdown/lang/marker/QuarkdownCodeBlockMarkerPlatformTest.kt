@@ -9,8 +9,6 @@ import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import com.intellij.ui.CollectionComboBoxModel
 import com.intellij.util.ui.UIUtil
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
 import javax.swing.text.JTextComponent
 
 /**
@@ -32,13 +30,13 @@ class QuarkdownCodeBlockMarkerPlatformTest : BasePlatformTestCase() {
         myFixture.configureByText(
             "c.qd",
             "```python \"Fibonacci function\" {#fibonacci}\n" +
-                "def fibonacci(n):\n" +
-                "    return n\n" +
-                "```\n" +
-                "\n" +
-                ".code lang:{python} caption:{Fibonacci function} ref:{example}\n" +
-                "    def fibonacci(n):\n" +
-                "        return n\n"
+                    "def fibonacci(n):\n" +
+                    "    return n\n" +
+                    "```\n" +
+                    "\n" +
+                    ".code lang:{python} caption:{Fibonacci function} ref:{example}\n" +
+                    "    def fibonacci(n):\n" +
+                    "        return n\n"
         )
         val elements = PsiTreeUtil.collectElements(myFixture.file) { true }.toMutableList()
         val result = mutableListOf<LineMarkerInfo<*>>()

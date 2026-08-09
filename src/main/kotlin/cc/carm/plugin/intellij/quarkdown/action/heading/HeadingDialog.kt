@@ -58,27 +58,43 @@ class HeadingDialog(
         val levelLabel = JBLabel("Level:")
         val combo = ComboBox(CollectionComboBoxModel(LEVELS, "1"))
         levelCombo = combo
-        panel.add(levelLabel, GridConstraints(row, 0, 1, 1,
-            GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE,
-            GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED,
-            null, null, null))
-        panel.add(combo, GridConstraints(row, 1, 1, 1,
-            GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL,
-            GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED,
-            null, null, null))
+        panel.add(
+            levelLabel, GridConstraints(
+                row, 0, 1, 1,
+                GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE,
+                GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED,
+                null, null, null
+            )
+        )
+        panel.add(
+            combo, GridConstraints(
+                row, 1, 1, 1,
+                GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL,
+                GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED,
+                null, null, null
+            )
+        )
         row++
 
         val contentLabel = JBLabel("Content:")
         val cf = JBTextField()
         contentField = cf
-        panel.add(contentLabel, GridConstraints(row, 0, 1, 1,
-            GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE,
-            GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED,
-            null, null, null))
-        panel.add(cf, GridConstraints(row, 1, 1, 1,
-            GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL,
-            GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED,
-            null, null, null))
+        panel.add(
+            contentLabel, GridConstraints(
+                row, 0, 1, 1,
+                GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE,
+                GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED,
+                null, null, null
+            )
+        )
+        panel.add(
+            cf, GridConstraints(
+                row, 1, 1, 1,
+                GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL,
+                GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED,
+                null, null, null
+            )
+        )
         row++
 
         val idLabel = JBLabel("ID:")
@@ -91,23 +107,39 @@ class HeadingDialog(
         extractButton = extract
 
         val idRow = JPanel(GridLayoutManager(1, 2, JBUI.emptyInsets(), 4, -1))
-        idRow.add(idf, GridConstraints(0, 0, 1, 1,
-            GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL,
-            GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED,
-            null, null, null))
-        idRow.add(extract, GridConstraints(0, 1, 1, 1,
-            GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE,
-            GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED,
-            null, null, null))
+        idRow.add(
+            idf, GridConstraints(
+                0, 0, 1, 1,
+                GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL,
+                GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED,
+                null, null, null
+            )
+        )
+        idRow.add(
+            extract, GridConstraints(
+                0, 1, 1, 1,
+                GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE,
+                GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED,
+                null, null, null
+            )
+        )
 
-        panel.add(idLabel, GridConstraints(row, 0, 1, 1,
-            GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE,
-            GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED,
-            null, null, null))
-        panel.add(idRow, GridConstraints(row, 1, 1, 1,
-            GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL,
-            GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED,
-            null, null, null))
+        panel.add(
+            idLabel, GridConstraints(
+                row, 0, 1, 1,
+                GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE,
+                GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED,
+                null, null, null
+            )
+        )
+        panel.add(
+            idRow, GridConstraints(
+                row, 1, 1, 1,
+                GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL,
+                GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED,
+                null, null, null
+            )
+        )
 
         // Make the dialog a bit wider so the heading content field is comfortable.
         val natural = panel.preferredSize

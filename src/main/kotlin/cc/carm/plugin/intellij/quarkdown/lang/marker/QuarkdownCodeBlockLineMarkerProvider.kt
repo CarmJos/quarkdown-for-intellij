@@ -108,6 +108,7 @@ class QuarkdownCodeBlockLineMarkerProvider : LineMarkerProvider {
                     val info = QuarkdownCodeBlockSyntax.parseFenceLine(line) ?: return
                     dialog.parseFence(info)
                 }
+
                 QuarkdownCodeBlockSyntax.Kind.CODE_FUNCTION -> {
                     val info = QuarkdownCodeBlockSyntax.parseCodeFunctionLine(line) ?: return
                     dialog.parseCodeFunction(info)

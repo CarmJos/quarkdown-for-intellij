@@ -2,6 +2,7 @@ package cc.carm.plugin.intellij.quarkdown.settings
 
 import com.intellij.openapi.options.Configurable
 import com.intellij.openapi.options.SearchableConfigurable
+import com.intellij.ui.JBColor
 import com.intellij.ui.dsl.builder.*
 import org.jetbrains.annotations.Nls
 import javax.swing.JComponent
@@ -157,7 +158,7 @@ class QuarkdownEditorAppearanceConfigurable :
                 row {
                     label("These settings are for preview purposes. Some settings may require IDE restart to take effect.")
                         .applyToComponent {
-                            foreground = java.awt.Color.GRAY
+                            foreground = JBColor.GRAY
                         }
                 }
             }

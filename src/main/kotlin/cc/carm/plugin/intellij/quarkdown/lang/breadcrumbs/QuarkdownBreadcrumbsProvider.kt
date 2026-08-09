@@ -39,6 +39,7 @@ class QuarkdownBreadcrumbsProvider : BreadcrumbsProvider {
                 val text = e.headingText.ifEmpty { "(empty heading)" }
                 "$prefix $text"
             }
+
             is PsiFile -> e.name
             else -> e.text.take(32)
         }

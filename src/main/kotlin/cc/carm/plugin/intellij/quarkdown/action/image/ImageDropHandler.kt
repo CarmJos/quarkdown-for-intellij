@@ -87,10 +87,9 @@ class ImageDropHandler : FileDropHandler, EditorDropHandler {
 
         // Check if any dropped file is an image
         val imageFiles = e.files.filter { isImageFile(it) }
-        if (imageFiles.isEmpty()) return false
+        return imageFiles.isNotEmpty() && showDialogAndInsert(e.project, editor, docFile, imageFiles.first())
 
         // Open dialog with first image file path pre-filled
-        return showDialogAndInsert(e.project, editor, docFile, imageFiles.first())
     }
 
     // ========================

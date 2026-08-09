@@ -2,9 +2,6 @@ package cc.carm.plugin.intellij.quarkdown.lang.table
 
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertTrue
 
 /**
  * Verifies every floating-toolbar action has a tooltip text set in plugin.xml, so

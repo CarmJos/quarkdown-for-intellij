@@ -220,6 +220,7 @@ object QuarkdownCallParser {
                     pos++
                     if (pos < n && text[pos] == '\n') pos++
                 }
+
                 c == '{' -> {
                     val close = findClosingBrace(text, pos)
                     val rawStart = pos + 1
@@ -236,6 +237,7 @@ object QuarkdownCallParser {
                     )
                     pos = close + 1
                 }
+
                 else -> {
                     // maybe a named argument `name:{...}`
                     val nm = namedArgRegex.find(text, pos)

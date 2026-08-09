@@ -7,8 +7,6 @@ import com.intellij.codeInsight.daemon.LineMarkerInfo
 import com.intellij.codeInsight.daemon.LineMarkerProviders
 import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
 
 /**
  * Verifies the heading gutter marker is registered on the platform for the Quarkdown
@@ -29,9 +27,9 @@ class QuarkdownHeadingMarkerPlatformTest : BasePlatformTestCase() {
         myFixture.configureByText(
             "c.qd",
             "# Title\n" +
-                "## Section {#sec}\n" +
-                "### Sub\n" +
-                "plain text\n"
+                    "## Section {#sec}\n" +
+                    "### Sub\n" +
+                    "plain text\n"
         )
         val provider = QuarkdownHeadingLineMarkerProvider()
         val markers = collectMarkers(provider)
@@ -42,8 +40,8 @@ class QuarkdownHeadingMarkerPlatformTest : BasePlatformTestCase() {
         myFixture.configureByText(
             "c.qd",
             "plain text\n" +
-                "#NoSpace\n" +
-                "```\ncode\n```\n"
+                    "#NoSpace\n" +
+                    "```\ncode\n```\n"
         )
         val provider = QuarkdownHeadingLineMarkerProvider()
         val markers = collectMarkers(provider)
