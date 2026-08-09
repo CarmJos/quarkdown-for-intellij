@@ -30,8 +30,10 @@ class QuarkdownFindUsagesProvider : FindUsagesProvider {
     /**
      * The type label shown in the Show Usages window title. It is rendered grey before the
      * (white) [getDescriptiveName], e.g. `References plc-symbol-output`.
+     * i18n: the value comes from `QuarkdownBundle.properties` (key `quarkdown.ref.references`).
      */
-    override fun getType(element: PsiElement): String = "References"
+    override fun getType(element: PsiElement): String =
+        cc.carm.plugin.intellij.quarkdown.QuarkdownBundle.message("quarkdown.ref.references")
 
     override fun getDescriptiveName(element: PsiElement): String = bareName(element) ?: ""
 

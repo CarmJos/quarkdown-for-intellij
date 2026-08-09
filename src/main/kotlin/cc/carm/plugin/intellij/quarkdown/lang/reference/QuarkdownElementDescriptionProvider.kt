@@ -28,8 +28,10 @@ class QuarkdownElementDescriptionProvider : ElementDescriptionProvider {
         val file = element.containingFile ?: return null
         if (file.fileType != QuarkdownFileType.INSTANCE) return null
 
-        // The Show Usages window title's type part: "References".
-        if (location === UsageViewTypeLocation.INSTANCE) return "References"
+        // The Show Usages window title's type part: "References" (i18n via bundle).
+        if (location === UsageViewTypeLocation.INSTANCE) {
+            return cc.carm.plugin.intellij.quarkdown.QuarkdownBundle.message("quarkdown.ref.references")
+        }
 
         val text = element.text?.trim() ?: return null
         if (text.isEmpty()) return null
