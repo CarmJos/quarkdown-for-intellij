@@ -13,8 +13,9 @@ import com.intellij.psi.tree.IElementType
  * required for the platform's `PsiReferenceService` to consult our `PsiReferenceContributor`
  * (otherwise Ctrl+Click / Go-to-declaration / Find Usages cannot see the references).
  *
- * Id-bearing tokens (`{#id}` = ID_TAG, and `{id}` inside `.ref`/`.var` = FUNCTION_PARAMS)
- * are created as [QuarkdownIdLeafPsiElement], which implements `PsiNamedElement`. The platform
+ * Id-bearing tokens (`{#id}` = ID_TAG, and `{id}` inside `.ref`/`.var` = the
+ * FUNCTION_PARAMS content between the function braces) are created as
+ * [QuarkdownIdLeafPsiElement], which implements `PsiNamedElement`. The platform
  * Symbol model then treats them as declarations, so Ctrl+Click shows the Java-style Show Usages
  * popup listing every usage.
  */

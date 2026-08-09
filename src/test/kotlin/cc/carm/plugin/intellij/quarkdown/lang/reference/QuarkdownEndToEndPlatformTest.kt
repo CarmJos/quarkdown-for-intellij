@@ -21,16 +21,17 @@ class QuarkdownEndToEndPlatformTest : BasePlatformTestCase() {
         myFixture.configureByText("tokens.qd", text)
 
         val psiFile = myFixture.file
-        val leaf1 = psiFile.findElementAt(text.indexOf("{plc-symbol-table-output}"))
-        val leaf2 = psiFile.findElementAt(text.indexOf("{#plc-symbol-table-output}") + 1)
+        // The id content (inside the braces) must stay a single leaf so it is not
+        // split into `plc` / `symbol` / `table` / `output`.
+        val refContentStart = text.indexOf("{plc-symbol-table-output}") + 1
+        val refLeaf = psiFile.findElementAt(refContentStart)
+        val labelLeaf = psiFile.findElementAt(text.indexOf("{#plc-symbol-table-output}") + 1)
 
-        System.out.println("ref leaf='${leaf1?.text}' class=${leaf1?.javaClass?.simpleName}")
-        System.out.println("label leaf='${leaf2?.text}' class=${leaf2?.javaClass?.simpleName}")
+        System.out.println("ref leaf='${refLeaf?.text}' class=${refLeaf?.javaClass?.simpleName}")
+        System.out.println("label leaf='${labelLeaf?.text}' class=${labelLeaf?.javaClass?.simpleName}")
 
-        // The whole id (including braces) must be a single leaf, so it is not split
-        // into `plc` / `symbol` / `table` / `output`.
-        assertTrue("ref id should be one token", leaf1?.text == "{plc-symbol-table-output}")
-        assertTrue("label id should be one token", leaf2?.text == "{#plc-symbol-table-output}")
+        assertTrue("ref id content should be one token", refLeaf?.text == "plc-symbol-table-output")
+        assertTrue("label id should be one token", labelLeaf?.text == "{#plc-symbol-table-output}")
     }
 
     fun `test ctrl click on label shows all usages via multiResolve`() {

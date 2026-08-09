@@ -3,6 +3,7 @@
 ## [Unreleased]
 
 ### Added
+- Distinct syntax highlighting for Quarkdown function calls: the method name (`.ref`, `.row`, `.var`, …), the argument braces `{ }`, named parameters (`size:{a4}`, `margin:{…}`) and their values are now colored independently from plain text, configurable under Editor | Color Scheme | Quarkdown.
 - File path completion for `.include`, `.read`, `.css` and `.code` — typing `.include {path}` now suggests files and directories reachable from the current document, with support for quoted values, directory navigation and `../` traversal.
 - Word & paragraph count in the status bar for `.qd` files, excluding Quarkdown function calls (`.var`, `.read`, `.center`, …), their indented bodies and fenced code blocks.
 - Floating table editor bars matching the IntelliJ Markdown plugin: horizontal bars above column separators and vertical bars at row edges. Clicking a bar opens a floating toolbar to insert/remove/move/select rows or columns and set column alignment; double-click selects the row/column; the gutter icon re-aligns the table.

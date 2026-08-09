@@ -55,6 +55,9 @@ class QuarkdownColorSettingsPage : ColorSettingsPage {
 
             AttributesDescriptor("Function Call Dot", QuarkdownSyntaxHighlighter.FUNCTION_DOT),
             AttributesDescriptor("Function Name", QuarkdownSyntaxHighlighter.FUNCTION_NAME),
+            AttributesDescriptor("Function Parameter Name", QuarkdownSyntaxHighlighter.FUNCTION_PARAMETER_NAME),
+            AttributesDescriptor("Function Parameter Colon", QuarkdownSyntaxHighlighter.FUNCTION_PARAMETER_COLON),
+            AttributesDescriptor("Function Braces { }", QuarkdownSyntaxHighlighter.FUNCTION_BRACE),
             AttributesDescriptor("Function Parameters", QuarkdownSyntaxHighlighter.FUNCTION_PARAMS),
 
             AttributesDescriptor("Element ID Tag", QuarkdownSyntaxHighlighter.ID_TAG),
@@ -106,6 +109,10 @@ class QuarkdownColorSettingsPage : ColorSettingsPage {
             appendLine()
             appendLine(".doctype { paged }")
             appendLine(".docname { \"My Document\" }")
+            appendLine(".pageformat size:{a4} margin:{2.54cm 3.18cm 2.54cm 3.18cm}")
+            appendLine(".row { .col { content } }")
+            appendLine()
+            appendLine("A reference to .ref {chapter-1} and a .var {version} variable.")
             appendLine()
             appendLine("<!-- This is a comment -->")
             appendLine()

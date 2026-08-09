@@ -23,6 +23,21 @@ class QuarkdownLexer : LexerBase() {
     /** True while we're lexing the same line after an image prefix. */
     private var inImageSyntax = false
 
+    /**
+     * Lexer state for Quarkdown function calls (e.g. `.pageformat size:{a4}`).
+     *
+     * Both flags are persisted via [getState] / [initialState] so the platform can
+     * re-lex a changed region mid-call without losing the function-call context.
+     */
+    private var atFunctionName = false
+    private var inFunctionCall = false
+
+    /** The lexer state as of the current token's start (returned by [getState]). */
+    private var tokenStartState = 0
+
+    /** Tokens still to emit after a multi-token construct (e.g. a function brace block). */
+    private val pendingTokens = ArrayDeque<Pair<IElementType, Int>>()
+
     override fun start(buffer: CharSequence, startOffset: Int, endOffset: Int, initialState: Int) {
         this.buffer = buffer
         this.startOffset = startOffset
@@ -32,6 +47,9 @@ class QuarkdownLexer : LexerBase() {
         this.tokenType = null
         this.stateInComment = false
         this.inImageSyntax = false
+        this.pendingTokens.clear()
+        this.atFunctionName = (initialState and STATE_AT_FUNCTION_NAME) != 0
+        this.inFunctionCall = (initialState and STATE_IN_FUNCTION_CALL) != 0
         // CRITICAL: Must advance to first token so getTokenType() returns valid value.
         // The editor framework calls getTokenType() directly after start() without advance().
         advance()
@@ -41,6 +59,9 @@ class QuarkdownLexer : LexerBase() {
         tokenStart = tokenEnd
         tokenType = null
         if (tokenStart >= endOffset) return
+        // Capture the state BEFORE lexing the token at tokenStart: getState() must
+        // return a state that reproduces this token when the lexer is restarted here.
+        tokenStartState = currentState()
         tokenType = nextToken()
     }
 
@@ -49,7 +70,11 @@ class QuarkdownLexer : LexerBase() {
     override fun getTokenEnd(): Int = tokenEnd
     override fun getBufferSequence(): CharSequence = buffer
     override fun getBufferEnd(): Int = endOffset
-    override fun getState(): Int = 0
+    override fun getState(): Int = tokenStartState
+
+    private fun currentState(): Int =
+        (if (atFunctionName) STATE_AT_FUNCTION_NAME else 0) or
+            (if (inFunctionCall) STATE_IN_FUNCTION_CALL else 0)
 
     // --------------------------------------------------------------------
     // Helpers
@@ -103,8 +128,33 @@ class QuarkdownLexer : LexerBase() {
     // --------------------------------------------------------------------
 
     private fun nextToken(): IElementType {
+        // -------- Remaining tokens of a multi-token construct --------
+        if (pendingTokens.isNotEmpty()) {
+            val (type, len) = pendingTokens.removeFirst()
+            return emit(type, len)
+        }
+
         val start = tokenStart
         val c = ch(start)
+
+        // -------- Function name (right after a function-call dot) --------
+        if (atFunctionName) {
+            if (c.isLetter()) {
+                val nameLen = scanIdentifier(start)
+                atFunctionName = false
+                inFunctionCall = true
+                return emit(QuarkdownTokenTypes.FUNCTION_NAME, nameLen)
+            }
+            // No name follows the dot (e.g. `.` at end of input): drop the expectation.
+            atFunctionName = false
+        }
+
+        // -------- Inside a function call's argument list --------
+        if (inFunctionCall) {
+            val argToken = lexFunctionArgument(start)
+            if (argToken != null) return argToken
+            // The argument list ended; fall through to the normal tokenizer.
+        }
 
         // -------- Inside HTML comment: emit content until --> --------
         if (stateInComment) {
@@ -241,7 +291,8 @@ class QuarkdownLexer : LexerBase() {
             '(' -> return emit(QuarkdownTokenTypes.PAREN_OPEN, 1)
             ')' -> return emit(QuarkdownTokenTypes.PAREN_CLOSE, 1)
             '{' -> {
-                // Check if this is an ID tag: {#...}
+                // Check if this is an ID tag: {#...}  (function-call braces are handled
+                // by lexFunctionArgument while inside a call).
                 if (ch(start + 1) == '#') {
                     // Scan until closing }
                     var len = 2 // '{' + '#'
@@ -253,34 +304,6 @@ class QuarkdownLexer : LexerBase() {
                         return emit(QuarkdownTokenTypes.ID_TAG, len)
                     }
                 }
-                
-                // Check if this brace is immediately after a function name (e.g., .ref, .var)
-                // Look backwards for a dot followed by letters
-                var lookBack = start - 1
-                // Skip spaces
-                while (lookBack >= 0 && (ch(lookBack) == ' ' || ch(lookBack) == '\t')) {
-                    lookBack--
-                }
-                // Check for function name (letters)
-                if (lookBack >= 0 && ch(lookBack).isLetter()) {
-                    var nameStart = lookBack
-                    while (nameStart >= 0 && ch(nameStart).isLetter()) {
-                        nameStart--
-                    }
-                    // Check for dot before the name
-                    if (nameStart >= 0 && ch(nameStart) == '.') {
-                        // This is a function call, scan entire {content} as one token
-                        var len = 1 // the {
-                        while (start + len < endOffset && ch(start + len) != '}') {
-                            len++
-                        }
-                        if (start + len < endOffset && ch(start + len) == '}') {
-                            len++ // include }
-                            return emit(QuarkdownTokenTypes.FUNCTION_PARAMS, len)
-                        }
-                    }
-                }
-                
                 return emit(QuarkdownTokenTypes.BRACE_OPEN, 1)
             }
             '}' -> return emit(QuarkdownTokenTypes.BRACE_CLOSE, 1)
@@ -290,7 +313,8 @@ class QuarkdownLexer : LexerBase() {
         if (c == '|') return emit(QuarkdownTokenTypes.TABLE_PIPE, 1)
 
         // -------- Dot / function call --------
-        if (c == '.' && ch(start + 1).isLetter()) {
+        if (c == '.' && isFunctionStartDotAt(start)) {
+            atFunctionName = true
             return emit(QuarkdownTokenTypes.FUNCTION_DOT, 1)
         }
 
@@ -375,5 +399,140 @@ class QuarkdownLexer : LexerBase() {
             if (ch(start + i) == '\\' && start + i + 1 < endOffset) i += 2 else i++
         }
         return if (start + i < endOffset) i + 1 else i
+    }
+
+    // ---------------------------------------------------------------
+    // Function-call lexing
+    // ---------------------------------------------------------------
+
+    /**
+     * Lexes one token inside a function call's argument list (after `.name`).
+     * Returns `null` when the argument list is over so the caller falls through
+     * to the normal tokenizer.
+     */
+    private fun lexFunctionArgument(start: Int): IElementType? {
+        val c = ch(start)
+
+        // A newline ends the call. (`\` continuations keep it alive: the `\`+newline
+        // pair is consumed as a single ESCAPE token below, so the newline never
+        // reaches this branch.)
+        if (c == '\n' || c == '\r') {
+            inFunctionCall = false
+            return null
+        }
+
+        // Whitespace between arguments.
+        if (c == ' ' || c == '\t') {
+            return emit(QuarkdownTokenTypes.TEXT, countSpaces(start))
+        }
+
+        // Positional argument: `{ ... }`.
+        if (c == '{') {
+            return emitFunctionBraceBlock(start)
+        }
+
+        // `::name` chained call segment.
+        if (c == ':' && ch(start + 1) == ':' && ch(start + 2).isLetter()) {
+            atFunctionName = true
+            return emit(QuarkdownTokenTypes.TEXT, 2)
+        }
+
+        // The colon of a named parameter (`size:` in `size:{a4}`).
+        if (c == ':') {
+            return emit(QuarkdownTokenTypes.FUNCTION_PARAMETER_COLON, 1)
+        }
+
+        // Named argument: `name:{ ... }`.
+        if (c.isLetter()) {
+            val nameLen = scanIdentifier(start)
+            var afterName = start + nameLen
+            while (afterName < endOffset && (ch(afterName) == ' ' || ch(afterName) == '\t')) afterName++
+            if (afterName < endOffset && ch(afterName) == ':') {
+                var afterColon = afterName + 1
+                while (afterColon < endOffset && (ch(afterColon) == ' ' || ch(afterColon) == '\t')) afterColon++
+                if (afterColon < endOffset && ch(afterColon) == '{') {
+                    return emit(QuarkdownTokenTypes.FUNCTION_PARAMETER_NAME, nameLen)
+                }
+            }
+            // Not a named parameter — the argument list is over.
+            inFunctionCall = false
+            return null
+        }
+
+        // Line continuation / escape (keeps the call alive across `\` + newline).
+        if (c == '\\' && safe(start + 1) != null) {
+            return emit(QuarkdownTokenTypes.ESCAPE, 2)
+        }
+
+        // Anything else ends the argument list.
+        inFunctionCall = false
+        return null
+    }
+
+    /**
+     * Emits `{` as FUNCTION_BRACE_OPEN and queues the balanced content as
+     * FUNCTION_PARAMS and the closing `}` as FUNCTION_BRACE_CLOSE.
+     */
+    private fun emitFunctionBraceBlock(start: Int): IElementType {
+        val close = findMatchingBrace(start)
+        val contentLen = close - (start + 1)
+        if (contentLen > 0) {
+            pendingTokens.addLast(QuarkdownTokenTypes.FUNCTION_PARAMS to contentLen)
+        }
+        if (close < endOffset) {
+            pendingTokens.addLast(QuarkdownTokenTypes.FUNCTION_BRACE_CLOSE to 1)
+        }
+        return emit(QuarkdownTokenTypes.FUNCTION_BRACE_OPEN, 1)
+    }
+
+    /**
+     * Finds the index of the `}` that matches the brace opened at [openIdx],
+     * tracking nested braces and skipping quoted strings.
+     */
+    private fun findMatchingBrace(openIdx: Int): Int {
+        var depth = 0
+        var quote: Char? = null
+        var i = openIdx
+        while (i < endOffset) {
+            val c = ch(i)
+            if (quote != null) {
+                if (c == quote) quote = null
+                if (c == '\\') i++ // skip escaped char
+            } else when (c) {
+                '"', '\'' -> quote = c
+                '{' -> depth++
+                '}' -> {
+                    depth--
+                    if (depth == 0) return i
+                }
+            }
+            i++
+        }
+        return endOffset
+    }
+
+    /** Length of the identifier (`[a-zA-Z0-9]*`) starting at [start]. */
+    private fun scanIdentifier(start: Int): Int {
+        var i = 0
+        while (start + i < endOffset && ch(start + i).isLetterOrDigit()) i++
+        return i
+    }
+
+    /**
+     * True when [pos] is a `.` starting a Quarkdown function call: followed by a
+     * letter and not preceded by a word character (so `3.14`, `foo.bar`, `..` are excluded).
+     */
+    private fun isFunctionStartDotAt(pos: Int): Boolean {
+        if (ch(pos) != '.') return false
+        val next = ch(pos + 1)
+        if (!next.isLetter()) return false
+        if (pos == 0) return true
+        val prev = ch(pos - 1)
+        return !prev.isLetterOrDigit() && prev != '_'
+    }
+
+    companion object {
+        private const val STATE_AT_FUNCTION_NAME = 1
+        private const val STATE_IN_FUNCTION_CALL = 2
     }
 }

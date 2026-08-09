@@ -4,6 +4,8 @@ import cc.carm.plugin.intellij.quarkdown.lang.lexer.QuarkdownTokenTypes.BRACE_CL
 import cc.carm.plugin.intellij.quarkdown.lang.lexer.QuarkdownTokenTypes.BRACE_OPEN
 import cc.carm.plugin.intellij.quarkdown.lang.lexer.QuarkdownTokenTypes.BRACKET_CLOSE
 import cc.carm.plugin.intellij.quarkdown.lang.lexer.QuarkdownTokenTypes.BRACKET_OPEN
+import cc.carm.plugin.intellij.quarkdown.lang.lexer.QuarkdownTokenTypes.FUNCTION_BRACE_CLOSE
+import cc.carm.plugin.intellij.quarkdown.lang.lexer.QuarkdownTokenTypes.FUNCTION_BRACE_OPEN
 import cc.carm.plugin.intellij.quarkdown.lang.lexer.QuarkdownTokenTypes.PAREN_CLOSE
 import cc.carm.plugin.intellij.quarkdown.lang.lexer.QuarkdownTokenTypes.PAREN_OPEN
 import com.intellij.lang.BracePair
@@ -16,13 +18,14 @@ import com.intellij.psi.tree.IElementType
  *
  * Handles auto-closing, brace matching highlighting, and brace navigation
  * (Ctrl+[, Ctrl+]) for:
- * - `{ }` — function call parameter blocks
+ * - `{ }` — function call parameter blocks (both `FUNCTION_BRACE_*` and plain `BRACE_*`)
  * - `[ ]` — link/image references and table cells
  * - `( )` — link/image URLs
  */
 class QuarkdownBraceMatcher : PairedBraceMatcher {
 
     override fun getPairs(): Array<BracePair> = arrayOf(
+        BracePair(FUNCTION_BRACE_OPEN, FUNCTION_BRACE_CLOSE, true),
         BracePair(BRACE_OPEN, BRACE_CLOSE, true),
         BracePair(BRACKET_OPEN, BRACKET_CLOSE, true),
         BracePair(PAREN_OPEN, PAREN_CLOSE, true),

@@ -76,6 +76,10 @@ object QuarkdownTokenTypes {
     // -------------------------------------------------------------------------
     val FUNCTION_DOT = createToken("FUNCTION_DOT")        // .
     val FUNCTION_NAME = createToken("FUNCTION_NAME")      // doctype, ref, read, …
+    val FUNCTION_PARAMETER_NAME = createToken("FUNCTION_PARAMETER_NAME")  // size in size:{a4}
+    val FUNCTION_PARAMETER_COLON = createToken("FUNCTION_PARAMETER_COLON")  // : after a param name
+    val FUNCTION_BRACE_OPEN = createToken("FUNCTION_BRACE_OPEN")  // { opening a function argument
+    val FUNCTION_BRACE_CLOSE = createToken("FUNCTION_BRACE_CLOSE")  // } closing a function argument
     val FUNCTION_PARAMS = createToken("FUNCTION_PARAMS")  // content inside {}
 
     // -------------------------------------------------------------------------

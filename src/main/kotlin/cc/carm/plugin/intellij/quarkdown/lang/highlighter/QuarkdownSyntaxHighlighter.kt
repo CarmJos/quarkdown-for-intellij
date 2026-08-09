@@ -112,6 +112,15 @@ class QuarkdownSyntaxHighlighter : SyntaxHighlighterBase() {
         val FUNCTION_NAME = TextAttributesKey.createTextAttributesKey(
             "QUARKDOWN_FUNCTION_NAME", DefaultLanguageHighlighterColors.FUNCTION_DECLARATION
         )
+        val FUNCTION_PARAMETER_NAME = TextAttributesKey.createTextAttributesKey(
+            "QUARKDOWN_FUNCTION_PARAMETER_NAME", DefaultLanguageHighlighterColors.PARAMETER
+        )
+        val FUNCTION_PARAMETER_COLON = TextAttributesKey.createTextAttributesKey(
+            "QUARKDOWN_FUNCTION_PARAMETER_COLON", DefaultLanguageHighlighterColors.PARAMETER
+        )
+        val FUNCTION_BRACE = TextAttributesKey.createTextAttributesKey(
+            "QUARKDOWN_FUNCTION_BRACE", DefaultLanguageHighlighterColors.KEYWORD
+        )
         val FUNCTION_PARAMS = TextAttributesKey.createTextAttributesKey(
             "QUARKDOWN_FUNCTION_PARAMS", DefaultLanguageHighlighterColors.PARAMETER
         )
@@ -205,6 +214,10 @@ class QuarkdownSyntaxHighlighter : SyntaxHighlighterBase() {
             // Function calls
             QuarkdownTokenTypes.FUNCTION_DOT to FUNCTION_DOT,
             QuarkdownTokenTypes.FUNCTION_NAME to FUNCTION_NAME,
+            QuarkdownTokenTypes.FUNCTION_PARAMETER_NAME to FUNCTION_PARAMETER_NAME,
+            QuarkdownTokenTypes.FUNCTION_PARAMETER_COLON to FUNCTION_PARAMETER_COLON,
+            QuarkdownTokenTypes.FUNCTION_BRACE_OPEN to FUNCTION_BRACE,
+            QuarkdownTokenTypes.FUNCTION_BRACE_CLOSE to FUNCTION_BRACE,
             QuarkdownTokenTypes.FUNCTION_PARAMS to FUNCTION_PARAMS,
 
             // Element ID tag
