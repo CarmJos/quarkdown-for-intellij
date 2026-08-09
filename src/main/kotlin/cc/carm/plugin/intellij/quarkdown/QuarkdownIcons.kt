@@ -28,6 +28,10 @@ object QuarkdownIcons {
     @JvmField
     val TABLE_MARKER: Icon = IconLoader.getIcon("/icons/marker/table.svg", QuarkdownIcons::class.java)
 
+    /** Gutter icon for code blocks (fenced and `.code` function blocks) */
+    @JvmField
+    val CODE_MARKER: Icon = IconLoader.getIcon("/icons/marker/code.svg", QuarkdownIcons::class.java)
+
     // ------------------------------------------------------------------
     // Action domain — table
     // ------------------------------------------------------------------

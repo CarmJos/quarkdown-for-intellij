@@ -50,13 +50,12 @@
 - [x] Go to Definition: jump to `.ref {id}` definition, `.include`/`.read` file target with variable resolution, etc.
 - [x] Find References: find all usages of a `.ref {id}` label.
 - [x] Rename refactoring: rename label/id and auto-update all references.
-- [ ] Signature Help: parameter hints while typing function arguments.
-- [ ] Document Symbols: structured symbol list for Structure View.
-- [ ] Folding Ranges: code folding via LSP.
+- [X] Signature Help: parameter hints while typing function arguments.
+- [X] Document Symbols: structured symbol list for Structure View.
+- [X] Folding Ranges: code folding via LSP.
 - [ ] Semantic Tokens: enhanced semantic-level syntax highlighting.
 - [ ] Inlay Hints: inline parameter name annotations.
-- [ ] Code Actions: quick-fix suggestions (e.g., add missing parameters).
-- [ ] Document Links: clickable links for `.include`, image paths, etc.
+- [X] Document Links: clickable links for `.include`, image paths, etc.
 
 ## Editor
 
@@ -75,7 +74,7 @@
 - [x] Structure View (`Alt+7`) showing document outline (chapters, tables, images).
 - [x] Breadcrumbs navigation showing current position in document hierarchy.
 - [x] Code folding for sections, code blocks, and tables (similar to IntelliJ Markdown plugin).
-- [ ] Gutter icons marking image, table, and reference locations in editor margin.
+- [X] Gutter icons marking image, table, code block, and reference locations in editor margin.
 - [x] Word count and paragraph count in status bar (excluding function calls and code blocks).
 - [x] TODO / FIXME highlighting in comments, integrated with IDE TODO panel.
 - [x] Drag & drop image files into editor, auto-generating image syntax.
