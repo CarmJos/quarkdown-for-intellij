@@ -16,7 +16,7 @@ import java.awt.event.MouseEvent
 
 /**
  * Shows an image icon in the gutter on lines containing Quarkdown image syntax.
- * Clicking opens QuarkdownImageDialog in EDIT mode, preserving indentation.
+ * Clicking opens ImageDialog in EDIT mode, preserving indentation.
  */
 class QuarkdownImageLineMarkerProvider : LineMarkerProvider {
 
@@ -41,7 +41,7 @@ class QuarkdownImageLineMarkerProvider : LineMarkerProvider {
         return LineMarkerInfo(
             element,
             element.textRange,
-            QuarkdownIcons.IMAGE,
+            QuarkdownIcons.IMAGE_MARKER,
             { "Edit image" },
             ImageGutterHandler(dir),
             GutterIconRenderer.Alignment.RIGHT,

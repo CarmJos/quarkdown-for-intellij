@@ -1,8 +1,8 @@
 package cc.carm.plugin.intellij.quarkdown.statusbar
 
 import cc.carm.plugin.intellij.quarkdown.QuarkdownFileType
-import cc.carm.plugin.intellij.quarkdown.lang.editor.QuarkdownStatsParser
-import cc.carm.plugin.intellij.quarkdown.lang.editor.QuarkdownStatsParser.QuarkdownStats
+import cc.carm.plugin.intellij.quarkdown.statusbar.QuarkdownStatsParser
+import cc.carm.plugin.intellij.quarkdown.statusbar.QuarkdownStatsParser.QuarkdownStats
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.event.DocumentEvent
 import com.intellij.openapi.editor.event.DocumentListener

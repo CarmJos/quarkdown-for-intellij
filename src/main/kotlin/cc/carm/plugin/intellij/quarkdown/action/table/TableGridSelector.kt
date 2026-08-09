@@ -219,4 +219,3 @@ class TableGridSelector(
         private const val maxColumns = 10
     }
 }
-
