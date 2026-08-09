@@ -100,14 +100,15 @@ class QuarkdownSettingsConfigurable(private val project: Project) :
                 }
             }
 
-            group("Compile") {
-                row("CLI arguments:") {
+            group("Build") {
+                row("CLI arguments (Run tool window):") {
                     textField()
                         .bindText(
                             { settings.state.compileCliArgs.orEmpty() },
                             { settings.state.compileCliArgs = it }
                         )
                         .align(AlignX.FILL)
+                        .comment("Appended to: quarkdown compile <file> --pdf --timeout 60 --allow all --out-name main -o <out>")
                 }
                 row("Output directory:") {
                     textFieldWithBrowseButton(
@@ -123,13 +124,14 @@ class QuarkdownSettingsConfigurable(private val project: Project) :
             }
 
             group("Preview") {
-                row("CLI arguments:") {
+                row("CLI arguments (server mode):") {
                     textField()
                         .bindText(
                             { settings.state.previewCliArgs.orEmpty() },
                             { settings.state.previewCliArgs = it }
                         )
                         .align(AlignX.FILL)
+                        .comment("Appended to: quarkdown compile <file> -p -w --server-port <port> --allow all -o <out>")
                 }
                 row("Browser:") {
                     textFieldWithBrowseButton(

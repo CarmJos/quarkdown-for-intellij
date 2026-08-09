@@ -218,6 +218,18 @@
         <statusBarWidgetFactory
                 id="QuarkdownStats"
                 implementation="cc.carm.plugin.intellij.quarkdown.statusbar.QuarkdownStatsWidgetFactory"/>
+
+        <!-- Live preview tool window (JCEF) -->
+        <toolWindow
+                id="Quarkdown"
+                anchor="right"
+                factoryClass="cc.carm.plugin.intellij.quarkdown.ui.preview.QuarkdownPreviewToolWindowFactory"
+                icon="cc.carm.plugin.intellij.quarkdown.QuarkdownIcons.FILE"/>
+
+        <!-- "Quarkdown Build" run configuration type (executes quarkdown compile with PDF export through the IDE Run tool window) -->
+        <configurationType implementation="cc.carm.plugin.intellij.quarkdown.lang.preview.QuarkdownBuildConfigurationType"/>
+
+        <notificationGroup id="Quarkdown" displayType="BALLOON"/>
     </extensions>
 
     <actions>
@@ -227,6 +239,50 @@
                 description="Create a new Quarkdown document">
             <add-to-group group-id="NewGroup" anchor="last"/>
         </action>
+
+        <!-- Toolbar of the Quarkdown preview tool window -->
+        <group id="Quarkdown.PreviewActions" compact="true" text="Quarkdown Preview" description="Quarkdown preview actions">
+            <action id="Quarkdown.Preview.Toggle"
+                    class="cc.carm.plugin.intellij.quarkdown.action.preview.QuarkdownPreviewToggleAction"
+                    icon="cc.carm.plugin.intellij.quarkdown.QuarkdownIcons.PREVIEW_PLAY"
+                    text="Start Preview"
+                    description="Start or stop the live preview server"/>
+            <action id="Quarkdown.Preview.View"
+                    class="cc.carm.plugin.intellij.quarkdown.action.preview.QuarkdownViewPreviewAction"
+                    icon="cc.carm.plugin.intellij.quarkdown.QuarkdownIcons.PREVIEW_VIEW"
+                    text="View in Browser"
+                    description="Open the running preview in the external browser"/>
+            <separator/>
+            <action id="Quarkdown.Preview.Refresh"
+                    class="cc.carm.plugin.intellij.quarkdown.action.preview.QuarkdownRefreshPreviewAction"
+                    icon="cc.carm.plugin.intellij.quarkdown.QuarkdownIcons.PREVIEW_REFRESH"
+                    text="Refresh"
+                    description="Re-compile the current document and refresh the preview">
+                <keyboard-shortcut first-keystroke="control alt R" keymap="$default"/>
+            </action>
+            <action id="Quarkdown.Preview.CleanRefresh"
+                    class="cc.carm.plugin.intellij.quarkdown.action.preview.QuarkdownCleanRefreshPreviewAction"
+                    icon="cc.carm.plugin.intellij.quarkdown.QuarkdownIcons.PREVIEW_CLEAN"
+                    text="Clean &amp; Refresh"
+                    description="Clear the output cache and refresh the preview"/>
+            <separator/>
+            <action id="Quarkdown.Preview.Build"
+                    class="cc.carm.plugin.intellij.quarkdown.action.preview.QuarkdownBuildAction"
+                    icon="cc.carm.plugin.intellij.quarkdown.QuarkdownIcons.PREVIEW_BUILD"
+                    text="Build"
+                    description="Run the build (PDF export) in the IDE Run tool window"/>
+            <action id="Quarkdown.Preview.OpenInBrowser"
+                    class="cc.carm.plugin.intellij.quarkdown.action.preview.QuarkdownOpenInBrowserAction"
+                    icon="cc.carm.plugin.intellij.quarkdown.QuarkdownIcons.PREVIEW_BROWSER"
+                    text="Open in Browser"
+                    description="Open the port-based preview in an external browser"/>
+            <separator/>
+            <action id="Quarkdown.Preview.WatchChanges"
+                    class="cc.carm.plugin.intellij.quarkdown.action.preview.QuarkdownWatchChangesAction"
+                    icon="cc.carm.plugin.intellij.quarkdown.QuarkdownIcons.PREVIEW_WATCH"
+                    text="Watch Changes"
+                    description="Automatically refresh the preview on file changes"/>
+        </group>
 
         <!-- Floating toolbars for row/column operations on Quarkdown tables.
              MUST be in <actions>, not <extensions>, or ActionManager cannot resolve them. -->

@@ -43,10 +43,9 @@
 
 ## LSP Integration
 
-- [ ] LSP client lifecycle management (auto-start, connect, restart, stop).
-- [ ] Diagnostics: real-time syntax checking, type errors, undefined references.
-- [ ] Completion: code completion via LSP for function names and parameters.
-- [ ] Hover: `Ctrl+Q` documentation tooltips for directives and functions.
+- [x] Diagnostics: real-time syntax checking, type errors, undefined references (unknown functions, invalid enum values, missing/extra args, positional-after-named).
+- [x] Completion: code completion via LSP for function names and parameters (function names, next-argument hints, enum values, file paths).
+- [x] Hover: `Ctrl+Q` documentation tooltips for directives and functions (signature, description, parameters, samples).
 - [x] Go to Definition: jump to `.ref {id}` definition, `.include`/`.read` file target with variable resolution, etc.
 - [x] Find References: find all usages of a `.ref {id}` label.
 - [x] Rename refactoring: rename label/id and auto-update all references.
@@ -99,21 +98,22 @@
 
 ## Preview
 
-- [ ] Live preview panel using JCEF to render HTML output in a side panel.
-    - [ ] Auto-refresh preview on file save or changes.
-    - [ ] "Refresh" button for manual refresh.
-    - [ ] "Clean & Refresh" option to clear cache and refresh preview.
-    - [ ] "Compile PDF" action to generate PDF output using Quarkdown CLI.
+- [x] Live preview panel using JCEF to render HTML output in a side panel (server-mode: `quarkdown compile <file> -p -w --server-port <port> --allow all -o <out>`).
+    - [x] Auto-refresh preview on file save or changes (`-w` watch mode + browser hot-reload).
+    - [x] "Refresh" button for manual refresh (restarts the preview server).
+    - [x] "Clean & Refresh" option to clear cache and refresh preview (`--clean`).
+    - [x] "Build" action to generate PDF output through the IDE *Run* tool window (`quarkdown compile <file> --pdf --timeout 60 --allow all --out-name main -o <out>`).
+    - [x] Progress bar / loading indication while the server starts or the page loads.
+    - [x] File selector in the toolbar (pin a `.qd` file, or leave empty for "Auto: <current file>").
 - [ ] Split editor preview (editor + preview side by side in the editor area).
-- [ ] External browser preview option (configurable: side panel or external browser).
-- [ ] Watch mode for auto-compile on save (reference VSCode Quarkdown plugin implementation).
-- [ ] Compilation output console as a dedicated tool window.
-- [ ] Run Configuration support for `.qd` files (run/debug compilation).
+- [x] External browser preview option (port-based preview: `Open in Browser` + a `View` button shown while the server is running).
+- [x] Watch mode for auto-compile on save (handled by the CLI `-w` flag).
+- [ ] Compilation output console as a dedicated tool window (build output currently appears in the IDE Run tool window).
+- [x] Run Configuration support for `.qd` files (Quarkdown Build run configuration type executed from the Build button).
 
 ## Tool Windows & UI
 
-- [ ] Quarkdown tool window integrating: Preview.
-- [ ] Sidebar action icons on `.qd` files in project tree.
+- [x] Quarkdown tool window integrating: Preview.
 - [ ] Notification system for Quarkdown version updates.
 
 ## Quality

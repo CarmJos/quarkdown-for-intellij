@@ -19,7 +19,7 @@ class QuarkdownSettings : SimplePersistentStateComponent<QuarkdownSettings.State
         var compileCliArgs by string()
         var outputDirectory by string(".quarkdown-output")
         var previewBrowser by string()
-        var previewPort by property(8089)
+        var previewPort by property(8989)
         var previewCliArgs by string()
         var watchChanges by property(true)
     }

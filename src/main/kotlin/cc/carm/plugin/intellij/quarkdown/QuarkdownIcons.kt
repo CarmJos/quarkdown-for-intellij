@@ -123,4 +123,45 @@ object QuarkdownIcons {
     /** Insert a link (floating toolbar) */
     @JvmField
     val TEXT_LINK: Icon = IconLoader.getIcon("/icons/action/text/link.svg", QuarkdownIcons::class.java)
+
+    // ------------------------------------------------------------------
+    // Action domain — preview
+    // Each icon uses a distinct color to visually separate its function:
+    //   green  = start preview,  red = stop / clean,
+    //   blue   = view (peek),    yellow = watch,
+    //   orange = refresh,         purple = build,
+    //   teal   = open in browser.
+    // ------------------------------------------------------------------
+
+    /** Start the live preview (green play) */
+    @JvmField
+    val PREVIEW_PLAY: Icon = IconLoader.getIcon("/icons/action/preview/play.svg", QuarkdownIcons::class.java)
+
+    /** Stop the live preview (red stop) */
+    @JvmField
+    val PREVIEW_STOP: Icon = IconLoader.getIcon("/icons/action/preview/stop.svg", QuarkdownIcons::class.java)
+
+    /** View the running preview in the external browser (blue eye, shown while running) */
+    @JvmField
+    val PREVIEW_VIEW: Icon = IconLoader.getIcon("/icons/action/preview/view.svg", QuarkdownIcons::class.java)
+
+    /** Watch changes / auto-refresh (yellow eye) */
+    @JvmField
+    val PREVIEW_WATCH: Icon = IconLoader.getIcon("/icons/action/preview/watch.svg", QuarkdownIcons::class.java)
+
+    /** Manually refresh the live preview (orange) */
+    @JvmField
+    val PREVIEW_REFRESH: Icon = IconLoader.getIcon("/icons/action/preview/refresh.svg", QuarkdownIcons::class.java)
+
+    /** Clean the preview output cache and refresh (red) */
+    @JvmField
+    val PREVIEW_CLEAN: Icon = IconLoader.getIcon("/icons/action/preview/clean.svg", QuarkdownIcons::class.java)
+
+    /** Build (compile to PDF) through the IDE *Run* tool window (purple) */
+    @JvmField
+    val PREVIEW_BUILD: Icon = IconLoader.getIcon("/icons/action/preview/build.svg", QuarkdownIcons::class.java)
+
+    /** Open the port-based preview in an external browser (teal globe) */
+    @JvmField
+    val PREVIEW_BROWSER: Icon = IconLoader.getIcon("/icons/action/preview/browser.svg", QuarkdownIcons::class.java)
 }
