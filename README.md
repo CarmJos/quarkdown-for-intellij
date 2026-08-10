@@ -85,9 +85,9 @@ If you appreciate this plugin, consider supporting me with a donation at
 
 **Thank you for supporting open-source projects!**
 
-Many thanks to JetBrains for kindly providing a license for us to work on this and other open-source projects.
+<img src="https://resources.jetbrains.com/storage/products/company/brand/logos/jb_beam.svg" width="150px" alt="logo" align="right" style="float: right"/>
 
-[![](https://resources.jetbrains.com/storage/products/company/brand/logos/jb_beam.svg)](https://www.jetbrains.com/?from=https://github.com/CarmJos/)
+Many thanks to JetBrains for kindly providing a license for us to work on this and other open-source projects.
 
 ## Contributing
 

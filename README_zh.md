@@ -85,9 +85,10 @@ _**"为 JetBrains IntelliJ 平台提供 Quarkdown 语言支持。"**_
 
 **感谢您支持开源项目！**
 
+<img src="https://resources.jetbrains.com/storage/products/company/brand/logos/jb_beam.svg" width="150px" alt="logo" align="right" style="float: right"/>
+
 特别感谢 JetBrains 为我们提供许可证，让我们能够致力于这个和其他开源项目。
 
-[![](https://resources.jetbrains.com/storage/products/company/brand/logos/jb_beam.svg)](https://www.jetbrains.com/?from=https://github.com/CarmJos/)
 
 ## 贡献指南
 
