@@ -1,0 +1,67 @@
+<!--
+  Getting Started – for JetBrains Marketplace plugin page
+  ========================================================
+  Paste the content between the "START" and "END" markers into the
+  "Getting started" field of your plugin's Marketplace page.
+
+  NOTE: JetBrains Marketplace does NOT render <h1>-<h6> headings as of the
+  current editor. Use <p><strong>…</strong></p> or <p><b>…</b></p> for section
+  titles instead. Links are supported and should include descriptive text.
+-->
+
+<!-- ============= START ============= -->
+
+<p><strong>Quarkdown for IntelliJ</strong> brings the full <a href="https://github.com/iamgio/quarkdown">Quarkdown</a> language support to IntelliJ-based IDEs. In a few minutes you can start writing <code>.qd</code> documents with syntax highlighting, smart code completion, real-time error detection, and a live preview that refreshes as you save.</p>
+
+<p><strong>Step 1 – Install a compatible JetBrains IDE</strong></p>
+
+<p>Quarkdown for IntelliJ works in any IntelliJ-based IDE, including <strong>IntelliJ IDEA</strong> (Community or Ultimate), <strong>PyCharm</strong>, <strong>CLion</strong>, <strong>WebStorm</strong>, <strong>GoLand</strong>, and <strong>Android Studio</strong>. The plugin requires IDE version <strong>2025.2 or later</strong>. If you do not have an IDE installed yet, download one from the JetBrains website and install it first.</p>
+
+<p><strong>Step 2 – Install the plugin</strong></p>
+
+<ol>
+  <li>Launch your IDE and open <code>Settings/Preferences → Plugins</code>.</li>
+  <li>Switch to the <strong>Marketplace</strong> tab and search for <code>Quarkdown</code>.</li>
+  <li>Click <strong>Install</strong> and restart the IDE when prompted.</li>
+</ol>
+
+<p>Prefer to install from disk? Download the latest release from the <a href="https://github.com/CarmJos/quarkdown-for-intellij/releases">GitHub Releases</a> page, then go to <code>Settings/Preferences → Plugins → ⚙️ → Install Plugin from Disk…</code> and select the downloaded <code>.zip</code> file.</p>
+
+<p><strong>Step 3 – Install the Quarkdown command-line tool</strong></p>
+
+<p>The plugin uses the <a href="https://github.com/iamgio/quarkdown">Quarkdown</a> CLI under the hood for code completion, error checking, and the live preview. Make sure it is installed and available on your system <code>PATH</code>, or set the <code>QUARKDOWN_HOME</code> environment variable to your Quarkdown installation folder.</p>
+
+<p>You do not need to configure anything manually – the plugin <strong>auto-detects</strong> your Quarkdown installation when the IDE starts. If no installation is found, the plugin settings show a clear hint with the exact command to install it, so you can get up and running in one step.</p>
+
+<p><strong>Step 4 – Configure the plugin (optional)</strong></p>
+
+<p>Open <code>Settings/Preferences → Languages &amp; Frameworks → Quarkdown</code> to fine-tune the plugin to your workflow:</p>
+
+<ul>
+  <li><strong>Quarkdown path</strong> – point to your Quarkdown installation manually if auto-detection does not find it.</li>
+  <li><strong>Compile parameters</strong> – configure command-line arguments and the output directory used when building documents.</li>
+  <li><strong>Preview parameters</strong> – adjust how the live preview is generated and served, including watch mode and port settings.</li>
+  <li><strong>Editor appearance</strong> – customize fonts, line height, and per-element styling for headings, code blocks, tables, and more under <code>Editor → Color Scheme → Quarkdown</code>.</li>
+</ul>
+
+<p><strong>Step 5 – Start writing Quarkdown</strong></p>
+
+<p>Create your first document via <code>File → New → Quarkdown Document</code> (a ready-made template is included), or simply create a file with the <code>.qd</code> extension and start typing. You will immediately benefit from:</p>
+
+<ul>
+  <li>Full syntax highlighting and real-time error detection as you type.</li>
+  <li>Intelligent code completion for functions, parameters, and file paths.</li>
+  <li>Quick documentation, go-to-definition, find-usages, and rename refactoring for references and includes.</li>
+  <li>A live preview panel that auto-refreshes on save, with one-click export to PDF through the built-in <strong>Quarkdown Build</strong> run configuration.</li>
+</ul>
+
+<p><strong>Complementary and conflicting plugins</strong></p>
+
+<p>Quarkdown for IntelliJ works side by side with the built-in <a href="https://plugins.jetbrains.com/plugin/7793-markdown">Markdown</a> plugin that ships with IntelliJ-based IDEs – both can be used in the same project without conflicts, and Quarkdown intentionally mirrors Markdown's editing conveniences (floating table bars, code folding, and more) so the experience feels familiar.</p>
+
+<p>If you also work in Visual Studio Code, the <a href="https://quarkdown.com/vs-code">Quarkdown VS Code extension</a> offers equivalent support there, so you can switch editors freely.</p>
+
+<p>There are currently <strong>no known conflicting plugins</strong>. If you run into an incompatibility with another plugin, please report it on the <a href="https://github.com/CarmJos/quarkdown-for-intellij/issues">issue tracker</a> so we can look into it.</p>
+
+<!-- ============= END ============= -->
+
