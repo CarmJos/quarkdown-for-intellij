@@ -22,18 +22,20 @@ jobs:
       pull-requests: write
     steps:
 
-      # Free GitHub Actions Environment Disk Space
-      - name: Maximize Build Space
-        uses: jlumbroso/free-disk-space@v1.3.1
-        with:
-          tool-cache: false
-          large-packages: false
-
       # Check out the current repository
       - name: Fetch Sources
         uses: actions/checkout@v7
         with:
           ref: ${{ github.event.release.tag_name }}
+
+      # Compute artifact name: <repo>_<version>_v<short-commit-sha>
+      # Version is read from gradle.properties (same as the build workflow).
+      - name: Compute artifact name
+        id: artifact
+        run: |
+          VERSION=$(grep '^version' gradle.properties | cut -d'=' -f2 | tr -d ' ')
+          SHA=$(git rev-parse --short HEAD)
+          echo "name=${GITHUB_REPOSITORY##*/}_${VERSION}_v${SHA}" >> "$GITHUB_OUTPUT"
 
       # Set up the Java environment for the next steps
       - name: Setup Java
@@ -69,6 +71,22 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh release upload ${{ github.event.release.tag_name }} ./build/distributions/*.zip --clobber
+
+      # Also store the plugin as an Actions artifact (named with version + commit).
+      # The release asset above is left untouched; the distribution zip is simply
+      # unpacked so the artifact is the plugin itself (directly installable).
+      - name: Unpack plugin distribution
+        run: |
+          mkdir -p ./build/artifact
+          cd ./build/artifact
+          unzip -q ../distributions/*.zip
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ steps.artifact.outputs.name }}
+          path: ./build/artifact/
+          if-no-files-found: error
 
       # Publish the plugin to JetBrains Marketplace (full releases only, not prereleases)
       - name: Publish Plugin
