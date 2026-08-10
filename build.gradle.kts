@@ -289,3 +289,30 @@ tasks.named("sourcesJar") {
 
 // Print Quarkdown detection result
 println("Quarkdown home: ${quarkdownHome ?: "Not found - Quarkdown API will not be available"}")
+
+// ── Plugin metadata & JetBrains Marketplace configuration ────────────
+// Values declared here are patched into META-INF/plugin.xml at build time
+// by the IntelliJ Platform Gradle Plugin (see the `patchPluginXml` task).
+intellijPlatform {
+    pluginConfiguration {
+        vendor {
+            name = "CarmJos"
+            url = "https://github.com/CarmJos/quarkdown-for-intellij"
+        }
+    }
+
+    // Publish to JetBrains Marketplace via `./gradlew publishPlugin`.
+    // Requires the PUBLISH_TOKEN environment variable (set in CI secrets).
+    publishing {
+        token = providers.environmentVariable("PUBLISH_TOKEN")
+        channels = listOf("default")
+    }
+
+    // Plugin signing (required by JetBrains Marketplace since 2021).
+    // Credentials are read from environment variables (set in CI secrets).
+    signing {
+        certificateChain = providers.environmentVariable("CERTIFICATE_CHAIN")
+        privateKey = providers.environmentVariable("PRIVATE_KEY")
+        password = providers.environmentVariable("PRIVATE_KEY_PASSWORD")
+    }
+}

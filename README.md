@@ -74,7 +74,7 @@ enabling developers to write and edit Quarkdown documents with full IDE assistan
 
 ## Requirements
 
-- IntelliJ IDEA 2023.2 or later (Community or Ultimate)
+- IntelliJ IDEA 2025.2 or later (Community or Ultimate)
 - [Quarkdown CLI](https://github.com/iamgio/quarkdown) installed and available in `PATH` or configured in plugin settings
 
 ## Support and Donation

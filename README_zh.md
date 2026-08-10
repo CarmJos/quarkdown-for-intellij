@@ -74,7 +74,7 @@ _**"为 JetBrains IntelliJ 平台提供 Quarkdown 语言支持。"**_
 
 ## 系统要求
 
-- IntelliJ IDEA 2023.2 或更高版本（社区版或旗舰版）
+- IntelliJ IDEA 2025.2 或更高版本（社区版或旗舰版）
 - [Quarkdown CLI](https://github.com/iamgio/quarkdown) 已安装并可在 `PATH` 中找到，或在插件设置中配置
 
 ## 支持与捐赠
