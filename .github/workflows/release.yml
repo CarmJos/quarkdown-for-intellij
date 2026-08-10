@@ -1,17 +1,21 @@
 # GitHub Actions Workflow created for handling the release process based on the draft release prepared with the Build workflow.
+# On release publication: builds the plugin and uploads the distribution to the release assets.
+# Only full releases (non-prereleases) are published to the JetBrains Marketplace;
+# prereleases are uploaded to the release assets without being published to the Marketplace.
 # Running the publishPlugin task requires all the following secrets to be provided: PUBLISH_TOKEN, PRIVATE_KEY, PRIVATE_KEY_PASSWORD, CERTIFICATE_CHAIN.
 # See https://plugins.jetbrains.com/docs/intellij/plugin-signing.html for more information.
 
 name: Release
+
 on:
   release:
-    types: [ prereleased, released ]
+    types: [ published ]
 
 jobs:
 
-  # Prepare and publish the plugin to JetBrains Marketplace repository
+  # Build the plugin, upload it to the release and (for full releases) publish to JetBrains Marketplace
   release:
-    name: Publish Plugin
+    name: Release Plugin
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -44,9 +48,9 @@ jobs:
         with:
           cache-read-only: true
 
-      # Update the Unreleased section with the current release note
+      # Update the Unreleased section with the current release note (full releases only)
       - name: Patch Changelog
-        if: ${{ github.event.release.body != '' }}
+        if: ${{ github.event.release.body != '' && !github.event.release.prerelease }}
         env:
           CHANGELOG: ${{ github.event.release.body }}
         run: |
@@ -56,8 +60,19 @@ jobs:
 
           ./gradlew patchChangelog --release-note-file=$RELEASE_NOTE
 
-      # Publish the plugin to JetBrains Marketplace
+      # Build the plugin distribution
+      - name: Build Plugin
+        run: ./gradlew buildPlugin
+
+      # Upload the plugin distribution as a release asset
+      - name: Upload Release Asset
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release upload ${{ github.event.release.tag_name }} ./build/distributions/* --clobber
+
+      # Publish the plugin to JetBrains Marketplace (full releases only, not prereleases)
       - name: Publish Plugin
+        if: ${{ !github.event.release.prerelease }}
         env:
           PUBLISH_TOKEN: ${{ secrets.PUBLISH_TOKEN }}
           CERTIFICATE_CHAIN: ${{ secrets.CERTIFICATE_CHAIN }}
@@ -65,15 +80,9 @@ jobs:
           PRIVATE_KEY_PASSWORD: ${{ secrets.PRIVATE_KEY_PASSWORD }}
         run: ./gradlew publishPlugin
 
-      # Upload an artifact as a release asset
-      - name: Upload Release Asset
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release upload ${{ github.event.release.tag_name }} ./build/distributions/*
-
-      # Create a pull request
+      # Create a pull request (full releases only)
       - name: Create Pull Request
-        if: ${{ github.event.release.body != '' }}
+        if: ${{ github.event.release.body != '' && !github.event.release.prerelease }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
