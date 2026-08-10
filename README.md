@@ -71,4 +71,4 @@ the [GNU General Public License, Version 3](https://www.gnu.org/licenses/gpl-3.0
 
 [gh:releases]: https://github.com/CarmJos/quarkdown-for-intellij/releases
 
-[jb:plugin]: https://plugins.jetbrains.com/plugin/cc.carm.plugin.intellij.quarkdown
+[jb:plugin]: https://plugins.jetbrains.com/plugin/cc.carm.plugin.quarkdown

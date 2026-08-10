@@ -1,5 +1,5 @@
 <idea-plugin>
-    <id>cc.carm.plugin.intellij.quarkdown</id>
+    <id>cc.carm.plugin.quarkdown</id>
     <name>Quarkdown</name>
     <vendor>CarmJos</vendor>
     <description>Quarkdown language support for JetBrains IntelliJ Platform.</description>
