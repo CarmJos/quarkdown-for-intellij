@@ -272,11 +272,6 @@
                     icon="cc.carm.plugin.intellij.quarkdown.QuarkdownIcons.PREVIEW_BUILD"
                     text="Build"
                     description="Run the build (PDF export) in the IDE Run tool window"/>
-            <action id="Quarkdown.Preview.OpenInBrowser"
-                    class="cc.carm.plugin.intellij.quarkdown.action.preview.QuarkdownOpenInBrowserAction"
-                    icon="cc.carm.plugin.intellij.quarkdown.QuarkdownIcons.PREVIEW_BROWSER"
-                    text="Open in Browser"
-                    description="Open the port-based preview in an external browser"/>
             <separator/>
             <action id="Quarkdown.Preview.WatchChanges"
                     class="cc.carm.plugin.intellij.quarkdown.action.preview.QuarkdownWatchChangesAction"

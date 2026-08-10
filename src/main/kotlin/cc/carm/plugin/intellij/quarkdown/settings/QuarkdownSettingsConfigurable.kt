@@ -105,7 +105,7 @@ class QuarkdownSettingsConfigurable(private val project: Project) :
                             { settings.state.compileCliArgs = it }
                         )
                         .align(AlignX.FILL)
-                        .comment("Appended to: quarkdown compile <file> --pdf --timeout 60 --allow all --out-name main -o <out>")
+                        .comment("Appended to: quarkdown compile <file> --pdf")
                 }
                 row("Output directory:") {
                     textFieldWithBrowseButton(
@@ -128,7 +128,7 @@ class QuarkdownSettingsConfigurable(private val project: Project) :
                             { settings.state.previewCliArgs = it }
                         )
                         .align(AlignX.FILL)
-                        .comment("Appended to: quarkdown compile <file> -p -w --server-port <port> --allow all -o <out>")
+                        .comment("Appended to: quarkdown compile <file> --preview")
                 }
                 row("Browser:") {
                     textFieldWithBrowseButton(

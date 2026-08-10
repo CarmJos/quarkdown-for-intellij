@@ -14,24 +14,26 @@ import java.util.concurrent.TimeUnit
  *
  * Two modes are supported:
  *
- * **Live preview (server mode)** — a single long-lived process keeps a web server alive:
+ * **Live preview (server mode)** — a single long-lived process keeps a web server alive.
+ * The base command is kept minimal (`quarkdown compile <source> --preview`); the plugin
+ * only appends the flags it needs to operate:
  * ```
- * quarkdown compile <source> -p [-w] --server-port <port> --allow all -o <out> <extraArgs>
+ * quarkdown compile <source> --preview [--watch] --server-port <port> --browser none -o <out> <extraArgs>
  * ```
- * With `-w` the CLI watches the source directory and recompiles automatically; the
- * built-in browser page hot-reloads the changes.
+ * - `--watch` is added only when the "watch changes" setting is enabled.
+ * - `--browser none` prevents the CLI from opening a browser on its own; opening the
+ *   preview in a browser is always user-triggered.
+ * - `--server-port` and `-o` are internal to the plugin and are never shown in the
+ *   settings page description of the base command.
  *
- * **Build / PDF (one-shot)** — used together with the IDE *Run* tool window:
- * ```
- * quarkdown compile <source> --pdf --timeout 60 --allow all --out-name main -o <out> <extraArgs>
- * ```
+ * **Build / PDF (one-shot)** — used together with the IDE *Run* tool window. The base
+ * command is `quarkdown compile <source> --pdf`; every other option (`--timeout`,
+ * `--allow`, `--out-name`, `-o`, ...) is supplied by the user's CLI arguments setting.
  */
 object QuarkdownCli {
 
     private val logger = Logger.getInstance(QuarkdownCli::class.java)
 
-    /** Fixed output resource name for one-shot builds, so the artifact is easy to locate. */
-    const val OUT_NAME = "main"
 
     /** How long to wait for the preview web server to become reachable. */
     const val SERVER_START_TIMEOUT_SECONDS = 60L
@@ -57,8 +59,10 @@ object QuarkdownCli {
     /**
      * Builds the argument list for the long-lived **preview server** process.
      *
-     * The produced command follows the reference:
-     * `quarkdown compile <source> -p [-w] --server-port <port> --allow all -o <out> <extraArgs>`
+     * The base command is minimal (`quarkdown compile <source> --preview`); the plugin
+     * only appends what it needs to operate: `--watch` (when enabled), `--server-port`,
+     * `--browser none` (so the CLI never opens a browser on its own) and `-o`.
+     * Everything else comes from the user's preview CLI arguments setting.
      */
     fun previewServerArgs(
         executable: File,
@@ -72,28 +76,32 @@ object QuarkdownCli {
             executable.absolutePath,
             "compile",
             source.absolutePath,
-            "-p",
+            "--preview",
         )
-        if (watch) args.add("-w")
+        if (watch) args.add("--watch")
         args.add("--server-port")
         args.add(port.toString())
-        args.add("--allow")
-        args.add("all")
         args.add("-o")
         args.add(outputDir.absolutePath)
+        // Never auto-open a browser when starting the preview — opening is user-triggered.
+        if (!hasBrowserOption(extraArgs)) {
+            args.add("--browser")
+            args.add("none")
+        }
         args.addAll(tokenizeArguments(extraArgs))
         return args
     }
 
     /**
      * Builds the argument list for a one-shot **build** (PDF export) that is executed
-     * through the IDE *Run* tool window:
-     * `quarkdown compile <source> --pdf --timeout 60 --allow all --out-name main -o <out> <extraArgs>`
+     * through the IDE *Run* tool window. The base command is minimal —
+     * `quarkdown compile <source> --pdf` — and every other option (`--timeout`,
+     * `--allow`, `--out-name`, `-o`, ...) is supplied by the user's build CLI
+     * arguments setting.
      */
     fun buildRunArgs(
         executable: File,
         source: File,
-        outputDir: File,
         extraArgs: String?,
     ): List<String> {
         val args = mutableListOf(
@@ -101,14 +109,14 @@ object QuarkdownCli {
             "compile",
             source.absolutePath,
             "--pdf",
-            "--timeout", "60",
-            "--allow", "all",
-            "--out-name", OUT_NAME,
-            "-o", outputDir.absolutePath,
         )
         args.addAll(tokenizeArguments(extraArgs))
         return args
     }
+
+    /** True when the extra arguments already specify a `--browser` option. */
+    private fun hasBrowserOption(extraArgs: String?): Boolean =
+        tokenizeArguments(extraArgs).any { it == "--browser" || it == "-b" || it.startsWith("--browser=") }
 
     /** True when an HTTP server answers on [port] (any status code means "ready"). */
     fun isPortReady(port: Int): Boolean = try {
@@ -218,4 +226,3 @@ object QuarkdownCli {
 
     private val LAUNCHER_NAMES = listOf("quarkdown.cmd", "quarkdown.bat", "quarkdown")
 }
-

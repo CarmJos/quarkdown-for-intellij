@@ -22,8 +22,6 @@ import com.intellij.openapi.fileEditor.FileEditorManagerEvent
 import com.intellij.openapi.fileEditor.FileEditorManagerListener
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
-import com.intellij.psi.search.FileTypeIndex
-import com.intellij.psi.search.GlobalSearchScope
 import java.io.File
 import java.nio.charset.Charset
 import java.util.*
@@ -34,18 +32,21 @@ import java.util.concurrent.CopyOnWriteArrayList
  *
  * The preview is a **single long-lived Quarkdown server process**:
  * ```
- * quarkdown compile <file> -p -w --server-port <port> --allow all -o <out> <extraArgs>
+ * quarkdown compile <file> --preview [--watch] --server-port <port> --browser none -o <out> <extraArgs>
  * ```
- * - `-p` starts the embedded web server; the JCEF panel (or an external browser) loads
- *   `http://localhost:<port>/`.
- * - `-w` makes the CLI watch the source and recompile automatically; the served page
- *   hot-reloads in the browser, so no manual recompilation is needed for normal editing.
+ * - `--preview` starts the embedded web server; the JCEF panel (or an external browser)
+ *   loads `http://localhost:<port>/`.
+ * - `--watch` (enabled via the "Watch changes" setting) makes the CLI watch the source
+ *   and recompile automatically; the served page hot-reloads in the browser.
+ * - `--browser none` ensures the CLI never opens a browser by itself — opening the
+ *   preview is always user-triggered.
  * - *Refresh* / *Clean &amp; Refresh* restart that process.
  *
  * Responsibilities:
  *  - Track the previewed `.qd` file: a pinned selection from the file selector, or the
  *    active editor file when no file is pinned ("auto").
  *  - Start / stop / restart the server and report lifecycle events to [Listener]s.
+ *  - Keep the complete output log of the current run (for the "View Full Log" dialog).
  *  - Open the server URL in an external browser (port-based preview).
  *  - Run one-shot builds (`--pdf`) through the standard IDE *Run* tool window.
  */
@@ -87,10 +88,12 @@ class QuarkdownPreviewService(private val project: Project) : Disposable {
     var busy: Boolean = false
         private set
 
-    /** Watch mode: when `true` the server is started with `-w` (auto-recompile on save). */
-    @Volatile
-    var watchEnabled: Boolean = true
-        private set
+    /**
+     * Watch mode. Always reads from the "Watch changes" setting so the panel toggle and
+     * the Settings page stay in sync (single source of truth).
+     */
+    val watchEnabled: Boolean
+        get() = QuarkdownSettings.getInstance(project).state.watchChanges
 
     /** Port of the preview web server. */
     val port: Int
@@ -102,6 +105,9 @@ class QuarkdownPreviewService(private val project: Project) : Disposable {
 
     /** Last N lines of server output, kept for error reporting. */
     private val recentOutput = ArrayDeque<String>()
+
+    /** Every output line of the current server run (for the "View Full Log" dialog). */
+    private val fullLog = ArrayDeque<String>()
 
     /** Detail text of the last [State.ERROR], surfaced to the panel status bar. */
     @Volatile
@@ -124,7 +130,6 @@ class QuarkdownPreviewService(private val project: Project) : Disposable {
     }
 
     init {
-        watchEnabled = QuarkdownSettings.getInstance(project).state.watchChanges
 
         EditorFactory.getInstance().eventMulticaster.addDocumentListener(documentListener, this)
 
@@ -204,10 +209,9 @@ class QuarkdownPreviewService(private val project: Project) : Disposable {
         }
     }
 
-    /** Enables/disables watch mode and restarts the server so the flag takes effect. */
+    /** Enables/disables watch mode (persisted to the shared "Watch changes" setting). */
     fun setWatchEnabled(enabled: Boolean) {
         if (watchEnabled == enabled) return
-        watchEnabled = enabled
         QuarkdownSettings.getInstance(project).state.watchChanges = enabled
         if (state != State.STOPPED) {
             restartServer(clean = false)
@@ -216,6 +220,9 @@ class QuarkdownPreviewService(private val project: Project) : Disposable {
 
     /** URL served by the preview server. */
     fun viewUrl(): String = "http://localhost:${port}/"
+
+    /** Complete output log of the current server run (for the "View Full Log" dialog). */
+    fun fullLogText(): String = synchronized(recentOutput) { fullLog.joinToString("\n") }
 
     /**
      * Opens the port-based preview in an external browser. Starts the server first when
@@ -262,9 +269,9 @@ class QuarkdownPreviewService(private val project: Project) : Disposable {
             return
         }
         val settings = QuarkdownSettings.getInstance(project)
-        val outputDir = resolveOutputDir(file)
         val args = QuarkdownCli.buildRunArgs(
-            executable, File(file.path), outputDir,
+            executable,
+            File(file.path),
             extraArgs = settings.state.compileCliArgs.orEmpty(),
         )
         ApplicationManager.getApplication().invokeLater {
@@ -297,12 +304,6 @@ class QuarkdownPreviewService(private val project: Project) : Disposable {
         }
     }
 
-    /** All `.qd` files in the project, sorted by name (for the file selector). */
-    fun projectQdFiles(): List<VirtualFile> {
-        val files = FileTypeIndex.getFiles(QuarkdownFileType.INSTANCE, GlobalSearchScope.projectScope(project))
-        return files.sortedBy { it.name.lowercase() }
-    }
-
     // ----------------------------------------------------------------------
     // Internal helpers
     // ----------------------------------------------------------------------
@@ -325,6 +326,7 @@ class QuarkdownPreviewService(private val project: Project) : Disposable {
         pendingOpenBrowser = pendingOpenBrowser && state != State.STOPPED
         setState(State.STARTING)
         setBusy(true)
+        synchronized(recentOutput) { fullLog.clear() } // a new run starts with a fresh log
 
         executeOnPooledThread {
             try {
@@ -463,6 +465,8 @@ class QuarkdownPreviewService(private val project: Project) : Disposable {
         synchronized(recentOutput) {
             recentOutput.addLast(line)
             while (recentOutput.size > 200) recentOutput.removeFirst()
+            fullLog.addLast(line)
+            while (fullLog.size > 10_000) fullLog.removeFirst()
         }
         ApplicationManager.getApplication().invokeLater {
             listeners.forEach { it.onServerOutput(line) }

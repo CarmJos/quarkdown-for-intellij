@@ -138,8 +138,7 @@ object QuarkdownIcons {
     // Each icon uses a distinct color to visually separate its function:
     //   green  = start preview,  red = stop / clean,
     //   blue   = view (peek),    yellow = watch,
-    //   orange = refresh,         purple = build,
-    //   teal   = open in browser.
+    //   orange = refresh,         purple = build.
     // ------------------------------------------------------------------
 
     /** Start the live preview (green play) */
@@ -169,8 +168,4 @@ object QuarkdownIcons {
     /** Build (compile to PDF) through the IDE *Run* tool window (purple) */
     @JvmField
     val PREVIEW_BUILD: Icon = IconLoader.getIcon("/icons/action/preview/build.svg", QuarkdownIcons::class.java)
-
-    /** Open the port-based preview in an external browser (teal globe) */
-    @JvmField
-    val PREVIEW_BROWSER: Icon = IconLoader.getIcon("/icons/action/preview/browser.svg", QuarkdownIcons::class.java)
 }

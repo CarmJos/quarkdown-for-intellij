@@ -98,16 +98,18 @@
 
 ## Preview
 
-- [x] Live preview panel using JCEF to render HTML output in a side panel (server-mode: `quarkdown compile <file> -p -w --server-port <port> --allow all -o <out>`).
-    - [x] Auto-refresh preview on file save or changes (`-w` watch mode + browser hot-reload).
+- [x] Live preview panel using JCEF to render HTML output in a side panel (server-mode: `quarkdown compile <file> --preview [--watch] --server-port <port> --browser none -o <out>`).
+    - [x] Auto-refresh preview on file save or changes (`--watch` mode + browser hot-reload).
     - [x] "Refresh" button for manual refresh (restarts the preview server).
     - [x] "Clean & Refresh" option to clear cache and refresh preview (`--clean`).
-    - [x] "Build" action to generate PDF output through the IDE *Run* tool window (`quarkdown compile <file> --pdf --timeout 60 --allow all --out-name main -o <out>`).
+    - [x] "Build" action to generate PDF output through the IDE *Run* tool window (base command: `quarkdown compile <file> --pdf`, all other args user-defined).
     - [x] Progress bar / loading indication while the server starts or the page loads.
-    - [x] File selector in the toolbar (pin a `.qd` file, or leave empty for "Auto: <current file>").
+    - [x] File selector in the toolbar (text field + browse button; empty = "Auto: <current file>" hint).
+    - [x] Zoom controls (zoom in/out/reset + percentage) and `Ctrl+wheel` zoom in the bottom bar.
+    - [x] "View Full Log" button (bottom-left) showing the complete output of the current preview run.
 - [ ] Split editor preview (editor + preview side by side in the editor area).
-- [x] External browser preview option (port-based preview: `Open in Browser` + a `View` button shown while the server is running).
-- [x] Watch mode for auto-compile on save (handled by the CLI `-w` flag).
+- [x] External browser preview option (port-based preview: a `View` button shown only while the server is running).
+- [x] Watch mode for auto-compile on save (handled by the CLI `--watch` flag, linked to the "Watch changes" setting).
 - [ ] Compilation output console as a dedicated tool window (build output currently appears in the IDE Run tool window).
 - [x] Run Configuration support for `.qd` files (Quarkdown Build run configuration type executed from the Build button).
 

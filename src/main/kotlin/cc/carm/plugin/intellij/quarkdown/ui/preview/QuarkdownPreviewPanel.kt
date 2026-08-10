@@ -1,6 +1,7 @@
 package cc.carm.plugin.intellij.quarkdown.ui.preview
 
 import cc.carm.plugin.intellij.quarkdown.QuarkdownBundle
+import cc.carm.plugin.intellij.quarkdown.QuarkdownFileType
 import cc.carm.plugin.intellij.quarkdown.lang.preview.QuarkdownPreviewService
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.ActionGroup
@@ -8,14 +9,15 @@ import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.ActionToolbar
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.diagnostic.Logger
+import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.ui.ComboBox
+import com.intellij.openapi.ui.DialogBuilder
+import com.intellij.openapi.ui.TextFieldWithBrowseButton
 import com.intellij.openapi.util.Disposer
+import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VirtualFile
-import com.intellij.openapi.vfs.VirtualFileManager
-import com.intellij.openapi.vfs.newvfs.BulkFileListener
-import com.intellij.openapi.vfs.newvfs.events.VFileEvent
 import com.intellij.ui.components.JBLabel
+import com.intellij.ui.components.JBTextField
 import com.intellij.ui.jcef.JBCefApp
 import com.intellij.ui.jcef.JBCefBrowser
 import com.intellij.util.ui.JBUI
@@ -25,18 +27,30 @@ import org.cef.browser.CefFrame
 import org.cef.handler.CefLoadHandler
 import org.cef.network.CefRequest
 import java.awt.BorderLayout
-import java.awt.Component
-import javax.swing.*
+import java.awt.Cursor
+import java.awt.FlowLayout
+import java.awt.Font
+import java.io.File
+import javax.swing.JButton
+import javax.swing.JComponent
+import javax.swing.JPanel
+import javax.swing.JProgressBar
+import javax.swing.JScrollPane
+import javax.swing.JTextArea
+import javax.swing.SwingConstants
+import javax.swing.Timer
+import kotlin.math.roundToInt
 
 /**
  * The Quarkdown live-preview panel shown inside the `Quarkdown` tool window.
  *
  * Layout:
- *  - toolbar row: preview actions (start/stop, view, refresh, clean, build, browser,
- *    watch) on the left and a **file selector** combo box on the right,
+ *  - toolbar row: preview actions (start/stop, view, refresh, clean, build, watch) on
+ *    the left and a **file selector** (text field + browse button) on the right,
  *  - an indeterminate progress bar (visible while the server starts or the page loads),
  *  - a [JBCefBrowser] rendering `http://localhost:<port>/`,
- *  - a status bar reporting the current state and file.
+ *  - a bottom bar: "View Full Log" button (left), status label (center) and zoom
+ *    controls (right). Ctrl+wheel over the preview zooms it.
  */
 class QuarkdownPreviewPanel(private val project: Project) : Disposable {
 
@@ -57,13 +71,26 @@ class QuarkdownPreviewPanel(private val project: Project) : Disposable {
         foreground = UIUtil.getContextHelpForeground()
     }
 
-    private val fileCombo = ComboBox<FileOption>()
+    /** Text field + browse button for the previewed file. Empty text = "auto". */
+    private val fileField = TextFieldWithBrowseButton()
 
     private var toolbar: ActionToolbar? = null
 
     @Volatile
     private var browserLoading = false
-    private var updatingCombo = false
+    private var updatingFileField = false
+
+    // Debounce applying the typed path so intermediate keystrokes don't restart the server.
+    private val fileApplyDebounce = Timer(400) { applyFileFieldText() }.apply { isRepeats = false }
+
+    // Zoom state (JBCefBrowser.setZoomLevel, 1.0 = 100%).
+    @Volatile
+    private var zoomLevel = 1.0
+
+    private val zoomLabel = JBLabel("100%").apply {
+        border = JBUI.Borders.empty(0, 6)
+        foreground = UIUtil.getContextHelpForeground()
+    }
 
     private val listener = object : QuarkdownPreviewService.Listener {
         override fun onStateChanged(state: QuarkdownPreviewService.State) {
@@ -84,13 +111,13 @@ class QuarkdownPreviewPanel(private val project: Project) : Disposable {
     }
 
     init {
-        // Toolbar row + progress bar strip on top, browser in the middle, status at the bottom.
+        // Toolbar row + progress bar strip on top, browser in the middle, bottom bar at the bottom.
         val north = JPanel(BorderLayout())
         north.add(createToolbarRow(), BorderLayout.NORTH)
         north.add(progressBar, BorderLayout.SOUTH)
         root.add(north, BorderLayout.NORTH)
         root.add(createContent(), BorderLayout.CENTER)
-        root.add(statusLabel, BorderLayout.SOUTH)
+        root.add(createBottomBar(), BorderLayout.SOUTH)
 
         val jcefBrowser = browser
         if (jcefBrowser != null) {
@@ -134,24 +161,21 @@ class QuarkdownPreviewPanel(private val project: Project) : Disposable {
                     }
                 }
             }, cefBrowser)
+
+            // Ctrl + wheel over the preview zooms it (Chromium's built-in gesture is
+            // disabled in JCEF, so we implement it ourselves).
+            jcefBrowser.component.addMouseWheelListener { e ->
+                if (e.isControlDown) {
+                    zoomBy(-e.wheelRotation * 0.1)
+                    e.consume()
+                }
+            }
         }
 
         service.addListener(listener)
         browser?.let { Disposer.register(this, it) }
         Disposer.register(this) { service.removeListener(listener) }
 
-        project.messageBus.connect(this).subscribe(
-            VirtualFileManager.VFS_CHANGES,
-            object : BulkFileListener {
-                override fun after(events: MutableList<out VFileEvent>) {
-                    if (events.any { it.path.endsWith(".qd", ignoreCase = true) }) {
-                        ApplicationManager.getApplication().invokeLater { refreshFileModel() }
-                    }
-                }
-            }
-        )
-
-        refreshFileModel()
         updateForState(service.state)
         updateForFile(service.previewFile)
         updateProgressBar()
@@ -187,23 +211,29 @@ class QuarkdownPreviewPanel(private val project: Project) : Disposable {
         val label = JBLabel(QuarkdownBundle.message("quarkdown.preview.file.selector"))
         label.border = JBUI.Borders.empty(0, 4)
 
-        fileCombo.apply {
-            isSwingPopup = true
-            renderer = FileCellRenderer()
+        fileField.apply {
+            textField.columns = 30
             preferredSize = JBUI.size(300, 28)
             maximumSize = JBUI.size(340, 28)
-            addActionListener {
-                if (updatingCombo) return@addActionListener
-                val option = selectedItem as? FileOption
-                service.setSelectedFile(option?.file)
-            }
+            (textField as? JBTextField)?.emptyText?.text = autoFileText()
+            addBrowseFolderListener(
+                QuarkdownBundle.message("quarkdown.preview.file.selector.browse"),
+                null,
+                project,
+                FileChooserDescriptorFactory.createSingleFileDescriptor(QuarkdownFileType.INSTANCE),
+            )
+            addActionListener { applyFileFieldText() }
+            textField.document.addDocumentListener(object : javax.swing.event.DocumentListener {
+                override fun insertUpdate(e: javax.swing.event.DocumentEvent) = scheduleFileApply()
+                override fun removeUpdate(e: javax.swing.event.DocumentEvent) = scheduleFileApply()
+                override fun changedUpdate(e: javax.swing.event.DocumentEvent) = scheduleFileApply()
+            })
         }
-        refreshFileModel()
 
         val panel = JPanel(BorderLayout())
         panel.border = JBUI.Borders.empty(0, 4, 0, 8)
         panel.add(label, BorderLayout.WEST)
-        panel.add(fileCombo, BorderLayout.CENTER)
+        panel.add(fileField, BorderLayout.CENTER)
         return panel
     }
 
@@ -223,26 +253,76 @@ class QuarkdownPreviewPanel(private val project: Project) : Disposable {
         }
     }
 
+    private fun createBottomBar(): JComponent {
+        val bar = JPanel(BorderLayout())
+        bar.border = JBUI.Borders.empty(2, 0)
+        bar.add(createLogButton(), BorderLayout.WEST)
+        bar.add(statusLabel, BorderLayout.CENTER)
+        bar.add(createZoomControls(), BorderLayout.EAST)
+        return bar
+    }
+
+    private fun createLogButton(): JButton = JButton(QuarkdownBundle.message("quarkdown.preview.view.log")).apply {
+        isContentAreaFilled = false
+        isFocusPainted = false
+        border = JBUI.Borders.empty(2, 8)
+        foreground = UIUtil.getContextHelpForeground()
+        cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
+        addActionListener { showFullLog() }
+    }
+
+    private fun createZoomControls(): JComponent {
+        val panel = JPanel(FlowLayout(FlowLayout.RIGHT, 2, 0))
+        panel.add(createZoomButton("-", QuarkdownBundle.message("quarkdown.preview.zoom.out")) { zoomBy(-0.1) })
+        panel.add(zoomLabel)
+        panel.add(createZoomButton("+", QuarkdownBundle.message("quarkdown.preview.zoom.in")) { zoomBy(0.1) })
+        panel.add(createZoomButton("100%", QuarkdownBundle.message("quarkdown.preview.zoom.reset")) { setZoom(1.0) })
+        return panel
+    }
+
+    private fun createZoomButton(text: String, tooltip: String, action: () -> Unit): JButton =
+        JButton(text).apply {
+            this.toolTipText = tooltip
+            isContentAreaFilled = false
+            isFocusPainted = false
+            border = JBUI.Borders.empty(2, 6)
+            addActionListener { action() }
+        }
+
     // ------------------------------------------------------------------
     // File selector
     // ------------------------------------------------------------------
 
-    private fun refreshFileModel() {
-        val selected = service.pinnedFile
-        val files = service.projectQdFiles()
-        val model = DefaultComboBoxModel<FileOption>()
-        model.addElement(FileOption(null)) // auto
-        files.forEach { model.addElement(FileOption(it)) }
+    private fun scheduleFileApply() {
+        if (updatingFileField) return
+        fileApplyDebounce.restart()
+    }
 
-        updatingCombo = true
-        try {
-            fileCombo.model = model
-            val option = selected?.let { s -> files.firstOrNull { it.path == s.path }?.let { FileOption(it) } }
-            fileCombo.selectedItem = option ?: model.getElementAt(0)
-        } finally {
-            updatingCombo = false
+    private fun applyFileFieldText() {
+        if (updatingFileField) return
+        val text = fileField.text.trim()
+        if (text.isEmpty()) {
+            // Empty = "auto" (follow the active editor); the hint shows the current file.
+            service.setSelectedFile(null)
+            return
         }
-        fileCombo.repaint()
+        val file = resolveQdFile(text)
+        if (file == null) {
+            statusLabel.text = QuarkdownBundle.message("quarkdown.preview.file.selector.invalid", text)
+            return
+        }
+        service.setSelectedFile(file)
+    }
+
+    private fun resolveQdFile(text: String): VirtualFile? {
+        var f = File(text)
+        if (!f.isAbsolute) {
+            val base = project.basePath
+            f = if (base != null) File(base, text) else f
+        }
+        if (!f.isFile) return null
+        val vf = LocalFileSystem.getInstance().findFileByIoFile(f) ?: return null
+        return vf.takeIf { it.fileType == QuarkdownFileType.INSTANCE }
     }
 
     private fun autoFileText(): String {
@@ -254,23 +334,36 @@ class QuarkdownPreviewPanel(private val project: Project) : Disposable {
         }
     }
 
-    private inner class FileCellRenderer : DefaultListCellRenderer() {
-        override fun getListCellRendererComponent(
-            list: JList<*>?,
-            value: Any?,
-            index: Int,
-            isSelected: Boolean,
-            cellHasFocus: Boolean,
-        ): Component {
-            val component = super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus) as JLabel
-            val option = value as? FileOption
-            component.text = if (option?.file == null) autoFileText() else option.file.name
-            component.toolTipText = option?.file?.path
-            return component
-        }
+    // ------------------------------------------------------------------
+    // Zoom
+    // ------------------------------------------------------------------
+
+    private fun zoomBy(delta: Double) = setZoom(zoomLevel + delta)
+
+    private fun setZoom(level: Double) {
+        zoomLevel = level.coerceIn(0.25, 4.0)
+        browser?.setZoomLevel(zoomLevel)
+        zoomLabel.text = "${(zoomLevel * 100).roundToInt()}%"
     }
 
-    private data class FileOption(val file: VirtualFile?)
+    // ------------------------------------------------------------------
+    // Log dialog
+    // ------------------------------------------------------------------
+
+    private fun showFullLog() {
+        val log = service.fullLogText().ifBlank { QuarkdownBundle.message("quarkdown.preview.view.log.empty") }
+        val textArea = JTextArea(log).apply {
+            isEditable = false
+            font = Font(Font.MONOSPACED, Font.PLAIN, 12)
+            caretPosition = 0
+        }
+        val scroll = JScrollPane(textArea).apply { preferredSize = JBUI.size(720, 420) }
+        val builder = DialogBuilder(project)
+        builder.setTitle(QuarkdownBundle.message("quarkdown.preview.view.log.title"))
+        builder.setCenterPanel(scroll)
+        builder.addOkAction()
+        builder.show()
+    }
 
     // ------------------------------------------------------------------
     // State rendering
@@ -307,7 +400,14 @@ class QuarkdownPreviewPanel(private val project: Project) : Disposable {
     }
 
     private fun updateForFile(file: VirtualFile?) {
-        fileCombo.repaint()
+        updatingFileField = true
+        try {
+            val pinned = service.pinnedFile
+            fileField.text = pinned?.path ?: ""
+            (fileField.textField as? JBTextField)?.emptyText?.text = autoFileText()
+        } finally {
+            updatingFileField = false
+        }
         if (service.state == QuarkdownPreviewService.State.STOPPED && file != null) {
             statusLabel.text = QuarkdownBundle.message("quarkdown.preview.status.stopped")
         }
@@ -379,6 +479,7 @@ class QuarkdownPreviewPanel(private val project: Project) : Disposable {
         .replace(">", "&gt;")
 
     override fun dispose() {
+        fileApplyDebounce.stop()
         service.removeListener(listener)
     }
 
