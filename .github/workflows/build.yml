@@ -49,12 +49,21 @@ jobs:
         run: ./gradlew buildPlugin
 
       # Store an already-built plugin as an artifact for downloading
-      # Artifact is named after the repository name
+      # Artifact is named after the repository name.
+      # upload-artifact always wraps its content in a zip, so uploading the
+      # distribution zip would produce a zip inside a zip. Unpacking it first
+      # makes the downloaded artifact the plugin itself (directly installable).
+      - name: Unpack plugin distribution
+        run: |
+          cd ./build/distributions
+          unzip -q *.zip
+          rm *.zip
+
       - name: Upload artifact
         uses: actions/upload-artifact@v7
         with:
           name: ${{ github.event.repository.name }}
-          path: ./build/distributions/*.zip
+          path: ./build/distributions/
           if-no-files-found: error
 
   # Run tests and upload test reports on failure
