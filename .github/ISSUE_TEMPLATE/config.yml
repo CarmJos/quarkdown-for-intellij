@@ -1,0 +1,12 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Question / Discussion
+    url: https://github.com/CarmJos/quarkdown-for-intellij/discussions/new/choose
+    about: Ask a question or start a discussion about the plugin.
+  - name: Quarkdown (core) issues
+    url: https://github.com/iamgio/quarkdown/issues
+    about: For bugs or feature requests related to the Quarkdown core engine, language server, or standard library, please report them to the upstream project.
+  - name: Quarkdown VS Code extension
+    url: https://github.com/quarkdown-labs/quarkdown-vscode/issues
+    about: For issues related to the Quarkdown VS Code extension.
+
