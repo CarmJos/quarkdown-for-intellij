@@ -3,7 +3,7 @@ package cc.carm.plugin.intellij.quarkdown.lang.reference
 import cc.carm.plugin.intellij.quarkdown.QuarkdownFileType
 import com.intellij.find.findUsages.FindUsagesHandler
 import com.intellij.find.findUsages.FindUsagesOptions
-import com.intellij.openapi.application.ReadAction
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiManager
@@ -22,7 +22,7 @@ import com.intellij.util.Processor
  * like Java method/class usages.
  *
  * `processElementUsages` runs on a background progress thread, so every PSI access is
- * wrapped in [ReadAction].
+ * wrapped in a read action.
  */
 class QuarkdownFindUsagesHandler(psiElement: PsiElement) : FindUsagesHandler(psiElement) {
 
@@ -32,8 +32,8 @@ class QuarkdownFindUsagesHandler(psiElement: PsiElement) : FindUsagesHandler(psi
         element: PsiElement,
         processor: Processor<in UsageInfo>,
         options: FindUsagesOptions
-    ): Boolean = ReadAction.compute<Boolean, RuntimeException> {
-        val targetId = targetIdOf(element) ?: return@compute true
+    ): Boolean = ApplicationManager.getApplication().runReadAction<Boolean> {
+        val targetId = targetIdOf(element) ?: return@runReadAction true
 
         val scope = options.searchScope as? GlobalSearchScope
             ?: GlobalSearchScope.projectScope(element.project)
@@ -47,7 +47,7 @@ class QuarkdownFindUsagesHandler(psiElement: PsiElement) : FindUsagesHandler(psi
                 if (!anchor.referenceText.trim().equals(targetId, ignoreCase = true)) continue
 
                 val usage = usageInfoAt(file, anchor.start, anchor.end) ?: continue
-                if (!processor.process(usage)) return@compute false
+                if (!processor.process(usage)) return@runReadAction false
             }
         }
         true

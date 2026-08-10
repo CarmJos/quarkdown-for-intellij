@@ -14,7 +14,6 @@ import com.intellij.openapi.wm.StatusBar
 import com.intellij.openapi.wm.StatusBarWidget
 import com.intellij.openapi.wm.StatusBarWidgetFactory
 import com.intellij.openapi.wm.impl.status.EditorBasedWidget
-import com.intellij.util.messages.MessageBusConnection
 import java.awt.Component
 
 /**
@@ -95,14 +94,8 @@ class QuarkdownStatsWidget(project: Project) : EditorBasedWidget(project) {
 
     override fun install(statusBar: StatusBar) {
         super.install(statusBar)
-        // Attach the document listener immediately so typing updates the counts even
-        // before the first editor-selection change.
-        reattachDocumentListener()
-    }
-
-    @Suppress("DEPRECATION")
-    override fun registerCustomListeners(connection: MessageBusConnection) {
-        connection.subscribe(
+        // Subscribe to editor-selection changes so the counts follow the active editor.
+        project.messageBus.connect(this).subscribe(
             FileEditorManagerListener.FILE_EDITOR_MANAGER,
             object : FileEditorManagerListener {
                 override fun selectionChanged(event: FileEditorManagerEvent) {
@@ -112,6 +105,9 @@ class QuarkdownStatsWidget(project: Project) : EditorBasedWidget(project) {
                 }
             }
         )
+        // Attach the document listener immediately so typing updates the counts even
+        // before the first editor-selection change.
+        reattachDocumentListener()
     }
 
     private fun reattachDocumentListener() {
@@ -119,7 +115,7 @@ class QuarkdownStatsWidget(project: Project) : EditorBasedWidget(project) {
         if (editor === listenedEditor) return
         listenedEditor?.document?.removeDocumentListener(documentListener)
         listenedEditor = editor
-        editor?.document?.addDocumentListener(documentListener)
+        editor?.document?.addDocumentListener(documentListener, this)
     }
 
     override fun dispose() {

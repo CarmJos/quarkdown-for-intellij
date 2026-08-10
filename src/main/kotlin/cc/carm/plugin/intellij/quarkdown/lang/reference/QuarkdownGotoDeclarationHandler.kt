@@ -2,6 +2,7 @@ package cc.carm.plugin.intellij.quarkdown.lang.reference
 
 import cc.carm.plugin.intellij.quarkdown.QuarkdownFileType
 import com.intellij.codeInsight.navigation.actions.GotoDeclarationHandler
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.TextRange
@@ -30,9 +31,9 @@ class QuarkdownGotoDeclarationHandler : GotoDeclarationHandler {
         editor: Editor?
     ): Array<PsiElement> {
         if (sourceElement == null || editor == null) return PsiElement.EMPTY_ARRAY
-        return com.intellij.openapi.application.ReadAction.compute<Array<PsiElement>, RuntimeException> {
-            val psiFile = sourceElement.containingFile ?: return@compute PsiElement.EMPTY_ARRAY
-            if (psiFile.fileType != QuarkdownFileType.INSTANCE) return@compute PsiElement.EMPTY_ARRAY
+        return ApplicationManager.getApplication().runReadAction<Array<PsiElement>> {
+            val psiFile = sourceElement.containingFile ?: return@runReadAction PsiElement.EMPTY_ARRAY
+            if (psiFile.fileType != QuarkdownFileType.INSTANCE) return@runReadAction PsiElement.EMPTY_ARRAY
             computeTargets(sourceElement, offset, editor, psiFile)
         }
     }

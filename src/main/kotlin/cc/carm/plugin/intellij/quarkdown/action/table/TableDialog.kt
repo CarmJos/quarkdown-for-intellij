@@ -8,6 +8,7 @@ import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.editor.Document
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
+import com.intellij.psi.PsiDocumentManager
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBTextField
 import com.intellij.uiDesigner.core.GridConstraints
@@ -159,7 +160,11 @@ class TableDialog(
         refreshFromDocument()
         // The write happens while this modal dialog is open; nudge the daemon so the
         // table bars re-collect immediately instead of only when the dialog closes.
-        project?.let { DaemonCodeAnalyzer.getInstance(it).restart() }
+        val targetProject = project
+        if (targetProject != null) {
+            val psiFile = PsiDocumentManager.getInstance(targetProject).getPsiFile(document)
+            if (psiFile != null) DaemonCodeAnalyzer.getInstance(targetProject).restart(psiFile)
+        }
     }
 
     /**

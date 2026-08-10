@@ -104,10 +104,6 @@ class QuarkdownPreviewPanel(private val project: Project) : Disposable {
         override fun onBusyChanged(busy: Boolean) {
             updateProgressBar()
         }
-
-        override fun onServerOutput(line: String) {
-            logger.debug("Preview server: $line")
-        }
     }
 
     init {
@@ -217,10 +213,9 @@ class QuarkdownPreviewPanel(private val project: Project) : Disposable {
             maximumSize = JBUI.size(340, 28)
             (textField as? JBTextField)?.emptyText?.text = autoFileText()
             addBrowseFolderListener(
-                QuarkdownBundle.message("quarkdown.preview.file.selector.browse"),
-                null,
                 project,
-                FileChooserDescriptorFactory.createSingleFileDescriptor(QuarkdownFileType.INSTANCE),
+                FileChooserDescriptorFactory.createSingleFileDescriptor(QuarkdownFileType.INSTANCE)
+                    .withTitle(QuarkdownBundle.message("quarkdown.preview.file.selector.browse")),
             )
             addActionListener { applyFileFieldText() }
             textField.document.addDocumentListener(object : javax.swing.event.DocumentListener {
@@ -396,7 +391,7 @@ class QuarkdownPreviewPanel(private val project: Project) : Disposable {
             QuarkdownPreviewService.State.RUNNING -> b.loadURL(service.viewUrl())
             QuarkdownPreviewService.State.ERROR -> b.loadHTML(placeholderHtml(text))
         }
-        toolbar?.updateActionsImmediately()
+        toolbar?.updateActionsAsync()
     }
 
     private fun updateForFile(file: VirtualFile?) {
@@ -411,7 +406,7 @@ class QuarkdownPreviewPanel(private val project: Project) : Disposable {
         if (service.state == QuarkdownPreviewService.State.STOPPED && file != null) {
             statusLabel.text = QuarkdownBundle.message("quarkdown.preview.status.stopped")
         }
-        toolbar?.updateActionsImmediately()
+        toolbar?.updateActionsAsync()
     }
 
     private fun updateProgressBar() {

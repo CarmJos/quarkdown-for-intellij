@@ -284,7 +284,7 @@ class QuarkdownPreviewService(private val project: Project) : Disposable {
                 runConfiguration.commandLine = args
                 runManager.setTemporaryConfiguration(configuration)
                 ProgramRunnerUtil.executeConfiguration(
-                    project, configuration, DefaultRunExecutor.getRunExecutorInstance()
+                    configuration, DefaultRunExecutor.getRunExecutorInstance()
                 )
             } catch (e: Throwable) {
                 logger.warn("Failed to launch Quarkdown build", e)
@@ -392,8 +392,9 @@ class QuarkdownPreviewService(private val project: Project) : Disposable {
                 executeOnPooledThread {
                     try {
                         reader.forEachLine { line -> onServerOutput(line) }
-                    } catch (e: Exception) {
-                        logger.debug("Preview server output stream closed", e)
+                    } catch (_: Exception) {
+                        // Closing the stream is expected when the server process exits;
+                        // the exit-code watcher below reports unexpected termination.
                     }
                 }
 

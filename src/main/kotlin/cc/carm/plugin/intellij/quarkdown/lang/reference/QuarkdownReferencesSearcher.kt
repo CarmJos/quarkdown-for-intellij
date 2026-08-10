@@ -1,8 +1,8 @@
 package cc.carm.plugin.intellij.quarkdown.lang.reference
 
 import cc.carm.plugin.intellij.quarkdown.QuarkdownFileType
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.QueryExecutorBase
-import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiManager
 import com.intellij.psi.PsiReference
@@ -22,7 +22,7 @@ import com.intellij.util.Processor
  * the id of the target element (via [QuarkdownReference.isReferenceTo]). This reliably finds
  * every `.ref {id}` usage of a `{#id}` label and vice versa.
  *
- * The query runs on a background thread, so all PSI access is wrapped in [ReadAction].
+ * The query runs on a background thread, so all PSI access is wrapped in a read action.
  */
 class QuarkdownReferencesSearcher :
     QueryExecutorBase<PsiReference, ReferencesSearch.SearchParameters>(true) {
@@ -32,9 +32,9 @@ class QuarkdownReferencesSearcher :
         consumer: Processor<in PsiReference>
     ) {
         val target = parameters.elementToSearch
-        ReadAction.run<RuntimeException> {
-            val targetFile = target.containingFile ?: return@run
-            if (targetFile.fileType != QuarkdownFileType.INSTANCE) return@run
+        ApplicationManager.getApplication().runReadAction {
+            val targetFile = target.containingFile ?: return@runReadAction
+            if (targetFile.fileType != QuarkdownFileType.INSTANCE) return@runReadAction
 
             // The target must sit inside a reference anchor (otherwise it has no references).
             val targetAnchors = QuarkdownReferenceAnchors.of(targetFile)
@@ -43,8 +43,8 @@ class QuarkdownReferencesSearcher :
                 .firstOrNull { TextRange(it.start, it.end).intersects(targetRange) }
                 ?.referenceText
                 ?.trim()
-                ?: return@run
-            if (targetId.isEmpty()) return@run
+                ?: return@runReadAction
+            if (targetId.isEmpty()) return@runReadAction
 
             val psiManager = PsiManager.getInstance(target.project)
             val searchScope = com.intellij.psi.search.GlobalSearchScopeUtil.toGlobalSearchScope(
@@ -68,7 +68,7 @@ class QuarkdownReferencesSearcher :
                         TextRange(anchor.start, anchor.end)
                     )
                     if (ref.isReferenceTo(target)) {
-                        if (!consumer.process(ref)) return@run
+                        if (!consumer.process(ref)) return@runReadAction
                     }
                 }
             }

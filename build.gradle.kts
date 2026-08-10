@@ -1,11 +1,18 @@
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.DirectoryProperty
+import org.gradle.api.provider.Property
+import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
+import org.gradle.api.tasks.testing.Test
 import org.jetbrains.intellij.platform.gradle.TestFrameworkType
 import java.io.File
+import java.net.Proxy
+import java.net.ProxySelector
+import java.net.URI
 import java.net.URL
 import java.time.Instant
+import java.util.zip.ZipInputStream
 
 plugins {
     id("org.jetbrains.kotlin.jvm")
@@ -200,6 +207,149 @@ fun findDefaultInstallations(): String? {
         }
     }
     return null
+}
+
+// ── Quarkdown SDK auto-download for tests ──────────────────────────
+// The function-registry & completion tests reflect against a real Quarkdown standard
+// library (com.quarkdown.stdlib.Stdlib). Instead of relying on a local installation
+// (which CI does not have) or a hand-written fake, the official Quarkdown CLI
+// distribution is downloaded from the GitHub releases and extracted into the project's
+// `build/` directory. A locally installed Quarkdown (QUARKDOWN_HOME or a default install
+// location) is preferred when present to avoid re-downloading.
+
+/** Directory under `build/` where the downloaded/extracted Quarkdown SDK is stored. */
+val quarkdownSdkCacheDir: File = layout.buildDirectory.dir("quarkdown-sdk").get().asFile
+
+/** Asset name of the Quarkdown release zip for the current platform. */
+fun quarkdownSdkPlatformAsset(): String {
+    val os = System.getProperty("os.name").lowercase()
+    val arch = System.getProperty("os.arch").lowercase()
+    return when {
+        os.contains("win") -> "quarkdown-windows-x64.zip"
+        os.contains("mac") -> if (arch.contains("aarch64") || arch.contains("arm")) "quarkdown-macos-aarch64.zip" else "quarkdown-macos-x64.zip"
+        os.contains("linux") -> "quarkdown-linux-x64.zip"
+        else -> error("Unsupported platform: os=$os arch=$arch")
+    }
+}
+
+/** Returns [path] as a File when it is a valid Quarkdown home, or `null`. */
+fun validQuarkdownHome(path: String?): File? {
+    if (path.isNullOrBlank()) return null
+    val home = File(path.trim())
+    return home.takeIf { File(home, "lib/quarkdown-stdlib.jar").exists() }
+}
+
+/**
+ * Downloads and extracts the Quarkdown CLI distribution (only `lib/` and `docs/` are
+ * kept; the bundled runtime JRE is not needed by the tests). The result is cached under
+ * `build/quarkdown-sdk` so subsequent builds don't re-download it.
+ */
+abstract class DownloadQuarkdownSdkTask : DefaultTask() {
+
+    @get:Input
+    abstract val assetName: Property<String>
+
+    @get:Input
+    abstract val forceRefresh: Property<Boolean>
+
+    @get:Input
+    abstract val skipDownload: Property<Boolean>
+
+    @get:OutputDirectory
+    abstract val outputDir: DirectoryProperty
+
+    @TaskAction
+    fun run() {
+        if (skipDownload.get()) {
+            logger.lifecycle("Skipping Quarkdown SDK download (local installation available)")
+            return
+        }
+        val home = outputDir.get().asFile
+        val stdlib = File(home, "lib/quarkdown-stdlib.jar")
+        if (stdlib.exists() && !forceRefresh.get()) {
+            logger.lifecycle("Quarkdown SDK already present at {}", home)
+            return
+        }
+        if (stdlib.exists()) home.deleteRecursively()
+
+        val asset = assetName.get()
+        val url = "https://github.com/iamgio/quarkdown/releases/download/latest/$asset"
+        val uri = URI(url)
+        val zip = File(outputDir.get().asFile.parentFile, asset)
+        logger.lifecycle("Downloading {} ...", url)
+        zip.parentFile.mkdirs()
+        try {
+            // Use the system proxy configuration (ProxySelector.getDefault()) so the
+            // download works in proxied environments without hard-coding a proxy.
+            val connection: java.net.HttpURLConnection =
+                ProxySelector.getDefault()
+                    ?.select(uri)
+                    ?.firstOrNull { it.type() != Proxy.Type.DIRECT }
+                    ?.let { proxy ->
+                        logger.lifecycle("Using system proxy {}", proxy.address())
+                        uri.toURL().openConnection(proxy) as java.net.HttpURLConnection
+                    }
+                    ?: uri.toURL().openConnection() as java.net.HttpURLConnection
+            connection.instanceFollowRedirects = true
+            connection.connectTimeout = 60_000
+            connection.readTimeout = 600_000
+            connection.setRequestProperty("User-Agent", "quarkdown-for-intellij-gradle")
+            connection.connect()
+            val responseCode = connection.responseCode
+            if (responseCode !in 200..299) {
+                error("Failed to download Quarkdown SDK: HTTP $responseCode for $url")
+            }
+            connection.inputStream.use { input ->
+                zip.outputStream().use { output -> input.copyTo(output, 64 * 1024) }
+            }
+        } catch (e: Exception) {
+            zip.delete()
+            throw e
+        }
+
+        logger.lifecycle("Extracting {} ...", asset)
+        home.mkdirs()
+        ZipInputStream(zip.inputStream().buffered()).use { zis ->
+            var entry = zis.nextEntry
+            while (entry != null) {
+                val name = entry.name.removePrefix("quarkdown/")
+                if (!entry.isDirectory && (name.startsWith("lib/") || name.startsWith("docs/"))) {
+                    val target = File(home, name)
+                    target.parentFile.mkdirs()
+                    zis.copyTo(target.outputStream())
+                }
+                zis.closeEntry()
+                entry = zis.nextEntry
+            }
+        }
+        zip.delete()
+        logger.lifecycle("Quarkdown SDK ready at {}", home)
+    }
+}
+
+// Prefer a locally installed Quarkdown; otherwise fall back to the downloaded SDK.
+val localQuarkdownHome: File? = validQuarkdownHome(System.getenv("QUARKDOWN_HOME"))
+    ?: validQuarkdownHome(findDefaultInstallations())
+
+fun quarkdownTestHome(): File = localQuarkdownHome ?: quarkdownSdkCacheDir
+
+// `-Pquarkdown.sdk.force=true` forces a fresh download even when a local install exists.
+val quarkdownSdkForce: Boolean =
+    providers.gradleProperty("quarkdown.sdk.force").map { it.toBoolean() }.orElse(false).get()
+
+// Proxy defaults: gradle property → env var → 127.0.0.1:7890.
+val downloadQuarkdownSdk by tasks.registering(DownloadQuarkdownSdkTask::class) {
+    group = "quarkdown"
+    description = "Downloads and extracts the Quarkdown SDK used by the tests"
+    assetName.set(quarkdownSdkPlatformAsset())
+    forceRefresh.set(quarkdownSdkForce)
+    skipDownload.set(!quarkdownSdkForce && localQuarkdownHome != null)
+    outputDir.set(quarkdownSdkCacheDir)
+}
+
+tasks.named<Test>("test") {
+    dependsOn(downloadQuarkdownSdk)
+    systemProperty("quarkdown.test.home", quarkdownTestHome().absolutePath)
 }
 
 dependencies {

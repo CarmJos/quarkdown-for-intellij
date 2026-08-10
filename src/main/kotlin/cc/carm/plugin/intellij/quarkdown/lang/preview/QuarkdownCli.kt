@@ -6,7 +6,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.SystemInfo
 import java.io.File
 import java.net.HttpURLConnection
-import java.net.URL
+import java.net.URI
 import java.util.concurrent.TimeUnit
 
 /**
@@ -120,7 +120,7 @@ object QuarkdownCli {
 
     /** True when an HTTP server answers on [port] (any status code means "ready"). */
     fun isPortReady(port: Int): Boolean = try {
-        val conn = URL("http://127.0.0.1:$port/").openConnection() as HttpURLConnection
+        val conn = URI("http://127.0.0.1:$port/").toURL().openConnection() as HttpURLConnection
         try {
             conn.connectTimeout = 1000
             conn.readTimeout = 1000

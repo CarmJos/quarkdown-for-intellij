@@ -10,8 +10,11 @@ class QuarkdownCompletionPlatformTest : BasePlatformTestCase() {
 
     override fun setUp() {
         super.setUp()
-        // Point the registry at the local scoop Quarkdown so functions load.
-        val path = System.getenv("QUARKDOWN_HOME")
+        // Use the Quarkdown home provided by the Gradle test task (system property set
+        // from the auto-downloaded SDK or a local installation), then fall back to the
+        // environment variable or a well-known local install for IDE test runs.
+        val path = System.getProperty("quarkdown.test.home")
+            ?: System.getenv("QUARKDOWN_HOME")
             ?: "C:\\Users\\Karmu\\scoop\\apps\\quarkdown\\current"
         FunctionRegistry.getInstance(project).refresh(path, force = true)
     }
@@ -142,6 +145,7 @@ class QuarkdownCompletionPlatformTest : BasePlatformTestCase() {
         val confidence = QuarkdownCompletionConfidence()
         myFixture.configureByText("conf.qd", ".")
         val result = confidence.shouldSkipAutopopup(
+            myFixture.editor,
             myFixture.file.findElementAt(0) ?: myFixture.file,
             myFixture.file,
             1

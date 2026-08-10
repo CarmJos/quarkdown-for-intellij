@@ -85,8 +85,7 @@ class FunctionRegistry(private val project: Project) {
             forceRefreshVersion++
         }
         // Trigger (re)computation of the cached value if it was invalidated.
-        val functions = cachedFunctions.value
-        logger.info("Loaded ${functions.size} functions from cache/reflection")
+        cachedFunctions.value
     }
 
     fun refreshAsync(homePath: String, force: Boolean = false, onDone: (success: Boolean) -> Unit) {
@@ -138,7 +137,6 @@ class FunctionRegistry(private val project: Project) {
                 return cached
             }
         }
-        if (force) logger.info("Force refresh requested, bypassing IDE cache")
 
         return buildAndSave(home)
     }
