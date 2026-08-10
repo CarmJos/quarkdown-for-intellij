@@ -61,7 +61,7 @@ enabling developers to write and edit Quarkdown documents with full IDE assistan
 
 1. Open IntelliJ IDEA
 2. Go to `Settings/Preferences` → `Plugins`
-3. Search for "Quarkdown"
+3. Search for "[Quarkdown](https://plugins.jetbrains.com/plugin/33459)"
 4. Click `Install` and restart the IDE
 
 ### From Disk
