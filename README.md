@@ -78,14 +78,13 @@ enabling developers to write and edit Quarkdown documents with full IDE assistan
 - [Quarkdown CLI](https://github.com/iamgio/quarkdown) installed and available in `PATH` or configured in plugin settings
 
 ## Support and Donation
+<img src="https://resources.jetbrains.com/storage/products/company/brand/logos/jb_beam.svg" width="150px" alt="logo" align="right" style="float: right"/>
 
 If you appreciate this plugin, consider supporting me with a donation at 
 [GitHub Sponsors](https://github.com/sponsors/CarmJos) or
 [爱发电](https://www.ifdian.net/a/carmjos/plan) !
 
 **Thank you for supporting open-source projects!**
-
-<img src="https://resources.jetbrains.com/storage/products/company/brand/logos/jb_beam.svg" width="150px" alt="logo" align="right" style="float: right"/>
 
 Many thanks to JetBrains for kindly providing a license for us to work on this and other open-source projects.
 

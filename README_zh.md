@@ -78,6 +78,7 @@ _**"为 JetBrains IntelliJ 平台提供 Quarkdown 语言支持。"**_
 - [Quarkdown CLI](https://github.com/iamgio/quarkdown) 已安装并可在 `PATH` 中找到，或在插件设置中配置对应路径。
 
 ## 支持与捐赠
+<img src="https://resources.jetbrains.com/storage/products/company/brand/logos/jb_beam.svg" width="150px" alt="logo" align="right" style="float: right"/>
 
 如果您喜欢这个插件，欢迎通过以下方式支持我：
 [GitHub Sponsors](https://github.com/sponsors/CarmJos) 或
@@ -85,7 +86,6 @@ _**"为 JetBrains IntelliJ 平台提供 Quarkdown 语言支持。"**_
 
 **感谢您支持开源项目！**
 
-<img src="https://resources.jetbrains.com/storage/products/company/brand/logos/jb_beam.svg" width="150px" alt="logo" align="right" style="float: right"/>
 
 特别感谢 JetBrains 为我们提供许可证，让我们能够致力于这个和其他开源项目。
 
