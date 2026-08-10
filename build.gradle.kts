@@ -171,24 +171,45 @@ tasks.named("processResources") {
 
 // ── End of auto-generation configuration ────────────────────────────
 
-// Quarkdown installation path detection
-val quarkdownHome: String? = System.getenv("QUARKDOWN_HOME")
-    ?: findQuarkdownFromPath()
-    ?: findDefaultInstallations()
+// ── Quarkdown installation path detection ──────────────────────────
+// Resolves a local Quarkdown installation home. A home is only considered valid when it
+// contains `lib/quarkdown-stdlib.jar`. Candidates are checked in order:
+//   1. the QUARKDOWN_HOME environment variable,
+//   2. well-known install locations (scoop, Program Files, brew, /opt, …),
+//   3. a `quarkdown` launcher found on PATH (its home is resolved by walking up the
+//      directory chain until `lib/` is found — this handles both `<home>/bin` and
+//      scoop-style shims correctly).
 
-fun findQuarkdownFromPath(): String? {
+val quarkdownHome: String? = resolveQuarkdownHome()?.absolutePath
+
+fun resolveQuarkdownHome(): File? =
+    validQuarkdownHome(System.getenv("QUARKDOWN_HOME"))
+        ?: findDefaultInstallations()
+        ?: findQuarkdownFromPath()
+
+fun findQuarkdownFromPath(): File? {
     val path = System.getenv("PATH") ?: return null
     val pathDirs = path.split(File.pathSeparator)
     for (dir in pathDirs) {
-        val quarkdownBin = File(dir, "quarkdown")
-        if (quarkdownBin.exists() || File(dir, "quarkdown.bat").exists() || File(dir, "quarkdown.cmd").exists()) {
-            return File(dir).parent
+        if (dir.isBlank()) continue
+        val hasLauncher = File(dir, "quarkdown").exists() ||
+            File(dir, "quarkdown.bat").exists() ||
+            File(dir, "quarkdown.cmd").exists()
+        if (!hasLauncher) continue
+        // The launcher is usually in `<home>/bin` or in a shim directory (e.g. scoop's
+        // `shims/`). Walk up the directory chain and return the first ancestor that is a
+        // valid Quarkdown home (contains `lib/quarkdown-stdlib.jar`).
+        var candidate = File(dir).absoluteFile
+        while (candidate != null) {
+            val home = validQuarkdownHome(candidate.absolutePath)
+            if (home != null) return home
+            candidate = candidate.parentFile
         }
     }
     return null
 }
 
-fun findDefaultInstallations(): String? {
+fun findDefaultInstallations(): File? {
     val defaultPaths = listOf(
         // Windows scoop
         "${System.getProperty("user.home")}/scoop/apps/quarkdown/current",
@@ -202,11 +223,16 @@ fun findDefaultInstallations(): String? {
     )
 
     for (path in defaultPaths) {
-        if (File(path).exists()) {
-            return path
-        }
+        validQuarkdownHome(path)?.let { return it }
     }
     return null
+}
+
+/** Returns [path] as a File when it is a valid Quarkdown home, or `null`. */
+fun validQuarkdownHome(path: String?): File? {
+    if (path.isNullOrBlank()) return null
+    val home = File(path.trim())
+    return home.takeIf { File(home, "lib/quarkdown-stdlib.jar").exists() }
 }
 
 // ── Quarkdown SDK auto-download for tests ──────────────────────────
@@ -230,13 +256,6 @@ fun quarkdownSdkPlatformAsset(): String {
         os.contains("linux") -> "quarkdown-linux-x64.zip"
         else -> error("Unsupported platform: os=$os arch=$arch")
     }
-}
-
-/** Returns [path] as a File when it is a valid Quarkdown home, or `null`. */
-fun validQuarkdownHome(path: String?): File? {
-    if (path.isNullOrBlank()) return null
-    val home = File(path.trim())
-    return home.takeIf { File(home, "lib/quarkdown-stdlib.jar").exists() }
 }
 
 /**
@@ -328,8 +347,7 @@ abstract class DownloadQuarkdownSdkTask : DefaultTask() {
 }
 
 // Prefer a locally installed Quarkdown; otherwise fall back to the downloaded SDK.
-val localQuarkdownHome: File? = validQuarkdownHome(System.getenv("QUARKDOWN_HOME"))
-    ?: validQuarkdownHome(findDefaultInstallations())
+val localQuarkdownHome: File? = resolveQuarkdownHome()
 
 fun quarkdownTestHome(): File = localQuarkdownHome ?: quarkdownSdkCacheDir
 
@@ -337,7 +355,6 @@ fun quarkdownTestHome(): File = localQuarkdownHome ?: quarkdownSdkCacheDir
 val quarkdownSdkForce: Boolean =
     providers.gradleProperty("quarkdown.sdk.force").map { it.toBoolean() }.orElse(false).get()
 
-// Proxy defaults: gradle property → env var → 127.0.0.1:7890.
 val downloadQuarkdownSdk by tasks.registering(DownloadQuarkdownSdkTask::class) {
     group = "quarkdown"
     description = "Downloads and extracts the Quarkdown SDK used by the tests"
@@ -369,37 +386,11 @@ dependencies {
 
     }
 
-    // Quarkdown dependencies - add Quarkdown jars if available
-    if (quarkdownHome != null) {
-        val libDir = File("$quarkdownHome/lib")
-        if (libDir.exists()) {
-            val quarkdownJars = libDir.listFiles { file ->
-                file.name.startsWith("quarkdown") && file.name.endsWith(".jar")
-            } ?: emptyArray()
-
-            for (jar in quarkdownJars) {
-                implementation(files(jar.absolutePath))
-            }
-
-            // Also add required dependencies
-            val additionalJars = libDir.listFiles { file ->
-                (file.name.startsWith("flexmark") ||
-                        file.name.startsWith("antlr4-runtime") ||
-                        file.name.startsWith("kotlin-stdlib") ||
-                        file.name.startsWith("gson") ||
-                        file.name.startsWith("commons-") ||
-                        file.name.startsWith("kotlinx-") ||
-                        file.name.startsWith("ktor-") ||
-                        file.name.startsWith("slf4j") ||
-                        file.name.startsWith("log4j")) &&
-                        file.name.endsWith(".jar")
-            } ?: emptyArray()
-
-            for (jar in additionalJars) {
-                implementation(files(jar.absolutePath))
-            }
-        }
-    }
+    // The Quarkdown standard-library classes are never referenced at compile time:
+    // FunctionRegistry loads them reflectively at runtime through QuarkdownSdkClassLoader
+    // (a URLClassLoader over the detected installation's lib/*.jar). Bundling them here
+    // would also break compilation because the SDK ships Kotlin 2.3 metadata while this
+    // project compiles with Kotlin 2.1. So no quarkdown jars are declared as dependencies.
 }
 
 // Project metadata and developer information
