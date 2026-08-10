@@ -27,13 +27,13 @@ jobs:
       - name: Fetch Sources
         uses: actions/checkout@v7
 
-      # Compute artifact name: <repo>_<version>_v<short-commit-sha>
+      # Compute artifact name: <repo>_<version>_<short-commit-sha>
       - name: Compute artifact name
         id: artifact
         run: |
           VERSION=$(grep '^version' gradle.properties | cut -d'=' -f2 | tr -d ' ')
           SHA=$(git rev-parse --short HEAD)
-          echo "name=${GITHUB_REPOSITORY##*/}_${VERSION}_v${SHA}" >> "$GITHUB_OUTPUT"
+          echo "name=${GITHUB_REPOSITORY##*/}_${VERSION}_${SHA}" >> "$GITHUB_OUTPUT"
 
       # Set up the Java environment for the next steps
       - name: Setup Java
