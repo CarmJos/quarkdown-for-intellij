@@ -7,7 +7,8 @@ class QuarkdownFileType : LanguageFileType(QuarkdownLanguage.INSTANCE) {
 
     override fun getName(): String = "Quarkdown"
 
-    override fun getDescription(): String = "Quarkdown document"
+    override fun getDescription(): String =
+        QuarkdownBundle.message("quarkdown.filetype.description")
 
     override fun getDefaultExtension(): String = "qd"
 

@@ -1,5 +1,6 @@
 package cc.carm.plugin.intellij.quarkdown.lang.completion
 
+import cc.carm.plugin.intellij.quarkdown.QuarkdownBundle
 import cc.carm.plugin.intellij.quarkdown.QuarkdownFileType
 import cc.carm.plugin.intellij.quarkdown.lang.codeblock.CodeBlockLanguageProvider
 import com.intellij.codeInsight.completion.*
@@ -84,9 +85,17 @@ class CodeBlockLanguageCompletionContributor : CompletionContributor() {
 
         private fun buildLookupElement(identifier: String): LookupElementBuilder {
             val isCanonical = CodeBlockLanguageProvider.languages.any { it.name == identifier }
+            val typeText = QuarkdownBundle.message(
+                if (isCanonical) "quarkdown.completion.type.language" else "quarkdown.completion.type.alias"
+            )
+            val tailText = if (isCanonical) {
+                ""
+            } else {
+                QuarkdownBundle.message("quarkdown.completion.alias.tail")
+            }
             return LookupElementBuilder.create(identifier)
-                .withTypeText(if (isCanonical) "language" else "alias", true)
-                .withTailText(if (isCanonical) "" else " (alias)", true)
+                .withTypeText(typeText, true)
+                .withTailText(tailText, true)
         }
     }
 }

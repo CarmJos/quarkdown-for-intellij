@@ -1,5 +1,6 @@
 package cc.carm.plugin.intellij.quarkdown.lang.table
 
+import cc.carm.plugin.intellij.quarkdown.QuarkdownBundle
 import cc.carm.plugin.intellij.quarkdown.QuarkdownFileType
 import cc.carm.plugin.intellij.quarkdown.QuarkdownIcons
 import cc.carm.plugin.intellij.quarkdown.action.table.TableDialog
@@ -37,10 +38,10 @@ class QuarkdownTableLineMarkerProvider : LineMarkerProvider {
             element,
             element.textRange,
             QuarkdownIcons.TABLE_MARKER,
-            { "Edit table properties" },
+            { QuarkdownBundle.message("quarkdown.marker.table.tooltip") },
             TableGutterHandler(),
             GutterIconRenderer.Alignment.RIGHT,
-            { "Edit table properties" }
+            { QuarkdownBundle.message("quarkdown.marker.table.tooltip") }
         )
     }
 

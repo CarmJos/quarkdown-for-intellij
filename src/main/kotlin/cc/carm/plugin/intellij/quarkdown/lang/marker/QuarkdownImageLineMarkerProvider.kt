@@ -1,5 +1,6 @@
 package cc.carm.plugin.intellij.quarkdown.lang.marker
 
+import cc.carm.plugin.intellij.quarkdown.QuarkdownBundle
 import cc.carm.plugin.intellij.quarkdown.QuarkdownFileType
 import cc.carm.plugin.intellij.quarkdown.QuarkdownIcons
 import cc.carm.plugin.intellij.quarkdown.action.image.ImageDialog
@@ -42,10 +43,10 @@ class QuarkdownImageLineMarkerProvider : LineMarkerProvider {
             element,
             element.textRange,
             QuarkdownIcons.IMAGE_MARKER,
-            { "Edit image" },
+            { QuarkdownBundle.message("quarkdown.marker.image.tooltip") },
             ImageGutterHandler(dir),
             GutterIconRenderer.Alignment.RIGHT,
-            { "Edit image" }
+            { QuarkdownBundle.message("quarkdown.marker.image.tooltip") }
         )
     }
 

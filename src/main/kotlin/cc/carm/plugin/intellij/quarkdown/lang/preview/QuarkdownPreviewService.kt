@@ -192,11 +192,7 @@ class QuarkdownPreviewService(private val project: Project) : Disposable {
 
     /** Clears the output cache (`--clean`) and restarts the preview server. */
     fun cleanAndRefresh() {
-        if (state == State.STOPPED) {
-            restartServer(clean = true)
-        } else {
-            restartServer(clean = true)
-        }
+        restartServer(clean = true)
     }
 
     /** Pins (or unpins with `null`) the previewed file. */
@@ -371,7 +367,13 @@ class QuarkdownPreviewService(private val project: Project) : Disposable {
                 } catch (e: Exception) {
                     logger.warn("Failed to start preview server", e)
                     if (generation == serverGeneration) {
-                        setState(State.ERROR, "Failed to start Quarkdown: ${e.message}")
+                        setState(
+                            State.ERROR,
+                            QuarkdownBundle.message(
+                                "quarkdown.preview.status.start.failed",
+                                e.message ?: e.javaClass.simpleName
+                            )
+                        )
                         setBusy(false)
                     }
                     return@executeOnPooledThread
@@ -445,7 +447,13 @@ class QuarkdownPreviewService(private val project: Project) : Disposable {
             } catch (e: Exception) {
                 logger.warn("Preview server restart failed", e)
                 if (generation == serverGeneration) {
-                    setState(State.ERROR, "Internal error: ${e.message}")
+                    setState(
+                        State.ERROR,
+                        QuarkdownBundle.message(
+                            "quarkdown.preview.status.internal.error",
+                            e.message ?: e.javaClass.simpleName
+                        )
+                    )
                     setBusy(false)
                 }
             }

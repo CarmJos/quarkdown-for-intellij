@@ -1,5 +1,6 @@
 package cc.carm.plugin.intellij.quarkdown.lang.highlighter
 
+import cc.carm.plugin.intellij.quarkdown.QuarkdownBundle
 import cc.carm.plugin.intellij.quarkdown.QuarkdownIcons
 import com.intellij.openapi.editor.colors.TextAttributesKey
 import com.intellij.openapi.fileTypes.SyntaxHighlighter
@@ -18,63 +19,66 @@ class QuarkdownColorSettingsPage : ColorSettingsPage {
     override fun getAdditionalHighlightingTagToDescriptorMap(): Map<String, TextAttributesKey>? = null
     override fun getAttributeDescriptors(): Array<AttributesDescriptor> = DESCRIPTORS
     override fun getColorDescriptors(): Array<ColorDescriptor> = ColorDescriptor.EMPTY_ARRAY
-    override fun getDisplayName(): String = "Quarkdown"
+    override fun getDisplayName(): String = QuarkdownBundle.message("quarkdown.settings.name")
 
     companion object {
+        private fun attr(key: String, attributesKey: TextAttributesKey) =
+            AttributesDescriptor(QuarkdownBundle.message(key), attributesKey)
+
         private val ATTRIBUTES: Array<AttributesDescriptor> = arrayOf(
-            AttributesDescriptor("Heading Marker", QuarkdownSyntaxHighlighter.HEADING_MARKER),
-            AttributesDescriptor("Heading Content", QuarkdownSyntaxHighlighter.HEADING_CONTENT),
+            attr("quarkdown.color.attr.heading.marker", QuarkdownSyntaxHighlighter.HEADING_MARKER),
+            attr("quarkdown.color.attr.heading.content", QuarkdownSyntaxHighlighter.HEADING_CONTENT),
 
-            AttributesDescriptor("Bold", QuarkdownSyntaxHighlighter.BOLD),
-            AttributesDescriptor("Italic", QuarkdownSyntaxHighlighter.ITALIC),
-            AttributesDescriptor("Strikethrough", QuarkdownSyntaxHighlighter.STRIKETHROUGH),
-            AttributesDescriptor("Inline Code", QuarkdownSyntaxHighlighter.INLINE_CODE),
+            attr("quarkdown.color.attr.bold", QuarkdownSyntaxHighlighter.BOLD),
+            attr("quarkdown.color.attr.italic", QuarkdownSyntaxHighlighter.ITALIC),
+            attr("quarkdown.color.attr.strikethrough", QuarkdownSyntaxHighlighter.STRIKETHROUGH),
+            attr("quarkdown.color.attr.inline.code", QuarkdownSyntaxHighlighter.INLINE_CODE),
 
-            AttributesDescriptor("Fenced Code Block Delimiter", QuarkdownSyntaxHighlighter.FENCED_CODE_START),
-            AttributesDescriptor("Fenced Code Language", QuarkdownSyntaxHighlighter.FENCED_CODE_LANGUAGE),
-            AttributesDescriptor("Fenced Code Content", QuarkdownSyntaxHighlighter.FENCED_CODE_CONTENT),
-            AttributesDescriptor("Fenced Code End Delimiter", QuarkdownSyntaxHighlighter.FENCED_CODE_END),
+            attr("quarkdown.color.attr.fenced.code.delimiter", QuarkdownSyntaxHighlighter.FENCED_CODE_START),
+            attr("quarkdown.color.attr.fenced.code.language", QuarkdownSyntaxHighlighter.FENCED_CODE_LANGUAGE),
+            attr("quarkdown.color.attr.fenced.code.content", QuarkdownSyntaxHighlighter.FENCED_CODE_CONTENT),
+            attr("quarkdown.color.attr.fenced.code.end.delimiter", QuarkdownSyntaxHighlighter.FENCED_CODE_END),
 
-            AttributesDescriptor("Blockquote Marker", QuarkdownSyntaxHighlighter.BLOCKQUOTE),
-            AttributesDescriptor("List Marker", QuarkdownSyntaxHighlighter.LIST_MARKER),
+            attr("quarkdown.color.attr.blockquote.marker", QuarkdownSyntaxHighlighter.BLOCKQUOTE),
+            attr("quarkdown.color.attr.list.marker", QuarkdownSyntaxHighlighter.LIST_MARKER),
 
-            AttributesDescriptor("Horizontal Rule / Separator", QuarkdownSyntaxHighlighter.SEPARATOR),
-            AttributesDescriptor("Page Break", QuarkdownSyntaxHighlighter.PAGE_BREAK),
+            attr("quarkdown.color.attr.horizontal.rule", QuarkdownSyntaxHighlighter.SEPARATOR),
+            attr("quarkdown.color.attr.page.break", QuarkdownSyntaxHighlighter.PAGE_BREAK),
 
-            AttributesDescriptor("Table Pipe", QuarkdownSyntaxHighlighter.TABLE_PIPE),
-            AttributesDescriptor("Table Separator", QuarkdownSyntaxHighlighter.TABLE_SEPARATOR),
+            attr("quarkdown.color.attr.table.pipe", QuarkdownSyntaxHighlighter.TABLE_PIPE),
+            attr("quarkdown.color.attr.table.separator", QuarkdownSyntaxHighlighter.TABLE_SEPARATOR),
 
-            AttributesDescriptor("Image Prefix", QuarkdownSyntaxHighlighter.IMAGE_PREFIX),
-            AttributesDescriptor("Image Label", QuarkdownSyntaxHighlighter.IMAGE_LABEL),
-            AttributesDescriptor("Link / Image Description", QuarkdownSyntaxHighlighter.LINK_TEXT),
-            AttributesDescriptor("Link / Image URL", QuarkdownSyntaxHighlighter.LINK_URL),
-            AttributesDescriptor("Link / Image Title", QuarkdownSyntaxHighlighter.LINK_TITLE),
-            AttributesDescriptor("Brackets [ ]", QuarkdownSyntaxHighlighter.BRACKET),
-            AttributesDescriptor("Parentheses ( )", QuarkdownSyntaxHighlighter.PAREN),
-            AttributesDescriptor("Braces { }", QuarkdownSyntaxHighlighter.BRACE),
+            attr("quarkdown.color.attr.image.prefix", QuarkdownSyntaxHighlighter.IMAGE_PREFIX),
+            attr("quarkdown.color.attr.image.label", QuarkdownSyntaxHighlighter.IMAGE_LABEL),
+            attr("quarkdown.color.attr.link.description", QuarkdownSyntaxHighlighter.LINK_TEXT),
+            attr("quarkdown.color.attr.link.url", QuarkdownSyntaxHighlighter.LINK_URL),
+            attr("quarkdown.color.attr.link.title", QuarkdownSyntaxHighlighter.LINK_TITLE),
+            attr("quarkdown.color.attr.brackets", QuarkdownSyntaxHighlighter.BRACKET),
+            attr("quarkdown.color.attr.parentheses", QuarkdownSyntaxHighlighter.PAREN),
+            attr("quarkdown.color.attr.braces", QuarkdownSyntaxHighlighter.BRACE),
 
-            AttributesDescriptor("Function Call Dot", QuarkdownSyntaxHighlighter.FUNCTION_DOT),
-            AttributesDescriptor("Function Name", QuarkdownSyntaxHighlighter.FUNCTION_NAME),
-            AttributesDescriptor("Function Parameter Name", QuarkdownSyntaxHighlighter.FUNCTION_PARAMETER_NAME),
-            AttributesDescriptor("Function Parameter Colon", QuarkdownSyntaxHighlighter.FUNCTION_PARAMETER_COLON),
-            AttributesDescriptor("Function Braces { }", QuarkdownSyntaxHighlighter.FUNCTION_BRACE),
-            AttributesDescriptor("Function Parameters", QuarkdownSyntaxHighlighter.FUNCTION_PARAMS),
+            attr("quarkdown.color.attr.function.dot", QuarkdownSyntaxHighlighter.FUNCTION_DOT),
+            attr("quarkdown.color.attr.function.name", QuarkdownSyntaxHighlighter.FUNCTION_NAME),
+            attr("quarkdown.color.attr.function.parameter.name", QuarkdownSyntaxHighlighter.FUNCTION_PARAMETER_NAME),
+            attr("quarkdown.color.attr.function.parameter.colon", QuarkdownSyntaxHighlighter.FUNCTION_PARAMETER_COLON),
+            attr("quarkdown.color.attr.function.braces", QuarkdownSyntaxHighlighter.FUNCTION_BRACE),
+            attr("quarkdown.color.attr.function.parameters", QuarkdownSyntaxHighlighter.FUNCTION_PARAMS),
 
-            AttributesDescriptor("Semantic: Known Function", QuarkdownSyntaxHighlighter.SEMANTIC_KNOWN_FUNCTION),
-            AttributesDescriptor("Semantic: Variable Reference", QuarkdownSyntaxHighlighter.SEMANTIC_VARIABLE_REF),
-            AttributesDescriptor("Semantic: Valid Enum Value", QuarkdownSyntaxHighlighter.SEMANTIC_VALID_ENUM),
-            AttributesDescriptor("Semantic: Parameter Name", QuarkdownSyntaxHighlighter.SEMANTIC_PARAMETER),
+            attr("quarkdown.color.attr.semantic.known.function", QuarkdownSyntaxHighlighter.SEMANTIC_KNOWN_FUNCTION),
+            attr("quarkdown.color.attr.semantic.variable.reference", QuarkdownSyntaxHighlighter.SEMANTIC_VARIABLE_REF),
+            attr("quarkdown.color.attr.semantic.valid.enum", QuarkdownSyntaxHighlighter.SEMANTIC_VALID_ENUM),
+            attr("quarkdown.color.attr.semantic.parameter", QuarkdownSyntaxHighlighter.SEMANTIC_PARAMETER),
 
-            AttributesDescriptor("Element ID Tag", QuarkdownSyntaxHighlighter.ID_TAG),
+            attr("quarkdown.color.attr.id.tag", QuarkdownSyntaxHighlighter.ID_TAG),
 
-            AttributesDescriptor("HTML Comment", QuarkdownSyntaxHighlighter.HTML_COMMENT),
+            attr("quarkdown.color.attr.html.comment", QuarkdownSyntaxHighlighter.HTML_COMMENT),
 
-            AttributesDescriptor("Front Matter Delimiter", QuarkdownSyntaxHighlighter.FRONT_MATTER_DELIMITER),
-            AttributesDescriptor("Front Matter Content", QuarkdownSyntaxHighlighter.FRONT_MATTER_CONTENT),
+            attr("quarkdown.color.attr.front.matter.delimiter", QuarkdownSyntaxHighlighter.FRONT_MATTER_DELIMITER),
+            attr("quarkdown.color.attr.front.matter.content", QuarkdownSyntaxHighlighter.FRONT_MATTER_CONTENT),
 
-            AttributesDescriptor("Escape Sequences", QuarkdownSyntaxHighlighter.ESCAPE),
+            attr("quarkdown.color.attr.escape", QuarkdownSyntaxHighlighter.ESCAPE),
 
-            AttributesDescriptor("Plain Text", QuarkdownSyntaxHighlighter.TEXT),
+            attr("quarkdown.color.attr.plain.text", QuarkdownSyntaxHighlighter.TEXT),
         )
 
         private val DEMO_TEXT = buildString {

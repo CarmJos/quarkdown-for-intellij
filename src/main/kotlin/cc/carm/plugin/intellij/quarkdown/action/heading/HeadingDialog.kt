@@ -39,7 +39,7 @@ class HeadingDialog(
     private var extractButton: JButton? = null
 
     init {
-        title = "Heading Properties"
+        title = QuarkdownBundle.message("quarkdown.dialog.heading.title")
         init()
     }
 
@@ -55,7 +55,7 @@ class HeadingDialog(
         val panel = JPanel(GridLayoutManager(3, 2, JBUI.insets(10), -1, -1))
         var row = 0
 
-        val levelLabel = JBLabel("Level:")
+        val levelLabel = JBLabel(QuarkdownBundle.message("quarkdown.dialog.heading.level"))
         val combo = ComboBox(CollectionComboBoxModel(LEVELS, "1"))
         levelCombo = combo
         panel.add(
@@ -76,7 +76,7 @@ class HeadingDialog(
         )
         row++
 
-        val contentLabel = JBLabel("Content:")
+        val contentLabel = JBLabel(QuarkdownBundle.message("quarkdown.dialog.heading.content"))
         val cf = JBTextField()
         contentField = cf
         panel.add(
@@ -97,12 +97,12 @@ class HeadingDialog(
         )
         row++
 
-        val idLabel = JBLabel("ID:")
+        val idLabel = JBLabel(QuarkdownBundle.message("quarkdown.dialog.heading.id"))
         val idf = JBTextField()
         idField = idf
 
         val extract = JButton(QuarkdownBundle.message("quarkdown.dialog.heading.extract"))
-        extract.toolTipText = "Extract the heading content as a default id"
+        extract.toolTipText = QuarkdownBundle.message("quarkdown.dialog.heading.extract.tooltip")
         extract.addActionListener { fillExtractedId() }
         extractButton = extract
 

@@ -1,5 +1,6 @@
 package cc.carm.plugin.intellij.quarkdown.lang.structure
 
+import cc.carm.plugin.intellij.quarkdown.QuarkdownBundle
 import cc.carm.plugin.intellij.quarkdown.QuarkdownIcons
 import cc.carm.plugin.intellij.quarkdown.lang.psi.QuarkdownHeading
 import com.intellij.ide.structureView.StructureViewTreeElement
@@ -71,7 +72,7 @@ class QuarkdownStructureTreeElement(private val element: PsiElement) : Structure
      */
     private class HeadingPresentation(private val heading: QuarkdownHeading) : ItemPresentation {
         override fun getPresentableText(): String {
-            return heading.headingText.ifEmpty { "(empty heading)" }
+            return heading.headingText.ifEmpty { QuarkdownBundle.message("quarkdown.heading.empty") }
         }
 
         override fun getLocationString(): String? = null

@@ -24,9 +24,15 @@ class QuarkdownBuildConfigurationType : ConfigurationTypeBase(
     init {
         addFactory(object : ConfigurationFactory(this) {
             override fun createTemplateConfiguration(project: Project): RunConfiguration =
-                QuarkdownBuildRunConfiguration(project, this, "Quarkdown Build")
+                QuarkdownBuildRunConfiguration(
+                    project,
+                    this,
+                    QuarkdownBundle.message("quarkdown.preview.build.configuration.name")
+                )
 
-            override fun getName(): String = "Quarkdown Build"
+            override fun getName(): String =
+                QuarkdownBundle.message("quarkdown.preview.build.configuration.name")
+
             override fun getId(): String = "Quarkdown.Build"
         })
     }
@@ -39,4 +45,3 @@ class QuarkdownBuildConfigurationType : ConfigurationTypeBase(
             ConfigurationTypeUtil.findConfigurationType(QuarkdownBuildConfigurationType::class.java)
     }
 }
-

@@ -2,6 +2,7 @@
 
 package cc.carm.plugin.intellij.quarkdown.lang.inlay
 
+import cc.carm.plugin.intellij.quarkdown.QuarkdownBundle
 import cc.carm.plugin.intellij.quarkdown.QuarkdownFileType
 import cc.carm.plugin.intellij.quarkdown.lang.function.FunctionMetadata
 import cc.carm.plugin.intellij.quarkdown.lang.function.FunctionRegistry
@@ -42,7 +43,7 @@ class QuarkdownParameterNameInlayProvider : InlayHintsProvider<NoSettings> {
 
     override fun createSettings(): NoSettings = NoSettings()
     override val key: SettingsKey<NoSettings> = QUARKDOWN_PARAMETER_NAME_KEY
-    override val name: String = "Quarkdown parameter name hints"
+    override val name: String = QuarkdownBundle.message("quarkdown.inlay.parameter.name")
     override val previewText: String =
         ".pagemargin {bottomcenter}\n.multiply {6} by:{3}\n.row {.col {content}}"
 

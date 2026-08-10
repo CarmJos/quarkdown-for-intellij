@@ -155,10 +155,8 @@ object QuarkdownTableParser {
         Alignment.CENTER -> ":" + "-".repeat(width - 2) + ":"
     }
 
-    private fun padCell(text: String, width: Int): String {
-        if (text.length >= width) return text
-        return text + " ".repeat(width - text.length)
-    }
+    private fun padCell(text: String, width: Int): String =
+        if (text.length >= width) text else text + " ".repeat(width - text.length)
 
     private fun <T> List<T>.padTo(size: Int, value: T): List<T> {
         if (this.size >= size) return this

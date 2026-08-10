@@ -25,6 +25,14 @@ class QuarkdownLexer : LexerBase() {
     private var inImageSyntax = false
 
     /**
+     * True between the opening fence (``` / ~~~) and the closing fence of a fenced
+     * code block. While set, every line is emitted as [QuarkdownTokenTypes.FENCED_CODE_CONTENT]
+     * and a line-start fence closes the block as [QuarkdownTokenTypes.FENCED_CODE_END].
+     * Persisted via [getState] / [initialState] so re-lexing inside a block keeps the context.
+     */
+    private var inFencedCode = false
+
+    /**
      * Lexer state for Quarkdown function calls (e.g. `.pageformat size:{a4}`).
      *
      * Both flags are persisted via [getState] / [initialState] so the platform can
@@ -51,6 +59,7 @@ class QuarkdownLexer : LexerBase() {
         this.pendingTokens.clear()
         this.atFunctionName = (initialState and STATE_AT_FUNCTION_NAME) != 0
         this.inFunctionCall = (initialState and STATE_IN_FUNCTION_CALL) != 0
+        this.inFencedCode = (initialState and STATE_IN_FENCED_CODE) != 0
         // CRITICAL: Must advance to first token so getTokenType() returns valid value.
         // The editor framework calls getTokenType() directly after start() without advance().
         advance()
@@ -75,7 +84,8 @@ class QuarkdownLexer : LexerBase() {
 
     private fun currentState(): Int =
         (if (atFunctionName) STATE_AT_FUNCTION_NAME else 0) or
-                (if (inFunctionCall) STATE_IN_FUNCTION_CALL else 0)
+                (if (inFunctionCall) STATE_IN_FUNCTION_CALL else 0) or
+                (if (inFencedCode) STATE_IN_FENCED_CODE else 0)
 
     // --------------------------------------------------------------------
     // Helpers
@@ -100,11 +110,6 @@ class QuarkdownLexer : LexerBase() {
 
     /** Return char at [pos] or null if out of bounds. */
     private fun safe(pos: Int): Char? = if (pos in 0 until endOffset) buffer[pos] else null
-
-    private fun isEol(pos: Int): Boolean {
-        val c = safe(pos) ?: return true
-        return c == '\n' || c == '\r'
-    }
 
     /** Count of space/tab characters at [pos]. */
     private fun countSpaces(pos: Int): Int {
@@ -137,6 +142,31 @@ class QuarkdownLexer : LexerBase() {
 
         val start = tokenStart
         val c = ch(start)
+
+        // -------- Inside a fenced code block (content / closing fence) --------
+        if (inFencedCode) {
+            if (c != '\n' && c != '\r') {
+                val atLineStart = start == startOffset || ch(start - 1) == '\n' || ch(start - 1) == '\r'
+                if (atLineStart) {
+                    val spaces = countSpaces(start)
+                    val contentPos = start + spaces
+                    if (contentPos < endOffset) {
+                        val fc = ch(contentPos)
+                        if (fc == '`' || fc == '~') {
+                            val fenceLen = scanFenceOpen(contentPos, fc)
+                            if (fenceLen != null) {
+                                inFencedCode = false
+                                return emit(QuarkdownTokenTypes.FENCED_CODE_END, contentPos + fenceLen - start)
+                            }
+                        }
+                    }
+                }
+                // A content line: the whole line (without the trailing newline).
+                val lineLen = scanToEol(start)
+                return emit(QuarkdownTokenTypes.FENCED_CODE_CONTENT, if (lineLen > 0) lineLen else 1)
+            }
+            // A newline falls through to the NEWLINE handling below.
+        }
 
         // -------- Function name (right after a function-call dot) --------
         if (atFunctionName) {
@@ -202,13 +232,29 @@ class QuarkdownLexer : LexerBase() {
             val spaces = countSpaces(start)
             val contentPos = start + spaces
 
-            // -------- Fenced code block start / end (``` or ~~~) --------
+            // -------- Fenced code block start (``` or ~~~) --------
             if (contentPos < endOffset) {
                 val fc = ch(contentPos)
                 if (fc == '`' || fc == '~') {
                     val fenceLen = scanFenceOpen(contentPos, fc)
                     if (fenceLen != null) {
+                        inFencedCode = true
                         val totalLen = contentPos + fenceLen - start
+                        // Queue the language identifier (the rest of the opening line up to
+                        // the first whitespace / quote / brace) so it is emitted right after
+                        // the START token, e.g. "python" in ```python "caption" {#id}.
+                        val langStart = contentPos + fenceLen
+                        var langLen = 0
+                        while (langStart + langLen < endOffset) {
+                            val lc = ch(langStart + langLen)
+                            if (lc == ' ' || lc == '\t' || lc == '\n' || lc == '\r' ||
+                                lc == '"' || lc == '\'' || lc == '{'
+                            ) break
+                            langLen++
+                        }
+                        if (langLen > 0) {
+                            pendingTokens.addLast(QuarkdownTokenTypes.FENCED_CODE_LANGUAGE to langLen)
+                        }
                         return emit(QuarkdownTokenTypes.FENCED_CODE_START, totalLen)
                     }
                 }
@@ -344,15 +390,17 @@ class QuarkdownLexer : LexerBase() {
 
     /**
      * Check if the fence starting at [pos] with character [fc] is a valid
-     * code fence opening (at least 3 chars). Returns the count of chars,
-     * or null if not a fence.
+     * code fence (at least 3 chars). Returns the count of chars, or null if
+     * not a fence.
+     *
+     * A language identifier may follow the fence directly (e.g. ` ```python `),
+     * so no whitespace check is applied after the delimiter run — this matches
+     * [cc.carm.plugin.intellij.quarkdown.lang.codeblock.QuarkdownCodeBlockSyntax].
      */
     private fun scanFenceOpen(pos: Int, fc: Char): Int? {
         var count = 0
         while (pos + count < endOffset && ch(pos + count) == fc) count++
         if (count < 3) return null
-        val after = pos + count
-        if (after < endOffset && !isEol(after) && ch(after) != ' ' && ch(after) != '\t') return null
         return count
     }
 
@@ -543,5 +591,6 @@ class QuarkdownLexer : LexerBase() {
     companion object {
         private const val STATE_AT_FUNCTION_NAME = 1
         private const val STATE_IN_FUNCTION_CALL = 2
+        private const val STATE_IN_FENCED_CODE = 4
     }
 }

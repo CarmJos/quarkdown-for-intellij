@@ -1,5 +1,6 @@
 package cc.carm.plugin.intellij.quarkdown.statusbar
 
+import cc.carm.plugin.intellij.quarkdown.QuarkdownBundle
 import cc.carm.plugin.intellij.quarkdown.QuarkdownFileType
 import cc.carm.plugin.intellij.quarkdown.statusbar.QuarkdownStatsParser.QuarkdownStats
 import com.intellij.openapi.editor.Editor
@@ -27,7 +28,8 @@ class QuarkdownStatsWidgetFactory : StatusBarWidgetFactory {
 
     override fun getId(): String = ID
 
-    override fun getDisplayName(): String = "Quarkdown Word & Paragraph Count"
+    override fun getDisplayName(): String =
+        QuarkdownBundle.message("quarkdown.statusbar.stats.display.name")
 
     override fun isAvailable(project: Project): Boolean = true
 
@@ -74,13 +76,17 @@ class QuarkdownStatsWidget(project: Project) : EditorBasedWidget(project) {
                 cachedStats = QuarkdownStatsParser.computeStats(document.text)
                 cachedModCount = document.modificationStamp
             }
-            return "${cachedStats.wordCount} words \u00b7 ${cachedStats.paragraphCount} paragraphs"
+            return QuarkdownBundle.message(
+                "quarkdown.statusbar.stats.text",
+                cachedStats.wordCount,
+                cachedStats.paragraphCount
+            )
         }
 
         override fun getAlignment(): Float = Component.CENTER_ALIGNMENT
 
         override fun getTooltipText(): String =
-            "Word & paragraph count of the current Quarkdown document (function calls excluded)"
+            QuarkdownBundle.message("quarkdown.statusbar.stats.tooltip")
     }
 
     override fun ID(): String = QuarkdownStatsWidgetFactory.ID

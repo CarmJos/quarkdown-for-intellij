@@ -1,5 +1,6 @@
 package cc.carm.plugin.intellij.quarkdown.action.text
 
+import cc.carm.plugin.intellij.quarkdown.QuarkdownBundle
 import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
@@ -13,7 +14,11 @@ import com.intellij.openapi.project.DumbAware
  *
  * The language portion supports code completion via [CodeBlockLanguageCompletionContributor].
  */
-class CodeBlockInsertAction : AnAction(), DumbAware {
+class CodeBlockInsertAction : AnAction(
+    QuarkdownBundle.message("quarkdown.action.code.block"),
+    QuarkdownBundle.message("quarkdown.action.code.block.description"),
+    null
+), DumbAware {
 
     override fun getActionUpdateThread() = ActionUpdateThread.BGT
 

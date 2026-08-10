@@ -107,10 +107,9 @@
     - [x] File selector in the toolbar (text field + browse button; empty = "Auto: <current file>" hint).
     - [x] Zoom controls (zoom in/out/reset + percentage) and `Ctrl+wheel` zoom in the bottom bar.
     - [x] "View Full Log" button (bottom-left) showing the complete output of the current preview run.
-- [ ] Split editor preview (editor + preview side by side in the editor area).
 - [x] External browser preview option (port-based preview: a `View` button shown only while the server is running).
 - [x] Watch mode for auto-compile on save (handled by the CLI `--watch` flag, linked to the "Watch changes" setting).
-- [ ] Compilation output console as a dedicated tool window (build output currently appears in the IDE Run tool window).
+- [X] Compilation output console as a dedicated tool window (build output currently appears in the IDE Run tool window).
 - [x] Run Configuration support for `.qd` files (Quarkdown Build run configuration type executed from the Build button).
 
 ## Tool Windows & UI
@@ -120,4 +119,4 @@
 
 ## Quality
 
-- [ ] Internationalization (i18n): English / Chinese bilingual UI support.
+- [x] Internationalization (i18n): English / Chinese bilingual UI support.

@@ -1,5 +1,6 @@
 package cc.carm.plugin.intellij.quarkdown.action.image
 
+import cc.carm.plugin.intellij.quarkdown.QuarkdownBundle
 import com.intellij.openapi.fileChooser.FileChooserDescriptor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
@@ -40,19 +41,19 @@ class ImageSaveDialog(
         private set
 
     init {
-        title = "Save Image To..."
+        title = QuarkdownBundle.message("quarkdown.dialog.image.save.title")
         init()
     }
 
     override fun createCenterPanel(): JComponent {
         val panel = JPanel(GridLayoutManager(2, 2, JBUI.insets(10), -1, -1))
 
-        val dirLabel = JBLabel("Save to:")
+        val dirLabel = JBLabel(QuarkdownBundle.message("quarkdown.dialog.image.save.directory"))
         val df = TextFieldWithBrowseButton()
         dirField = df
         val dirDescriptor = FileChooserDescriptor(false, true, false, false, false, false)
-            .withTitle("Select Image Save Directory")
-            .withDescription("Choose a directory to save the image file")
+            .withTitle(QuarkdownBundle.message("quarkdown.dialog.image.save.chooser.title"))
+            .withDescription(QuarkdownBundle.message("quarkdown.dialog.image.save.chooser.description"))
         df.addBrowseFolderListener(TextBrowseFolderListener(dirDescriptor, myProject))
         if (defaultDir != null) {
             df.text = defaultDir.path
@@ -74,7 +75,7 @@ class ImageSaveDialog(
             )
         )
 
-        val nameLabel = JBLabel("File name:")
+        val nameLabel = JBLabel(QuarkdownBundle.message("quarkdown.dialog.image.save.filename"))
         val nf = JBTextField(defaultFileName)
         nameField = nf
         panel.add(
@@ -100,15 +101,24 @@ class ImageSaveDialog(
     override fun doValidate(): ValidationInfo? {
         val dirPath = dirField?.text?.trim().orEmpty()
         if (dirPath.isEmpty()) {
-            return ValidationInfo("Please select a save directory.", dirField)
+            return ValidationInfo(
+                QuarkdownBundle.message("quarkdown.dialog.image.save.error.no.directory"),
+                dirField
+            )
         }
         val dir = File(dirPath)
         if (!dir.isDirectory) {
-            return ValidationInfo("Directory does not exist: $dirPath", dirField)
+            return ValidationInfo(
+                QuarkdownBundle.message("quarkdown.dialog.image.save.error.directory", dirPath),
+                dirField
+            )
         }
         val fileName = nameField?.text?.trim().orEmpty()
         if (fileName.isEmpty()) {
-            return ValidationInfo("Please enter a file name.", nameField)
+            return ValidationInfo(
+                QuarkdownBundle.message("quarkdown.dialog.image.save.error.no.filename"),
+                nameField
+            )
         }
         return null
     }

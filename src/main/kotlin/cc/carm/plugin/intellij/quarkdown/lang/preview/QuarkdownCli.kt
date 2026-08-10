@@ -224,5 +224,6 @@ object QuarkdownCli {
         return tokens
     }
 
-    private val LAUNCHER_NAMES = listOf("quarkdown.cmd", "quarkdown.bat", "quarkdown")
+    /** Platform-specific launcher names of the `quarkdown` command (order = preference). */
+    internal val LAUNCHER_NAMES = listOf("quarkdown.cmd", "quarkdown.bat", "quarkdown")
 }

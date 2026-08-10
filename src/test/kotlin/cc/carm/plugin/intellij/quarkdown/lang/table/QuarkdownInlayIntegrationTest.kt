@@ -98,7 +98,9 @@ class QuarkdownInlayIntegrationTest : BasePlatformTestCase() {
 
         // Simulate the dialog's live "Format Table" write: the table gets wider.
         com.intellij.openapi.command.WriteCommandAction.runWriteCommandAction(project) {
-            myFixture.editor.document.text = "| H1       | H2       |\n|:--------:|:--------:|\n| a        | b        |"
+            myFixture.editor.document.setText(
+                "| H1       | H2       |\n|:--------:|:--------:|\n| a        | b        |"
+            )
         }
 
         // Re-collect with the SAME collector instance (mirrors a reused inlay pass).

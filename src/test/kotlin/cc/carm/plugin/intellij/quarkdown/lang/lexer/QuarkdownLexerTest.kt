@@ -152,4 +152,46 @@ class QuarkdownLexerTest {
             types(text)
         )
     }
+
+    @Test
+    fun `fenced code block emits start language content and end tokens`() {
+        val text = "```kotlin\nfun main() {}\n```\n"
+        val tokens = tokenize(text)
+        assertEquals(
+            listOf(
+                "FENCED_CODE_START",
+                "FENCED_CODE_LANGUAGE",
+                "NEWLINE",
+                "FENCED_CODE_CONTENT",
+                "NEWLINE",
+                "FENCED_CODE_END",
+                "NEWLINE",
+            ),
+            tokens.map { it.first }
+        )
+        assertEquals("```", tokens[0].second)
+        assertEquals("kotlin", tokens[1].second)
+        assertEquals("fun main() {}", tokens[3].second)
+        assertEquals("```", tokens[5].second)
+    }
+
+    @Test
+    fun `fence with caption still only lexes the language identifier`() {
+        val text = "```python \"Fibonacci\" {#fib}\nprint(1)\n```"
+        val tokens = tokenize(text)
+        assertEquals(
+            listOf(
+                "FENCED_CODE_START",
+                "FENCED_CODE_LANGUAGE",
+                "FENCED_CODE_CONTENT",
+                "NEWLINE",
+                "FENCED_CODE_CONTENT",
+                "NEWLINE",
+                "FENCED_CODE_END",
+            ),
+            tokens.map { it.first }
+        )
+        assertEquals("python", tokens[1].second)
+        assertEquals("print(1)", tokens[4].second)
+    }
 }

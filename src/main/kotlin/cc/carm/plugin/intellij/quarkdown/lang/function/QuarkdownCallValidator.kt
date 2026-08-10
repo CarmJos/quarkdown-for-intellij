@@ -17,7 +17,11 @@ object QuarkdownCallValidator {
         val severity: Severity,
         val start: Int,
         val end: Int,
-        val message: String
+        val message: String,
+        /** Resource-bundle key used by the annotator to render a localized message. */
+        val messageKey: String? = null,
+        /** MessageFormat arguments for [messageKey]. */
+        val messageArgs: List<Any> = emptyList()
     )
 
     data class ResolvedArg(
@@ -54,7 +58,9 @@ object QuarkdownCallValidator {
                             Severity.ERROR,
                             arg.nameStart,
                             arg.nameEnd,
-                            "Unknown parameter '${arg.paramName}' for '${call.name}'"
+                            "Unknown parameter '${arg.paramName}' for '${call.name}'",
+                            messageKey = "quarkdown.validator.unknown.parameter",
+                            messageArgs = listOf<Any>(arg.paramName ?: "", call.name)
                         )
                     )
                     resolved.add(ResolvedArg(arg, null))
@@ -68,7 +74,9 @@ object QuarkdownCallValidator {
                             Severity.ERROR,
                             arg.fullStart,
                             arg.fullEnd,
-                            "All arguments following a named argument must be named as well"
+                            "All arguments following a named argument must be named as well",
+                            messageKey = "quarkdown.validator.positional.after.named",
+                            messageArgs = emptyList()
                         )
                     )
                 }
@@ -79,7 +87,9 @@ object QuarkdownCallValidator {
                             Severity.ERROR,
                             arg.fullStart,
                             arg.fullEnd,
-                            "Too many arguments for '${call.name}'"
+                            "Too many arguments for '${call.name}'",
+                            messageKey = "quarkdown.validator.too.many.args",
+                            messageArgs = listOf(call.name)
                         )
                     )
                 } else {
@@ -117,7 +127,9 @@ object QuarkdownCallValidator {
                     Severity.ERROR,
                     call.nameStart,
                     call.nameEnd,
-                    "Unknown function '${call.name}'"
+                    "Unknown function '${call.name}'",
+                    messageKey = "quarkdown.validator.unknown.function",
+                    messageArgs = listOf(call.name)
                 )
             )
             return issues
@@ -142,7 +154,9 @@ object QuarkdownCallValidator {
                         Severity.ERROR,
                         start,
                         end,
-                        "Invalid value '$value' for '${param.name}'. Expected: ${allowed.joinToString(", ")}"
+                        "Invalid value '$value' for '${param.name}'. Expected: ${allowed.joinToString(", ")}",
+                        messageKey = "quarkdown.validator.invalid.value",
+                        messageArgs = listOf(value, param.name, allowed.joinToString(", "))
                     )
                 )
             }
@@ -162,7 +176,9 @@ object QuarkdownCallValidator {
                     Severity.WARNING,
                     call.nameStart,
                     call.nameEnd,
-                    "Expected ${required.size} arguments, but $writtenCount found"
+                    "Expected ${required.size} arguments, but $writtenCount found",
+                    messageKey = "quarkdown.validator.missing.args",
+                    messageArgs = listOf(required.size, writtenCount)
                 )
             )
         }
@@ -175,10 +191,7 @@ object QuarkdownCallValidator {
      * and quotes. `{bottomcenter}` → `bottomcenter`, `"paged"` → `paged`.
      */
     fun normalizeValue(raw: String): String {
-        var v = raw.trim()
-        if (v.length >= 2 && v.startsWith("{") && v.endsWith("}")) {
-            v = v.substring(1, v.length - 1).trim()
-        }
+        var v = raw.trim().removeSurrounding("{", "}").trim()
         if (v.length >= 2 && (v[0] == '"' || v[0] == '\'') && v.last() == v[0]) {
             v = v.substring(1, v.length - 1).trim()
         }

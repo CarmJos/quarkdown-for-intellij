@@ -1,5 +1,6 @@
 package cc.carm.plugin.intellij.quarkdown.lang.breadcrumbs
 
+import cc.carm.plugin.intellij.quarkdown.QuarkdownBundle
 import cc.carm.plugin.intellij.quarkdown.QuarkdownLanguage
 import cc.carm.plugin.intellij.quarkdown.lang.psi.QuarkdownHeading
 import com.intellij.lang.Language
@@ -36,7 +37,7 @@ class QuarkdownBreadcrumbsProvider : BreadcrumbsProvider {
         return when (e) {
             is QuarkdownHeading -> {
                 val prefix = "#".repeat(e.level)
-                val text = e.headingText.ifEmpty { "(empty heading)" }
+                val text = e.headingText.ifEmpty { QuarkdownBundle.message("quarkdown.heading.empty") }
                 "$prefix $text"
             }
 
@@ -47,7 +48,8 @@ class QuarkdownBreadcrumbsProvider : BreadcrumbsProvider {
 
     override fun getElementTooltip(e: PsiElement): String? {
         return when (e) {
-            is QuarkdownHeading -> "Level ${e.level} heading: ${e.headingText}"
+            is QuarkdownHeading ->
+                QuarkdownBundle.message("quarkdown.breadcrumbs.heading.tooltip", e.level, e.headingText)
             is PsiFile -> e.virtualFile?.path
             else -> null
         }
@@ -55,4 +57,3 @@ class QuarkdownBreadcrumbsProvider : BreadcrumbsProvider {
 
     override fun getElementIcon(e: PsiElement) = null
 }
-

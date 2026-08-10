@@ -1,6 +1,7 @@
 package cc.carm.plugin.intellij.quarkdown.lang.parser
 
 import cc.carm.plugin.intellij.quarkdown.QuarkdownLanguage
+import cc.carm.plugin.intellij.quarkdown.lang.codeblock.QuarkdownCodeBlock
 import cc.carm.plugin.intellij.quarkdown.lang.lexer.QuarkdownLexer
 import cc.carm.plugin.intellij.quarkdown.lang.lexer.QuarkdownTokenTypes
 import cc.carm.plugin.intellij.quarkdown.lang.psi.QuarkdownHeading
@@ -35,6 +36,10 @@ class QuarkdownParserDefinition : ParserDefinition {
     override fun createElement(node: ASTNode): PsiElement {
         return when (node.elementType) {
             QuarkdownTypes.HEADING -> QuarkdownHeading(node)
+            // Fenced code blocks are PsiLanguageInjectionHosts so the
+            // QuarkdownCodeBlockInjector can highlight their content with the
+            // declared language (e.g. ```python → Python highlighting).
+            QuarkdownTypes.FENCED_CODE_BLOCK -> QuarkdownCodeBlock(node)
             // All other elements implement ContributedReferenceHost so the platform's
             // PsiReferenceService consults our PsiReferenceContributor (required for
             // Ctrl+Click, Go-to-declaration and Find Usages).

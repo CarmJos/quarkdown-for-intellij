@@ -1,5 +1,6 @@
 package cc.carm.plugin.intellij.quarkdown.ui.floating
 
+import cc.carm.plugin.intellij.quarkdown.QuarkdownBundle
 import com.intellij.ide.ui.customization.CustomizableActionGroupProvider
 
 /**
@@ -12,7 +13,7 @@ class FloatingToolbarGroupProvider : CustomizableActionGroupProvider() {
     override fun registerGroups(registrar: CustomizableActionGroupRegistrar) {
         registrar.addCustomizableActionGroup(
             "Quarkdown.Toolbar.Floating",
-            "Quarkdown Floating Toolbar"
+            QuarkdownBundle.message("quarkdown.floating.toolbar.group.name")
         )
     }
 }

@@ -43,7 +43,17 @@ class QuarkdownCodeBlock(node: ASTNode) : ASTWrapperPsiElement(node), PsiLanguag
             val startOffset = startNode.textRange.endOffset - nodeStart
             val endOffset = endNode.textRange.startOffset - nodeStart
             if (startOffset >= endOffset) return null
-            return TextRange(startOffset, endOffset)
+            // Skip the language / caption / id portion of the opening line: the content
+            // begins right after the first newline that follows the opening fence.
+            val contentStart = node.getChildren(null)
+                .firstOrNull { child ->
+                    child.elementType == QuarkdownTokenTypes.NEWLINE &&
+                            child.textRange.startOffset - nodeStart >= startOffset
+                }
+                ?.textRange?.endOffset?.minus(nodeStart)
+                ?: startOffset
+            if (contentStart >= endOffset) return null
+            return TextRange(contentStart, endOffset)
         }
 
     /**

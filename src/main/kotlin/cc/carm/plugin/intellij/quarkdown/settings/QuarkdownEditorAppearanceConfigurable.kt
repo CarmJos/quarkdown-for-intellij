@@ -1,5 +1,6 @@
 package cc.carm.plugin.intellij.quarkdown.settings
 
+import cc.carm.plugin.intellij.quarkdown.QuarkdownBundle
 import com.intellij.openapi.options.Configurable
 import com.intellij.openapi.options.SearchableConfigurable
 import com.intellij.ui.JBColor
@@ -24,7 +25,7 @@ class QuarkdownEditorAppearanceConfigurable :
 
     // Font settings
     private val fontFamilyOptions = listOf(
-        "Default",
+        QuarkdownBundle.message("quarkdown.settings.editor.appearance.font.default"),
         "JetBrains Mono",
         "Consolas",
         "Courier New",
@@ -49,20 +50,21 @@ class QuarkdownEditorAppearanceConfigurable :
 
     override fun getId(): String = ID
 
-    override fun getDisplayName(): @Nls String = "Editor Appearance"
+    override fun getDisplayName(): @Nls String =
+        QuarkdownBundle.message("quarkdown.settings.editor.appearance.name")
 
     override fun createComponent(): JComponent {
         return panel {
-            group("Font Settings") {
-                row("Font family:") {
+            group(QuarkdownBundle.message("quarkdown.settings.editor.appearance.font.settings")) {
+                row(QuarkdownBundle.message("quarkdown.settings.editor.appearance.font.family")) {
                     comboBox(fontFamilyOptions)
                         .bindItem(
                             { selectedFontFamily },
-                            { selectedFontFamily = it ?: "Default" }
+                            { selectedFontFamily = it ?: QuarkdownBundle.message("quarkdown.settings.editor.appearance.font.default") }
                         )
                         .align(AlignX.FILL)
                 }
-                row("Font size:") {
+                row(QuarkdownBundle.message("quarkdown.settings.editor.appearance.font.size")) {
                     intTextField(8..72, 1)
                         .bindIntText(
                             { fontSize },
@@ -70,27 +72,27 @@ class QuarkdownEditorAppearanceConfigurable :
                         )
                         .applyToComponent { columns = 6 }
                 }
-                row("Line height:") {
+                row(QuarkdownBundle.message("quarkdown.settings.editor.appearance.line.height")) {
                     intTextField(10..300, 5)
                         .bindIntText(
                             { lineHeight },
                             { lineHeight = it }
                         )
                         .applyToComponent { columns = 6 }
-                    label("(percentage, 100 = normal)")
+                    label(QuarkdownBundle.message("quarkdown.settings.editor.appearance.line.height.hint"))
                 }
             }
 
-            group("Editor Behavior") {
+            group(QuarkdownBundle.message("quarkdown.settings.editor.appearance.behavior")) {
                 row {
-                    checkBox("Enable line wrap (soft wrap)")
+                    checkBox(QuarkdownBundle.message("quarkdown.settings.editor.appearance.line.wrap"))
                         .bindSelected(
                             { enableLineWrap },
                             { enableLineWrap = it }
                         )
                 }
                 row {
-                    checkBox("Show line numbers")
+                    checkBox(QuarkdownBundle.message("quarkdown.settings.editor.appearance.line.numbers"))
                         .bindSelected(
                             { showLineNumbers },
                             { showLineNumbers = it }
@@ -98,18 +100,18 @@ class QuarkdownEditorAppearanceConfigurable :
                 }
             }
 
-            group("Per-Component Styling") {
-                row("Headings:") {}
+            group(QuarkdownBundle.message("quarkdown.settings.editor.appearance.styling")) {
+                row(QuarkdownBundle.message("quarkdown.settings.editor.appearance.styling.headings")) {}
                 indent {
                     row {
-                        checkBox("Bold headings")
+                        checkBox(QuarkdownBundle.message("quarkdown.settings.editor.appearance.styling.headings.bold"))
                             .bindSelected(
                                 { headingBold },
                                 { headingBold = it }
                             )
                     }
                     row {
-                        checkBox("Italic headings")
+                        checkBox(QuarkdownBundle.message("quarkdown.settings.editor.appearance.styling.headings.italic"))
                             .bindSelected(
                                 { headingItalic },
                                 { headingItalic = it }
@@ -117,17 +119,17 @@ class QuarkdownEditorAppearanceConfigurable :
                     }
                 }
 
-                row("Code Blocks:") {}
+                row(QuarkdownBundle.message("quarkdown.settings.editor.appearance.styling.codeblocks")) {}
                 indent {
                     row {
-                        checkBox("Show background color")
+                        checkBox(QuarkdownBundle.message("quarkdown.settings.editor.appearance.styling.codeblocks.background"))
                             .bindSelected(
                                 { codeBlockBackground },
                                 { codeBlockBackground = it }
                             )
                     }
                     row {
-                        checkBox("Show border")
+                        checkBox(QuarkdownBundle.message("quarkdown.settings.editor.appearance.styling.codeblocks.border"))
                             .bindSelected(
                                 { codeBlockBorder },
                                 { codeBlockBorder = it }
@@ -135,17 +137,17 @@ class QuarkdownEditorAppearanceConfigurable :
                     }
                 }
 
-                row("Tables:") {}
+                row(QuarkdownBundle.message("quarkdown.settings.editor.appearance.styling.tables")) {}
                 indent {
                     row {
-                        checkBox("Show border")
+                        checkBox(QuarkdownBundle.message("quarkdown.settings.editor.appearance.styling.tables.border"))
                             .bindSelected(
                                 { tableBorder },
                                 { tableBorder = it }
                             )
                     }
                     row {
-                        checkBox("Striped rows")
+                        checkBox(QuarkdownBundle.message("quarkdown.settings.editor.appearance.styling.tables.striped"))
                             .bindSelected(
                                 { tableStriped },
                                 { tableStriped = it }
@@ -154,9 +156,9 @@ class QuarkdownEditorAppearanceConfigurable :
                 }
             }
 
-            group("Note") {
+            group(QuarkdownBundle.message("quarkdown.settings.editor.appearance.note")) {
                 row {
-                    label("These settings are for preview purposes. Some settings may require IDE restart to take effect.")
+                    label(QuarkdownBundle.message("quarkdown.settings.editor.appearance.note.text"))
                         .applyToComponent {
                             foreground = JBColor.GRAY
                         }

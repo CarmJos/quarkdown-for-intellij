@@ -1,5 +1,6 @@
 package cc.carm.plugin.intellij.quarkdown.lang.fold
 
+import cc.carm.plugin.intellij.quarkdown.QuarkdownBundle
 import cc.carm.plugin.intellij.quarkdown.QuarkdownLanguage
 import com.intellij.lang.ASTNode
 import com.intellij.lang.folding.FoldingBuilderEx
@@ -74,13 +75,16 @@ class QuarkdownFoldingBuilder : FoldingBuilderEx() {
                 val contentLines = countNonEmptyLines(text, foldStart, foldEnd)
                 if (contentLines > 0) {
                     val group = FoldingGroup.newGroup("quarkdown.section")
+                    val unit = QuarkdownBundle.message(
+                        if (contentLines == 1) "quarkdown.fold.line" else "quarkdown.fold.lines"
+                    )
                     descriptors.add(
                         FoldingDescriptor(
                             root,
                             foldStart,
                             foldEnd,
                             group,
-                            "... ($contentLines ${if (contentLines == 1) "line" else "lines"})"
+                            QuarkdownBundle.message("quarkdown.fold.section.placeholder", contentLines, unit)
                         )
                     )
                 }
@@ -107,13 +111,16 @@ class QuarkdownFoldingBuilder : FoldingBuilderEx() {
             val foldStart = offsetOfLine(lines, startIdx)
             val foldEnd = offsetOfLine(lines, endIdx) + lines[endIdx].length
             val rowCount = endIdx - startIdx + 1
+            val unit = QuarkdownBundle.message(
+                if (rowCount == 1) "quarkdown.fold.row" else "quarkdown.fold.rows"
+            )
             descriptors.add(
                 FoldingDescriptor(
                     root,
                     foldStart,
                     foldEnd,
                     tableGroup,
-                    "Table ($rowCount ${if (rowCount == 1) "row" else "rows"})"
+                    QuarkdownBundle.message("quarkdown.fold.table.placeholder", rowCount, unit)
                 )
             )
         }

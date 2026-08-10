@@ -1,5 +1,6 @@
 package cc.carm.plugin.intellij.quarkdown.lang.marker
 
+import cc.carm.plugin.intellij.quarkdown.QuarkdownBundle
 import cc.carm.plugin.intellij.quarkdown.QuarkdownFileType
 import cc.carm.plugin.intellij.quarkdown.QuarkdownIcons
 import cc.carm.plugin.intellij.quarkdown.action.code.CodeBlockDialog
@@ -76,10 +77,10 @@ class QuarkdownCodeBlockLineMarkerProvider : LineMarkerProvider {
             element,
             element.textRange,
             QuarkdownIcons.CODE_MARKER,
-            { "Edit code block" },
+            { QuarkdownBundle.message("quarkdown.marker.codeblock.tooltip") },
             CodeBlockGutterHandler(kind, lineStart, lineEnd),
             GutterIconRenderer.Alignment.RIGHT,
-            { "Edit code block" }
+            { QuarkdownBundle.message("quarkdown.marker.codeblock.tooltip") }
         )
     }
 

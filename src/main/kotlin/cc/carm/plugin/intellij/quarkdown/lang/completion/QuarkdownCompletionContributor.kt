@@ -1,5 +1,6 @@
 package cc.carm.plugin.intellij.quarkdown.lang.completion
 
+import cc.carm.plugin.intellij.quarkdown.QuarkdownBundle
 import cc.carm.plugin.intellij.quarkdown.QuarkdownFileType
 import cc.carm.plugin.intellij.quarkdown.lang.function.FunctionMetadata
 import cc.carm.plugin.intellij.quarkdown.lang.function.FunctionRegistry
@@ -240,7 +241,15 @@ class QuarkdownCompletionContributor : CompletionContributor() {
                 val lookup = LookupElementBuilder.create(displayText)
                     .withLookupString(relativePath)
                     .withIcon(icon)
-                    .withTypeText(if (isDir) "directory" else (child.extension?.uppercase() ?: "file"), true)
+                    .withTypeText(
+                        if (isDir) {
+                            QuarkdownBundle.message("quarkdown.completion.type.directory")
+                        } else {
+                            child.extension?.uppercase()
+                                ?: QuarkdownBundle.message("quarkdown.completion.type.file")
+                        },
+                        true
+                    )
                     .withTailText(if (basePath.isNotEmpty()) "  $basePath" else null, true)
                     .withInsertHandler(
                         pathInsertHandler(
@@ -363,7 +372,7 @@ class QuarkdownCompletionContributor : CompletionContributor() {
         private fun buildNamedArgLookup(param: ParameterMetadata): LookupElementBuilder {
             return LookupElementBuilder.create(param.name)
                 .withTypeText(param.type, true)
-                .withTailText("  named argument", true)
+                .withTailText("  ${QuarkdownBundle.message("quarkdown.completion.tail.named.argument")}", true)
                 .withInsertHandler { ctx, _ ->
                     val ed = ctx.editor
                     val start = ctx.startOffset

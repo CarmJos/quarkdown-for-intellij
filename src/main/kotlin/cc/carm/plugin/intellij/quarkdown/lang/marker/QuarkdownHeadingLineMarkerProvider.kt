@@ -1,5 +1,6 @@
 package cc.carm.plugin.intellij.quarkdown.lang.marker
 
+import cc.carm.plugin.intellij.quarkdown.QuarkdownBundle
 import cc.carm.plugin.intellij.quarkdown.QuarkdownFileType
 import cc.carm.plugin.intellij.quarkdown.QuarkdownIcons
 import cc.carm.plugin.intellij.quarkdown.action.heading.HeadingDialog
@@ -45,10 +46,10 @@ class QuarkdownHeadingLineMarkerProvider : LineMarkerProvider {
             element,
             element.textRange,
             QuarkdownIcons.HEADING_MARKER,
-            { "Edit heading" },
+            { QuarkdownBundle.message("quarkdown.marker.heading.tooltip") },
             HeadingGutterHandler(lineStart),
             GutterIconRenderer.Alignment.RIGHT,
-            { "Edit heading" }
+            { QuarkdownBundle.message("quarkdown.marker.heading.tooltip") }
         )
     }
 

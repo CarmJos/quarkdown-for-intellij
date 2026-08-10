@@ -1,5 +1,6 @@
 package cc.carm.plugin.intellij.quarkdown.action.equation
 
+import cc.carm.plugin.intellij.quarkdown.QuarkdownBundle
 import cc.carm.plugin.intellij.quarkdown.lang.equation.QuarkdownEquationSyntax
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
@@ -38,7 +39,7 @@ class EquationDialog(
     private var idField: JBTextField? = null
 
     init {
-        title = "Equation Properties"
+        title = QuarkdownBundle.message("quarkdown.dialog.equation.title")
         init()
     }
 
@@ -57,7 +58,7 @@ class EquationDialog(
     override fun createCenterPanel(): JComponent {
         val panel = JPanel(GridLayoutManager(1, 2, JBUI.insets(10), -1, -1))
 
-        val idLabel = JBLabel("ID:")
+        val idLabel = JBLabel(QuarkdownBundle.message("quarkdown.dialog.equation.id"))
         val idf = JBTextField()
         idField = idf
         panel.add(

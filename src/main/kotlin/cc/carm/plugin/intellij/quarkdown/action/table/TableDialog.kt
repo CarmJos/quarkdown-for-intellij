@@ -1,5 +1,6 @@
 package cc.carm.plugin.intellij.quarkdown.action.table
 
+import cc.carm.plugin.intellij.quarkdown.QuarkdownBundle
 import cc.carm.plugin.intellij.quarkdown.lang.table.QuarkdownTableModificationUtils
 import cc.carm.plugin.intellij.quarkdown.lang.table.QuarkdownTableParser
 import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer
@@ -44,7 +45,7 @@ class TableDialog(
     private var targetBlock: QuarkdownTableModificationUtils.TableBlock? = null
 
     init {
-        title = "Table Properties"
+        title = QuarkdownBundle.message("quarkdown.dialog.table.title")
         init()
     }
 
@@ -66,7 +67,7 @@ class TableDialog(
         val panel = JPanel(GridLayoutManager(2, 2, JBUI.insets(10), -1, -1))
         var row = 0
 
-        val labelLabel = JBLabel("Label:")
+        val labelLabel = JBLabel(QuarkdownBundle.message("quarkdown.dialog.table.label"))
         val lf = JBTextField()
         labelField = lf
         panel.add(
@@ -87,7 +88,7 @@ class TableDialog(
         )
         row++
 
-        val idLabel = JBLabel("ID:")
+        val idLabel = JBLabel(QuarkdownBundle.message("quarkdown.dialog.table.id"))
         val idf = JBTextField()
         idField = idf
         panel.add(
@@ -118,9 +119,9 @@ class TableDialog(
      */
     override fun createLeftSideActions(): Array<Action> {
         return arrayOf(
-            object : AbstractAction("Format Table") {
+            object : AbstractAction(QuarkdownBundle.message("quarkdown.dialog.table.format")) {
                 init {
-                    putValue(SHORT_DESCRIPTION, "Re-align the table cells")
+                    putValue(SHORT_DESCRIPTION, QuarkdownBundle.message("quarkdown.dialog.table.format.description"))
                 }
 
                 override fun actionPerformed(e: ActionEvent) {

@@ -1,5 +1,6 @@
 package cc.carm.plugin.intellij.quarkdown.action
 
+import cc.carm.plugin.intellij.quarkdown.QuarkdownBundle
 import cc.carm.plugin.intellij.quarkdown.QuarkdownIcons
 import com.intellij.ide.actions.CreateFileFromTemplateAction
 import com.intellij.ide.actions.CreateFileFromTemplateDialog
@@ -8,8 +9,8 @@ import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiDirectory
 
 class CreateDocumentAction : CreateFileFromTemplateAction(
-    "Quarkdown Document",
-    "Create a new Quarkdown document file",
+    QuarkdownBundle.message("quarkdown.action.create.document.text"),
+    QuarkdownBundle.message("quarkdown.action.create.document.description"),
     QuarkdownIcons.FILE
 ), DumbAware {
 
@@ -17,9 +18,17 @@ class CreateDocumentAction : CreateFileFromTemplateAction(
         project: Project, directory: PsiDirectory,
         builder: CreateFileFromTemplateDialog.Builder
     ) {
-        builder.setTitle("New Quarkdown Document")
-            .addKind("Empty Document", QuarkdownIcons.FILE, "Quarkdown Empty")
-            .addKind("With Example", QuarkdownIcons.FILE, "Quarkdown Example")
+        builder.setTitle(QuarkdownBundle.message("quarkdown.action.create.document.title"))
+            .addKind(
+                QuarkdownBundle.message("quarkdown.action.create.document.kind.empty"),
+                QuarkdownIcons.FILE,
+                "Quarkdown Empty"
+            )
+            .addKind(
+                QuarkdownBundle.message("quarkdown.action.create.document.kind.example"),
+                QuarkdownIcons.FILE,
+                "Quarkdown Example"
+            )
     }
 
     override fun getActionName(
@@ -27,5 +36,5 @@ class CreateDocumentAction : CreateFileFromTemplateAction(
         newName: String,
         templateName: String
     ): String =
-        "Create Quarkdown Document: $newName"
+        QuarkdownBundle.message("quarkdown.action.create.document.progress", newName)
 }

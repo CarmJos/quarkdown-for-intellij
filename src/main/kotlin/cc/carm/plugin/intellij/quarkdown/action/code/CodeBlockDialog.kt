@@ -1,5 +1,6 @@
 package cc.carm.plugin.intellij.quarkdown.action.code
 
+import cc.carm.plugin.intellij.quarkdown.QuarkdownBundle
 import cc.carm.plugin.intellij.quarkdown.lang.codeblock.CodeBlockLanguageProvider
 import cc.carm.plugin.intellij.quarkdown.lang.codeblock.QuarkdownCodeBlockSyntax
 import com.intellij.openapi.project.Project
@@ -50,7 +51,7 @@ class CodeBlockDialog(
     private var lastSelected: String? = null
 
     init {
-        title = "Code Block Properties"
+        title = QuarkdownBundle.message("quarkdown.dialog.codeblock.title")
         init()
     }
 
@@ -74,7 +75,7 @@ class CodeBlockDialog(
         val panel = JPanel(GridLayoutManager(3, 2, JBUI.insets(10), -1, -1))
         var row = 0
 
-        val languageLabel = JBLabel("Language:")
+        val languageLabel = JBLabel(QuarkdownBundle.message("quarkdown.dialog.codeblock.language"))
         val combo = ComboBox(CollectionComboBoxModel(ALL_LANGUAGES, null))
         combo.isEditable = true
         languageCombo = combo
@@ -103,7 +104,7 @@ class CodeBlockDialog(
         )
         row++
 
-        val captionLabel = JBLabel("Caption:")
+        val captionLabel = JBLabel(QuarkdownBundle.message("quarkdown.dialog.codeblock.caption"))
         val cf = JBTextField()
         captionField = cf
         panel.add(
@@ -125,7 +126,11 @@ class CodeBlockDialog(
         row++
 
         val idLabel = JBLabel(
-            if (kind == QuarkdownCodeBlockSyntax.Kind.CODE_FUNCTION) "ID (ref):" else "ID:"
+            if (kind == QuarkdownCodeBlockSyntax.Kind.CODE_FUNCTION) {
+                QuarkdownBundle.message("quarkdown.dialog.codeblock.id.ref")
+            } else {
+                QuarkdownBundle.message("quarkdown.dialog.codeblock.id")
+            }
         )
         val idf = JBTextField()
         idField = idf

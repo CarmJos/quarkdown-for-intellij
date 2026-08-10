@@ -9,7 +9,10 @@ import com.intellij.openapi.editor.Caret
 import com.intellij.openapi.editor.Document
 import com.intellij.openapi.project.DumbAware
 
-abstract class BaseToggleAction : AnAction(), DumbAware {
+abstract class BaseToggleAction(
+    text: String = "",
+    description: String = "",
+) : AnAction(text, description, null), DumbAware {
 
     override fun getActionUpdateThread() = ActionUpdateThread.BGT
 

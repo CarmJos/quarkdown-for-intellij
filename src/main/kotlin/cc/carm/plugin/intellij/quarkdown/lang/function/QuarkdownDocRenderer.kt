@@ -1,5 +1,6 @@
 package cc.carm.plugin.intellij.quarkdown.lang.function
 
+import cc.carm.plugin.intellij.quarkdown.QuarkdownBundle
 import com.intellij.lang.documentation.DocumentationMarkup
 import com.intellij.xml.util.XmlStringUtil
 
@@ -28,7 +29,9 @@ object QuarkdownDocRenderer {
             }
             fn.docUrl?.let { url ->
                 sb.append("<p class=\"paragraph\"><a href=\"")
-                    .append(XmlStringUtil.escapeString(url)).append("\">Open documentation</a></p>")
+                    .append(XmlStringUtil.escapeString(url)).append("\">")
+                    .append(XmlStringUtil.escapeString(QuarkdownBundle.message("quarkdown.doc.open.documentation")))
+                    .append("</a></p>")
             }
             sb.append(DocumentationMarkup.CONTENT_END)
         }
@@ -36,19 +39,25 @@ object QuarkdownDocRenderer {
         val sections = buildList {
             val visibleParams = fn.parameters.filter { !it.isInjected }
             if (visibleParams.isNotEmpty()) {
-                add("Parameters" to renderParameters(visibleParams))
+                add(QuarkdownBundle.message("quarkdown.doc.section.parameters") to renderParameters(visibleParams))
             }
             if (fn.returnDescription.isNotEmpty()) {
-                add("Return" to "<p class=\"paragraph\">${XmlStringUtil.escapeString(fn.returnDescription)}</p>")
+                add(
+                    QuarkdownBundle.message("quarkdown.doc.section.return") to
+                        "<p class=\"paragraph\">${XmlStringUtil.escapeString(fn.returnDescription)}</p>"
+                )
             }
             if (fn.samples.isNotEmpty()) {
                 val samplesHtml = fn.samples.joinToString("") {
                     "<pre>${XmlStringUtil.escapeString(it)}</pre>"
                 }
-                add("Examples" to samplesHtml)
+                add(QuarkdownBundle.message("quarkdown.doc.section.examples") to samplesHtml)
             }
             if (fn.module.isNotEmpty()) {
-                add("Module" to "<p class=\"paragraph\">${XmlStringUtil.escapeString(fn.module)}</p>")
+                add(
+                    QuarkdownBundle.message("quarkdown.doc.section.module") to
+                        "<p class=\"paragraph\">${XmlStringUtil.escapeString(fn.module)}</p>"
+                )
             }
         }
 
@@ -70,6 +79,8 @@ object QuarkdownDocRenderer {
 
     private fun renderParameters(params: List<ParameterMetadata>): String {
         val sb = StringBuilder()
+        val optional = QuarkdownBundle.message("quarkdown.doc.optional")
+        val named = QuarkdownBundle.message("quarkdown.doc.named")
         sb.append("<dl>")
         for (p in params) {
             sb.append("<dt>")
@@ -80,18 +91,20 @@ object QuarkdownDocRenderer {
                     .append(DocumentationMarkup.GRAYED_END)
             }
             if (p.isOptional) {
-                sb.append(" ").append(DocumentationMarkup.GRAYED_START).append("(optional)")
+                sb.append(" ").append(DocumentationMarkup.GRAYED_START)
+                    .append(XmlStringUtil.escapeString(optional))
                     .append(DocumentationMarkup.GRAYED_END)
             }
             if (p.isLikelyNamed) {
-                sb.append(" ").append(DocumentationMarkup.GRAYED_START).append("(named)")
+                sb.append(" ").append(DocumentationMarkup.GRAYED_START)
+                    .append(XmlStringUtil.escapeString(named))
                     .append(DocumentationMarkup.GRAYED_END)
             }
             sb.append("</dt>")
             val details = buildList {
                 if (p.description.isNotEmpty()) add(p.description)
                 p.allowedValues?.takeIf { it.isNotEmpty() }?.let {
-                    add("Allowed values: ${it.joinToString(", ")}")
+                    add(QuarkdownBundle.message("quarkdown.doc.allowed.values", it.joinToString(", ")))
                 }
             }
             if (details.isNotEmpty()) {

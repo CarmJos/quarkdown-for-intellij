@@ -1,5 +1,6 @@
 package cc.carm.plugin.intellij.quarkdown.action.image
 
+import cc.carm.plugin.intellij.quarkdown.QuarkdownBundle
 import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
@@ -8,7 +9,11 @@ import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.project.DumbAware
 
-class ImageInsertAction : AnAction(), DumbAware {
+class ImageInsertAction : AnAction(
+    QuarkdownBundle.message("quarkdown.action.image"),
+    QuarkdownBundle.message("quarkdown.action.image.description"),
+    null
+), DumbAware {
 
     override fun getActionUpdateThread() = ActionUpdateThread.BGT
 
@@ -21,11 +26,7 @@ class ImageInsertAction : AnAction(), DumbAware {
         val editor = e.getData(CommonDataKeys.EDITOR) ?: return
 
         val dialog = ImageDialog(e.project, ImageDialog.Mode.INSERT)
-
-        val docFile = FileDocumentManager.getInstance().getFile(editor.document)
-        if (docFile != null) {
-            dialog.setCurrentFileDir(docFile.parent)
-        }
+        FileDocumentManager.getInstance().getFile(editor.document)?.let { dialog.setCurrentFileDir(it.parent) }
 
         if (!dialog.showAndGet()) return
 

@@ -66,6 +66,18 @@ class QuarkdownPsiParser : PsiParser {
                 }
 
                 headingStack.add(marker to level)
+            } else if (tokenType == TT.FENCED_CODE_START) {
+                // Group the whole fenced block (opening fence + language + content +
+                // closing fence) into one FENCED_CODE_BLOCK node, so the platform can
+                // instantiate QuarkdownCodeBlock and inject the language highlighting.
+                val marker = builder.mark()
+                builder.advanceLexer() // consume FENCED_CODE_START
+                while (!builder.eof()) {
+                    val tt = builder.tokenType ?: break
+                    builder.advanceLexer()
+                    if (tt == TT.FENCED_CODE_END) break
+                }
+                marker.done(QuarkdownTypes.FENCED_CODE_BLOCK)
             } else {
                 builder.advanceLexer()
             }

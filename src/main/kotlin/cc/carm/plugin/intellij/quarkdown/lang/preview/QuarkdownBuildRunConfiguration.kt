@@ -1,5 +1,6 @@
 package cc.carm.plugin.intellij.quarkdown.lang.preview
 
+import cc.carm.plugin.intellij.quarkdown.QuarkdownBundle
 import com.intellij.execution.Executor
 import com.intellij.execution.configurations.*
 import com.intellij.execution.process.ProcessHandler
@@ -40,6 +41,9 @@ class QuarkdownBuildRunConfiguration(
         object : SettingsEditor<RunConfiguration>() {
             override fun resetEditorFrom(s: RunConfiguration) = Unit
             override fun applyEditorTo(s: RunConfiguration) = Unit
-            override fun createEditor(): javax.swing.JComponent = com.intellij.ui.components.JBLabel("Quarkdown Build")
+            override fun createEditor(): javax.swing.JComponent =
+                com.intellij.ui.components.JBLabel(
+                    QuarkdownBundle.message("quarkdown.preview.build.configuration.name")
+                )
         }
 }

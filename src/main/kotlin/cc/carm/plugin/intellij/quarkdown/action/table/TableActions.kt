@@ -1,5 +1,6 @@
 ﻿package cc.carm.plugin.intellij.quarkdown.action.table
 
+import cc.carm.plugin.intellij.quarkdown.QuarkdownBundle
 import cc.carm.plugin.intellij.quarkdown.QuarkdownFileType
 import cc.carm.plugin.intellij.quarkdown.lang.table.QuarkdownTableModificationUtils
 import cc.carm.plugin.intellij.quarkdown.lang.table.QuarkdownTableParser
@@ -35,7 +36,10 @@ class TableActionsGroup : DefaultActionGroup() {
 // ---------------------------------------------------------------------------
 // Row actions
 // ---------------------------------------------------------------------------
-abstract class RowBasedTableAction : AnAction() {
+abstract class RowBasedTableAction(
+    text: String = "",
+    description: String = "",
+) : AnAction(text, description, null) {
     override fun actionPerformed(event: AnActionEvent) {
         val (editor, file) = event.quarkdownContext() ?: return
         val block = findBlock(file, event.getData(TableActionKeys.TABLE_OFFSET)) ?: return
@@ -67,7 +71,11 @@ abstract class RowBasedTableAction : AnAction() {
 }
 
 /** Inserts an empty row above/below the clicked row. */
-abstract class InsertRowAction(private val insertAbove: Boolean) : RowBasedTableAction() {
+abstract class InsertRowAction(
+    private val insertAbove: Boolean,
+    text: String = "",
+    description: String = "",
+) : RowBasedTableAction(text, description) {
     override fun performAction(
         editor: Editor,
         file: PsiFile,
@@ -84,12 +92,25 @@ abstract class InsertRowAction(private val insertAbove: Boolean) : RowBasedTable
         }
     }
 
-    class InsertAbove : InsertRowAction(insertAbove = true)
-    class InsertBelow : InsertRowAction(insertAbove = false)
+    class InsertAbove : InsertRowAction(
+        insertAbove = true,
+        QuarkdownBundle.message("quarkdown.table.insert.row.above"),
+        QuarkdownBundle.message("quarkdown.table.insert.row.above.description")
+    )
+
+    class InsertBelow : InsertRowAction(
+        insertAbove = false,
+        QuarkdownBundle.message("quarkdown.table.insert.row.below"),
+        QuarkdownBundle.message("quarkdown.table.insert.row.below.description")
+    )
 }
 
 /** Swaps the clicked data row with the one above/below. */
-abstract class SwapRowsAction(private val swapWithAbove: Boolean) : RowBasedTableAction() {
+abstract class SwapRowsAction(
+    private val swapWithAbove: Boolean,
+    text: String = "",
+    description: String = "",
+) : RowBasedTableAction(text, description) {
     override fun performAction(
         editor: Editor,
         file: PsiFile,
@@ -115,12 +136,24 @@ abstract class SwapRowsAction(private val swapWithAbove: Boolean) : RowBasedTabl
         event.presentation.isEnabled = other in table.rows.indices
     }
 
-    class SwapWithAbove : SwapRowsAction(swapWithAbove = true)
-    class SwapWithBelow : SwapRowsAction(swapWithAbove = false)
+    class SwapWithAbove : SwapRowsAction(
+        swapWithAbove = true,
+        QuarkdownBundle.message("quarkdown.table.move.row.up"),
+        QuarkdownBundle.message("quarkdown.table.move.row.up.description")
+    )
+
+    class SwapWithBelow : SwapRowsAction(
+        swapWithAbove = false,
+        QuarkdownBundle.message("quarkdown.table.move.row.down"),
+        QuarkdownBundle.message("quarkdown.table.move.row.down.description")
+    )
 }
 
 /** Selects the whole clicked row. */
-class SelectRowAction : RowBasedTableAction() {
+class SelectRowAction : RowBasedTableAction(
+    QuarkdownBundle.message("quarkdown.table.select.row"),
+    QuarkdownBundle.message("quarkdown.table.select.row.description")
+) {
     override fun performAction(
         editor: Editor,
         file: PsiFile,
@@ -134,7 +167,10 @@ class SelectRowAction : RowBasedTableAction() {
 }
 
 /** Removes the clicked data row. */
-class RemoveCurrentRowAction : RowBasedTableAction() {
+class RemoveCurrentRowAction : RowBasedTableAction(
+    QuarkdownBundle.message("quarkdown.table.remove.row"),
+    QuarkdownBundle.message("quarkdown.table.remove.row.description")
+) {
     override fun performAction(
         editor: Editor,
         file: PsiFile,
@@ -153,7 +189,10 @@ class RemoveCurrentRowAction : RowBasedTableAction() {
 // ---------------------------------------------------------------------------
 // Column actions
 // ---------------------------------------------------------------------------
-abstract class ColumnBasedTableAction : AnAction() {
+abstract class ColumnBasedTableAction(
+    text: String = "",
+    description: String = "",
+) : AnAction(text, description, null) {
     override fun actionPerformed(event: AnActionEvent) {
         val (editor, file) = event.quarkdownContext() ?: return
         val block = findBlock(file, event.getData(TableActionKeys.TABLE_OFFSET)) ?: return
@@ -188,7 +227,11 @@ abstract class ColumnBasedTableAction : AnAction() {
 }
 
 /** Inserts an empty column before/after the clicked column. */
-abstract class InsertTableColumnAction(private val insertAfter: Boolean) : ColumnBasedTableAction() {
+abstract class InsertTableColumnAction(
+    private val insertAfter: Boolean,
+    text: String = "",
+    description: String = "",
+) : ColumnBasedTableAction(text, description) {
     override fun performAction(
         editor: Editor,
         file: PsiFile,
@@ -208,12 +251,25 @@ abstract class InsertTableColumnAction(private val insertAfter: Boolean) : Colum
         }
     }
 
-    class InsertBefore : InsertTableColumnAction(insertAfter = false)
-    class InsertAfter : InsertTableColumnAction(insertAfter = true)
+    class InsertBefore : InsertTableColumnAction(
+        insertAfter = false,
+        QuarkdownBundle.message("quarkdown.table.insert.column.before"),
+        QuarkdownBundle.message("quarkdown.table.insert.column.before.description")
+    )
+
+    class InsertAfter : InsertTableColumnAction(
+        insertAfter = true,
+        QuarkdownBundle.message("quarkdown.table.insert.column.after"),
+        QuarkdownBundle.message("quarkdown.table.insert.column.after.description")
+    )
 }
 
 /** Swaps the clicked column with the one on the left/right. */
-abstract class SwapColumnsAction(private val swapWithLeft: Boolean) : ColumnBasedTableAction() {
+abstract class SwapColumnsAction(
+    private val swapWithLeft: Boolean,
+    text: String = "",
+    description: String = "",
+) : ColumnBasedTableAction(text, description) {
     override fun performAction(
         editor: Editor,
         file: PsiFile,
@@ -236,12 +292,24 @@ abstract class SwapColumnsAction(private val swapWithLeft: Boolean) : ColumnBase
         event.presentation.isEnabled = other in 0 until table.columnCount
     }
 
-    class SwapWithLeft : SwapColumnsAction(swapWithLeft = true)
-    class SwapWithRight : SwapColumnsAction(swapWithLeft = false)
+    class SwapWithLeft : SwapColumnsAction(
+        swapWithLeft = true,
+        QuarkdownBundle.message("quarkdown.table.move.column.left"),
+        QuarkdownBundle.message("quarkdown.table.move.column.left.description")
+    )
+
+    class SwapWithRight : SwapColumnsAction(
+        swapWithLeft = false,
+        QuarkdownBundle.message("quarkdown.table.move.column.right"),
+        QuarkdownBundle.message("quarkdown.table.move.column.right.description")
+    )
 }
 
 /** Selects all cells of the clicked column using multiple carets. */
-class SelectCurrentColumnAction : ColumnBasedTableAction() {
+class SelectCurrentColumnAction : ColumnBasedTableAction(
+    QuarkdownBundle.message("quarkdown.table.select.column"),
+    QuarkdownBundle.message("quarkdown.table.select.column.description")
+) {
     override fun performAction(
         editor: Editor,
         file: PsiFile,
@@ -256,8 +324,10 @@ class SelectCurrentColumnAction : ColumnBasedTableAction() {
 
 /** Sets the clicked column's alignment. */
 abstract class SetColumnAlignmentAction(
-    private val alignment: QuarkdownTableParser.Alignment
-) : ColumnBasedTableAction() {
+    private val alignment: QuarkdownTableParser.Alignment,
+    text: String = "",
+    description: String = "",
+) : ColumnBasedTableAction(text, description) {
     override fun performAction(
         editor: Editor,
         file: PsiFile,
@@ -277,9 +347,23 @@ abstract class SetColumnAlignmentAction(
         }
     }
 
-    class Left : SetColumnAlignmentAction(QuarkdownTableParser.Alignment.LEFT)
-    class Center : SetColumnAlignmentAction(QuarkdownTableParser.Alignment.CENTER)
-    class Right : SetColumnAlignmentAction(QuarkdownTableParser.Alignment.RIGHT)
+    class Left : SetColumnAlignmentAction(
+        QuarkdownTableParser.Alignment.LEFT,
+        QuarkdownBundle.message("quarkdown.table.align.column.left"),
+        QuarkdownBundle.message("quarkdown.table.align.column.left.description")
+    )
+
+    class Center : SetColumnAlignmentAction(
+        QuarkdownTableParser.Alignment.CENTER,
+        QuarkdownBundle.message("quarkdown.table.align.column.center"),
+        QuarkdownBundle.message("quarkdown.table.align.column.center.description")
+    )
+
+    class Right : SetColumnAlignmentAction(
+        QuarkdownTableParser.Alignment.RIGHT,
+        QuarkdownBundle.message("quarkdown.table.align.column.right"),
+        QuarkdownBundle.message("quarkdown.table.align.column.right.description")
+    )
 }
 
 /** Group that only enables when a valid column is selected. */
@@ -302,7 +386,11 @@ class TableColumnAlignmentActionsGroup : DefaultActionGroup() {
  * Placed at the far left of both the row and column floating toolbars; it only needs
  * the [TableActionKeys.TABLE_OFFSET] and works regardless of the clicked row/column.
  */
-class FormatTableAction : AnAction() {
+class FormatTableAction : AnAction(
+    QuarkdownBundle.message("quarkdown.table.format"),
+    QuarkdownBundle.message("quarkdown.table.format.description"),
+    null
+) {
     override fun actionPerformed(event: AnActionEvent) {
         val (editor, file) = event.quarkdownContext() ?: return
         val block = findBlock(file, event.getData(TableActionKeys.TABLE_OFFSET)) ?: return

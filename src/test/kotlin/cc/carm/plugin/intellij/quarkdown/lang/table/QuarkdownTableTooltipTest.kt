@@ -2,12 +2,32 @@ package cc.carm.plugin.intellij.quarkdown.lang.table
 
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
+import java.util.Locale
 
 /**
  * Verifies every floating-toolbar action has a tooltip text set in plugin.xml, so
  * hovering the icon shows its function.
+ *
+ * The action texts now come from the QuarkdownBundle resource bundle, so the default
+ * locale is forced to English to keep these assertions deterministic.
  */
 class QuarkdownTableTooltipTest : BasePlatformTestCase() {
+
+    private var previousLocale: Locale? = null
+
+    override fun setUp() {
+        previousLocale = Locale.getDefault()
+        Locale.setDefault(Locale.ENGLISH)
+        super.setUp()
+    }
+
+    override fun tearDown() {
+        try {
+            super.tearDown()
+        } finally {
+            previousLocale?.let { Locale.setDefault(it) }
+        }
+    }
 
     private fun actionText(actionId: String): String {
         val action = ActionManager.getInstance().getAction(actionId)

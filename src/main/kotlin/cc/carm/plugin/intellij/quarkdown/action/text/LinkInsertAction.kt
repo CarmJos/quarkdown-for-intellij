@@ -1,5 +1,6 @@
 package cc.carm.plugin.intellij.quarkdown.action.text
 
+import cc.carm.plugin.intellij.quarkdown.QuarkdownBundle
 import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
@@ -7,7 +8,11 @@ import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.project.DumbAware
 
-class LinkInsertAction : AnAction(), DumbAware {
+class LinkInsertAction : AnAction(
+    QuarkdownBundle.message("quarkdown.action.link"),
+    QuarkdownBundle.message("quarkdown.action.link.description"),
+    null
+), DumbAware {
 
     override fun getActionUpdateThread() = ActionUpdateThread.BGT
 

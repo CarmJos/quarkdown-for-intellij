@@ -1,5 +1,6 @@
 package cc.carm.plugin.intellij.quarkdown.action.image
 
+import cc.carm.plugin.intellij.quarkdown.QuarkdownBundle
 import com.intellij.openapi.fileChooser.FileChooserDescriptor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.ComboBox
@@ -58,7 +59,11 @@ class ImageDialog(
     private var currentFileDir: VirtualFile? = null
 
     init {
-        title = if (mode == Mode.EDIT) "Edit Image" else "Insert Image"
+        title = if (mode == Mode.EDIT) {
+            QuarkdownBundle.message("quarkdown.dialog.image.title.edit")
+        } else {
+            QuarkdownBundle.message("quarkdown.dialog.image.title.insert")
+        }
         init()
     }
 
@@ -142,18 +147,12 @@ class ImageDialog(
         val panel = JPanel(GridLayoutManager(9, 2, JBUI.insets(10), -1, -1))
         var row = 0
 
-        val pathLabel = JBLabel("Image Path:")
+        val pathLabel = JBLabel(QuarkdownBundle.message("quarkdown.dialog.image.path"))
         val pf = TextFieldWithBrowseButton()
         pathField = pf
         val imageDescriptor = FileChooserDescriptor(true, false, false, false, false, false)
-            .withTitle("Select Image")
-            .withDescription("Select an image file to insert")
-            .withFileFilter { f ->
-                val name = f.name.lowercase()
-                name.endsWith(".png") || name.endsWith(".jpg") || name.endsWith(".jpeg")
-                        || name.endsWith(".gif") || name.endsWith(".bmp") || name.endsWith(".svg")
-                        || name.endsWith(".webp")
-            }
+            .withTitle(QuarkdownBundle.message("quarkdown.dialog.image.chooser.title"))
+            .withDescription(QuarkdownBundle.message("quarkdown.dialog.image.chooser.description"))
         val listener = TextBrowseFolderListener(imageDescriptor, project)
         pf.addBrowseFolderListener(listener)
         pf.addPropertyChangeListener("text") { onPathChanged() }
@@ -175,11 +174,11 @@ class ImageDialog(
         )
         row++
 
-        val modeLabel = JBLabel("Size Mode:")
+        val modeLabel = JBLabel(QuarkdownBundle.message("quarkdown.dialog.image.size.mode"))
         val modePanel = JPanel(FlowLayout(FlowLayout.LEFT, 0, 0))
-        val pr = JBRadioButton("Percentage", true)
+        val pr = JBRadioButton(QuarkdownBundle.message("quarkdown.dialog.image.size.percentage"), true)
         percentRadio = pr
-        val fsr = JBRadioButton("Fixed Size", false)
+        val fsr = JBRadioButton(QuarkdownBundle.message("quarkdown.dialog.image.size.fixed"), false)
         fixedSizeRadio = fsr
         val modeGroup = ButtonGroup()
         modeGroup.add(pr)
@@ -230,7 +229,7 @@ class ImageDialog(
         pr.addActionListener { toggleSizePanels() }
         fsr.addActionListener { toggleSizePanels() }
 
-        val labelLabel = JBLabel("Label:")
+        val labelLabel = JBLabel(QuarkdownBundle.message("quarkdown.dialog.image.label"))
         val lf = JBTextField()
         labelField = lf
         panel.add(
@@ -251,7 +250,7 @@ class ImageDialog(
         )
         row++
 
-        val altLabel = JBLabel("Alt Text:")
+        val altLabel = JBLabel(QuarkdownBundle.message("quarkdown.dialog.image.alt"))
         val altf = JBTextField()
         altField = altf
         panel.add(
@@ -272,7 +271,7 @@ class ImageDialog(
         )
         row++
 
-        val anchorIdLabel = JBLabel("Anchor ID:")
+        val anchorIdLabel = JBLabel(QuarkdownBundle.message("quarkdown.dialog.image.anchor"))
         val aidf = JBTextField()
         anchorIdField = aidf
         panel.add(
@@ -298,7 +297,7 @@ class ImageDialog(
 
     private fun buildPercentPanel(): JPanel {
         val panel = JPanel(BorderLayout(8, 0))
-        val label = JBLabel("Scale:")
+        val label = JBLabel(QuarkdownBundle.message("quarkdown.dialog.image.scale"))
         panel.add(label, BorderLayout.WEST)
 
         val slider = JSlider(0, 150, 100)
@@ -333,10 +332,10 @@ class ImageDialog(
 
     private fun buildFixedSizePanel(): JPanel {
         val panel = JPanel(GridLayoutManager(2, 4, JBUI.emptyInsets(), -1, -1))
-        val widthLabel = JBLabel("Width:")
+        val widthLabel = JBLabel(QuarkdownBundle.message("quarkdown.dialog.image.width"))
         val wf = JBTextField(6)
         widthField = wf
-        val heightLabel = JBLabel("Height:")
+        val heightLabel = JBLabel(QuarkdownBundle.message("quarkdown.dialog.image.height"))
         val hf = JBTextField(6)
         heightField = hf
         val combo = ComboBox(arrayOf("px", "cm", "in"))
@@ -392,7 +391,7 @@ class ImageDialog(
                 null, null, null
             )
         )
-        val optionalLabel = JBLabel("(optional)")
+        val optionalLabel = JBLabel(QuarkdownBundle.message("quarkdown.dialog.image.optional"))
         optionalLabel.foreground = UIManager.getColor("Label.disabledForeground")
         panel.add(
             optionalLabel, GridConstraints(

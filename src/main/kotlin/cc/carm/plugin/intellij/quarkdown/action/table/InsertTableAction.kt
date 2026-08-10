@@ -1,5 +1,6 @@
 package cc.carm.plugin.intellij.quarkdown.action.table
 
+import cc.carm.plugin.intellij.quarkdown.QuarkdownBundle
 import cc.carm.plugin.intellij.quarkdown.QuarkdownFileType
 import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnAction
@@ -13,7 +14,11 @@ import com.intellij.openapi.project.DumbAware
  * Inserts an empty Quarkdown table. Opens a spreadsheet-style row/column picker first
  * (mirrors the IntelliJ Markdown plugin); the chosen grid is inserted as an empty table.
  */
-class InsertTableAction : AnAction(), DumbAware {
+class InsertTableAction : AnAction(
+    QuarkdownBundle.message("quarkdown.action.table"),
+    QuarkdownBundle.message("quarkdown.action.table.description"),
+    null
+), DumbAware {
 
     override fun getActionUpdateThread() = ActionUpdateThread.BGT
 

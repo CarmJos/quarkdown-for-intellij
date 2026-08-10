@@ -1,5 +1,6 @@
 package cc.carm.plugin.intellij.quarkdown.lang.annotator
 
+import cc.carm.plugin.intellij.quarkdown.QuarkdownBundle
 import cc.carm.plugin.intellij.quarkdown.lang.reference.QuarkdownPathUtil
 import com.intellij.lang.annotation.AnnotationHolder
 import com.intellij.lang.annotation.Annotator
@@ -40,7 +41,7 @@ class QuarkdownImagePathAnnotator : Annotator {
             if (resolved == null || !resolved.exists()) {
                 holder.newAnnotation(
                     HighlightSeverity.WARNING,
-                    "Image file not found: '$path'"
+                    QuarkdownBundle.message("quarkdown.annotator.image.not.found", path)
                 ).range(TextRange(pathStart, pathEnd)).create()
             }
         }

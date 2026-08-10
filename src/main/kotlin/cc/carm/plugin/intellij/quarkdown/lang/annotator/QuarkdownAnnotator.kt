@@ -1,5 +1,6 @@
 package cc.carm.plugin.intellij.quarkdown.lang.annotator
 
+import cc.carm.plugin.intellij.quarkdown.QuarkdownBundle
 import cc.carm.plugin.intellij.quarkdown.lang.function.FunctionRegistry
 import cc.carm.plugin.intellij.quarkdown.lang.function.QuarkdownCallParser
 import cc.carm.plugin.intellij.quarkdown.lang.function.QuarkdownCallValidator
@@ -45,7 +46,10 @@ class QuarkdownAnnotator : Annotator {
                     QuarkdownCallValidator.Severity.ERROR -> HighlightSeverity.ERROR
                     QuarkdownCallValidator.Severity.WARNING -> HighlightSeverity.WARNING
                 }
-                holder.newAnnotation(severity, issue.message)
+                val message = issue.messageKey?.let {
+                    QuarkdownBundle.message(it, *issue.messageArgs.toTypedArray())
+                } ?: issue.message
+                holder.newAnnotation(severity, message)
                     .range(TextRange(issue.start, issue.end))
                     .create()
             }

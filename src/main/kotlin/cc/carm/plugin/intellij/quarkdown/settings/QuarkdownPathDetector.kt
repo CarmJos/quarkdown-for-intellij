@@ -1,18 +1,14 @@
 package cc.carm.plugin.intellij.quarkdown.settings
 
+import cc.carm.plugin.intellij.quarkdown.lang.preview.QuarkdownCli
 import java.io.File
 
 object QuarkdownPathDetector {
 
-    fun detect(): String? {
-        System.getenv("QUARKDOWN_HOME")?.let { dir ->
-            if (File(dir).exists()) return dir
-        }
-
-        detectDefaultInstallations()?.let { return it }
-
-        return detectFromPath()
-    }
+    fun detect(): String? =
+        System.getenv("QUARKDOWN_HOME")?.takeIf { File(it).exists() }
+            ?: detectDefaultInstallations()
+            ?: detectFromPath()
 
     fun isValidQuarkdownHome(path: String?): Boolean {
         if (path.isNullOrEmpty()) return false
@@ -24,17 +20,9 @@ object QuarkdownPathDetector {
     }
 
     private fun hasQuarkdownBinary(dir: File): Boolean {
-        if (File(dir, "quarkdown").exists()) return true
-        if (File(dir, "quarkdown.bat").exists()) return true
-        if (File(dir, "quarkdown.cmd").exists()) return true
-
         val binDir = File(dir, "bin")
-        if (binDir.isDirectory) {
-            if (File(binDir, "quarkdown").exists()) return true
-            if (File(binDir, "quarkdown.bat").exists()) return true
-            if (File(binDir, "quarkdown.cmd").exists()) return true
-        }
-        return false
+        return QuarkdownCli.LAUNCHER_NAMES.any { File(dir, it).exists() } ||
+                (binDir.isDirectory && QuarkdownCli.LAUNCHER_NAMES.any { File(binDir, it).exists() })
     }
 
     private fun detectDefaultInstallations(): String? {
@@ -57,10 +45,8 @@ object QuarkdownPathDetector {
     private fun detectFromPath(): String? {
         val pathEnv = System.getenv("PATH") ?: return null
         for (dir in pathEnv.split(File.pathSeparator)) {
-            if (File(dir, "quarkdown").exists()
-                || File(dir, "quarkdown.bat").exists()
-                || File(dir, "quarkdown.cmd").exists()
-            ) {
+            if (dir.isBlank()) continue
+            if (QuarkdownCli.LAUNCHER_NAMES.any { File(dir, it).exists() }) {
                 return File(dir).absolutePath
             }
         }
