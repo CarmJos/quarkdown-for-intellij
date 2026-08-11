@@ -112,7 +112,8 @@ jobs:
           git config user.name "GitHub Action"
 
           git checkout -b $BRANCH
-          git commit -am "Changelog update - $VERSION"
+          # Keep [ci skip] in the commit body (second line) so the title stays clean
+          git commit -am "docs: Changelog update - $VERSION" -m "[ci skip]"
 
           # Force-push so re-runs overwrite a branch left over from a previous run
           git push --force --set-upstream origin $BRANCH
@@ -125,7 +126,7 @@ jobs:
           # Reuse an existing PR for this branch (workflow re-runs), otherwise create one
           if ! gh pr view --head "$BRANCH" --json number >/dev/null 2>&1; then
             gh pr create \
-              --title "Changelog update - \`$VERSION\`" \
+              --title "docs: Changelog update - \`$VERSION\`" \
               --body "Current pull request contains patched \`CHANGELOG.md\` file for the \`$VERSION\` version." \
               --label "$LABEL" \
               --head $BRANCH
