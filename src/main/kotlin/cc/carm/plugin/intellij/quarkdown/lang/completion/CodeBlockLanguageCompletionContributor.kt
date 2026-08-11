@@ -77,7 +77,7 @@ class CodeBlockLanguageCompletionContributor : CompletionContributor() {
 
         private fun findLineStart(text: CharSequence, offset: Int): Int {
             if (offset <= 0) return 0
-            for (i in (offset - 1) downTo 0) {
+            for (i in offset - 1 downTo 0) {
                 if (text[i] == '\n') return i + 1
             }
             return 0

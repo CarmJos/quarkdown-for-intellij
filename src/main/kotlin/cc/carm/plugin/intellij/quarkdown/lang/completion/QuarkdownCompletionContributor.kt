@@ -211,59 +211,78 @@ class QuarkdownCompletionContributor : CompletionContributor() {
 
             // Document offset where the path value begins (after whitespace/quotes).
             val frontTrimmed = valuePrefix.length - trimmed.length
-            val pathValueStart = if (arg != null) {
-                arg.rawStart + frontTrimmed + (if (quoted) 1 else 0)
-            } else {
-                -1 // after a named colon there is no value yet; use the platform offsets
-            }
+            val pathValueStart = pathValueStartOffset(arg, frontTrimmed, quoted)
 
             // Detect whether a closing quote already follows the caret.
-            var hasClosingQuote = false
-            if (quoted && arg != null) {
-                val caret = parameters.offset
-                if (caret < arg.braceEnd) {
-                    hasClosingQuote = psiFile.text.startsWith("\"", caret)
-                }
-            }
+            val hasClosingQuote = hasClosingQuoteAfterCaret(parameters, arg, quoted)
 
             val lowerName = searchName.lowercase()
             val showHidden = lowerName.startsWith(".")
             for (child in base.children.sortedWith(compareBy({ it.isDirectory }, { it.name.lowercase() }))) {
                 if (!showHidden && child.name.startsWith(".")) continue
                 if (!child.name.lowercase().startsWith(lowerName)) continue
-
-                val isDir = child.isDirectory
-                val displayText = child.name + if (isDir) "/" else ""
-                val relativePath = basePath + displayText
-                val icon = if (isDir) AllIcons.Nodes.Folder
-                else child.fileType.icon ?: AllIcons.FileTypes.Any_type
-
-                val lookup = LookupElementBuilder.create(displayText)
-                    .withLookupString(relativePath)
-                    .withIcon(icon)
-                    .withTypeText(
-                        if (isDir) {
-                            QuarkdownBundle.message("quarkdown.completion.type.directory")
-                        } else {
-                            child.extension?.uppercase()
-                                ?: QuarkdownBundle.message("quarkdown.completion.type.file")
-                        },
-                        true
+                result.addElement(
+                    buildPathLookup(
+                        child, basePath, quoted, hasClosingQuote, wrapInBraces, pathValueStart, project
                     )
-                    .withTailText(if (basePath.isNotEmpty()) "  $basePath" else null, true)
-                    .withInsertHandler(
-                        pathInsertHandler(
-                            pathValueStart = pathValueStart,
-                            relativePath = relativePath,
-                            isDirectory = isDir,
-                            quoted = quoted,
-                            hasClosingQuote = hasClosingQuote,
-                            wrapInBraces = wrapInBraces,
-                            project = project
-                        )
-                    )
-                result.addElement(lookup)
+                )
             }
+        }
+
+        /**
+         * Document offset where the path value begins (after whitespace/quotes).
+         * `-1` means after a named colon there is no value yet; the platform offsets are used.
+         */
+        private fun pathValueStartOffset(arg: Arg?, frontTrimmed: Int, quoted: Boolean): Int =
+            if (arg != null) arg.rawStart + frontTrimmed + if (quoted) 1 else 0 else -1
+
+        /** Detects whether a closing quote already follows the caret. */
+        private fun hasClosingQuoteAfterCaret(parameters: CompletionParameters, arg: Arg?, quoted: Boolean): Boolean {
+            val psiFile = parameters.originalFile
+            val caret = parameters.offset
+            return quoted && arg != null && caret < arg.braceEnd && psiFile.text.startsWith("\"", caret)
+        }
+
+        /** Builds a path completion lookup element for [child]. */
+        private fun buildPathLookup(
+            child: VirtualFile,
+            basePath: String,
+            quoted: Boolean,
+            hasClosingQuote: Boolean,
+            wrapInBraces: Boolean,
+            pathValueStart: Int,
+            project: Project
+        ): LookupElement {
+            val isDir = child.isDirectory
+            val displayText = child.name + if (isDir) "/" else ""
+            val relativePath = basePath + displayText
+            val icon = if (isDir) AllIcons.Nodes.Folder
+            else child.fileType.icon ?: AllIcons.FileTypes.Any_type
+
+            return LookupElementBuilder.create(displayText)
+                .withLookupString(relativePath)
+                .withIcon(icon)
+                .withTypeText(
+                    if (isDir) {
+                        QuarkdownBundle.message("quarkdown.completion.type.directory")
+                    } else {
+                        child.extension?.uppercase()
+                            ?: QuarkdownBundle.message("quarkdown.completion.type.file")
+                    },
+                    true
+                )
+                .withTailText(if (basePath.isNotEmpty()) "  $basePath" else null, true)
+                .withInsertHandler(
+                    pathInsertHandler(
+                        pathValueStart = pathValueStart,
+                        relativePath = relativePath,
+                        isDirectory = isDir,
+                        quoted = quoted,
+                        hasClosingQuote = hasClosingQuote,
+                        wrapInBraces = wrapInBraces,
+                        project = project
+                    )
+                )
         }
 
         /**

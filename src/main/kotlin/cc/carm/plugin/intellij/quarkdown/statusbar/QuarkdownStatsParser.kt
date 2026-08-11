@@ -117,31 +117,45 @@ object QuarkdownStatsParser {
 
         var end = i
         while (true) {
-            // Advance to the end of the current line.
-            var lineEnd = end
-            while (lineEnd < n && text[lineEnd] != '\n' && text[lineEnd] != '\r') lineEnd++
+            val lineEnd = endOfLine(text, end)
+            val next = nextLineStart(text, lineEnd)
             end = lineEnd
-
-            // Skip the newline characters.
-            var next = lineEnd
-            if (next < n && text[next] == '\r') next++
-            if (next < n && text[next] == '\n') next++
             if (next >= n) break
-
-            // Inspect the next line.
-            var k = next
-            var indent = 0
-            while (k < n && (text[k] == ' ' || text[k] == '\t')) {
-                indent++
-                k++
-            }
-            if (k >= n) break
-            val c = text[k]
-            if (c == '\n' || c == '\r') break   // blank line ends the body
-            if (indent < 2) break               // non-indented line ends the body
+            // A blank line or a non-indented line ends the body.
+            if (!isIndentedBodyLine(text, next)) break
             end = next
         }
         return end
+    }
+
+    /** Returns the offset just past the newline sequence ending the line containing [from]. */
+    private fun endOfLine(text: String, from: Int): Int {
+        var lineEnd = from
+        while (lineEnd < text.length && text[lineEnd] != '\n' && text[lineEnd] != '\r') lineEnd++
+        return lineEnd
+    }
+
+    /** Returns the offset of the first character of the line after [lineEnd], or `text.length`. */
+    private fun nextLineStart(text: String, lineEnd: Int): Int {
+        var next = lineEnd
+        if (next < text.length && text[next] == '\r') next++
+        if (next < text.length && text[next] == '\n') next++
+        return next
+    }
+
+    /** True when the line starting at [lineStart] is an indented body line (indent ≥ 2, non-blank). */
+    private fun isIndentedBodyLine(text: String, lineStart: Int): Boolean {
+        val n = text.length
+        var k = lineStart
+        var indent = 0
+        while (k < n && (text[k] == ' ' || text[k] == '\t')) {
+            indent++
+            k++
+        }
+        if (k >= n) return false
+        val c = text[k]
+        if (c == '\n' || c == '\r') return false   // blank line ends the body
+        return indent >= 2
     }
 
     private fun mergeRanges(ranges: List<IntRange>): List<IntRange> {

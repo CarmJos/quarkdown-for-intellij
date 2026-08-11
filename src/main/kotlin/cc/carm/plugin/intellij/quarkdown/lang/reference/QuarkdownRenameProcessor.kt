@@ -4,6 +4,7 @@ import cc.carm.plugin.intellij.quarkdown.QuarkdownFileType
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.editor.Document
 import com.intellij.openapi.editor.Editor
+import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.PsiElement
@@ -33,6 +34,8 @@ import com.intellij.usageView.UsageInfo
  */
 class QuarkdownRenameProcessor : RenamePsiElementProcessor() {
 
+    private data class Replacement(val document: Document, val start: Int, val end: Int)
+
     override fun canProcessElement(element: PsiElement): Boolean {
         val file = element.containingFile ?: return false
         if (file.fileType != QuarkdownFileType.INSTANCE) return false
@@ -60,13 +63,21 @@ class QuarkdownRenameProcessor : RenamePsiElementProcessor() {
             ?: usages.firstNotNullOfOrNull { it.element?.containingFile?.project }
             ?: return
 
-        data class Replacement(val document: Document, val start: Int, val end: Int)
-
         val replacements = mutableListOf<Replacement>()
+        replacements += usageReplacements(usages)
+        collectElementReplacement(element, replacements)
 
-        // 1. Every usage reference's absolute range.
-        // `usage.reference` reconstructs the reference via a class check and returns null
-        // for our references, so use the stored element + rangeInElement instead.
+        applyReplacements(project, replacements, newName)
+        listener?.elementRenamed(element)
+    }
+
+    /**
+     * Collects the absolute document range of every usage reference.
+     * `usage.reference` reconstructs the reference via a class check and returns null
+     * for our references, so use the stored element + rangeInElement instead.
+     */
+    private fun usageReplacements(usages: Array<UsageInfo>): List<Replacement> {
+        val replacements = mutableListOf<Replacement>()
         for (usage in usages) {
             val refElement = usage.element
             if (refElement == null || !refElement.isValid) continue
@@ -79,34 +90,36 @@ class QuarkdownRenameProcessor : RenamePsiElementProcessor() {
                 replacements.add(Replacement(document, start, end))
             }
         }
+        return replacements
+    }
 
-        // 2. The element's own id range (in case the caret element wasn't covered by a usage).
+    /** Adds a replacement for the element's own id range (in case the caret element wasn't covered by a usage). */
+    private fun collectElementReplacement(element: PsiElement, replacements: MutableList<Replacement>) {
         val elementFile = element.containingFile
-        val elementDocument = elementFile?.viewProvider?.document
-        if (element.isValid && elementDocument != null) {
-            val leafText = element.text ?: ""
-            val (idStart, idEnd) = when {
-                leafText.startsWith("{#") && leafText.endsWith("}") ->
-                    element.textRange.startOffset + 2 to element.textRange.endOffset - 1
+        val elementDocument = elementFile?.viewProvider?.document ?: return
+        if (!element.isValid) return
+        val leafText = element.text ?: ""
+        val (idStart, idEnd) = when {
+            leafText.startsWith("{#") && leafText.endsWith("}") ->
+                element.textRange.startOffset + 2 to element.textRange.endOffset - 1
 
-                leafText.startsWith("{") && leafText.endsWith("}") ->
-                    element.textRange.startOffset + 1 to element.textRange.endOffset - 1
+            leafText.startsWith("{") && leafText.endsWith("}") ->
+                element.textRange.startOffset + 1 to element.textRange.endOffset - 1
 
-                else ->
-                    element.textRange.startOffset to element.textRange.endOffset
-            }
-            if (idEnd > idStart && idEnd <= elementDocument.textLength) {
-                val alreadyCovered = replacements.any {
-                    it.document === elementDocument &&
-                            it.start == idStart && it.end == idEnd
-                }
-                if (!alreadyCovered) {
-                    replacements.add(Replacement(elementDocument, idStart, idEnd))
-                }
-            }
+            else ->
+                element.textRange.startOffset to element.textRange.endOffset
         }
+        if (idEnd <= idStart || idEnd > elementDocument.textLength) return
+        val alreadyCovered = replacements.any {
+            it.document === elementDocument && it.start == idStart && it.end == idEnd
+        }
+        if (!alreadyCovered) {
+            replacements.add(Replacement(elementDocument, idStart, idEnd))
+        }
+    }
 
-        // 3. Apply per document, from the end, so earlier offsets stay valid.
+    /** Applies [replacements] per document, from the end, so earlier offsets stay valid. */
+    private fun applyReplacements(project: Project, replacements: List<Replacement>, newName: String) {
         WriteCommandAction.runWriteCommandAction(project) {
             for ((document, list) in replacements.groupBy { it.document }) {
                 for (r in list.sortedByDescending { it.start }) {
@@ -118,7 +131,5 @@ class QuarkdownRenameProcessor : RenamePsiElementProcessor() {
                 PsiDocumentManager.getInstance(project).commitDocument(document)
             }
         }
-
-        listener?.elementRenamed(element)
     }
 }

@@ -354,7 +354,7 @@ class FunctionRegistry(private val project: Project) {
             }
 
             val params = try {
-                (cls.getMethod("getParameters").invoke(f) as? List<*>) ?: emptyList<Any>()
+                cls.getMethod("getParameters").invoke(f) as? List<*> ?: emptyList<Any>()
             } catch (_: Exception) {
                 emptyList<Any>()
             }

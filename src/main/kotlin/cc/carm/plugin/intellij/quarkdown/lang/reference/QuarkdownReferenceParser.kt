@@ -44,9 +44,17 @@ object QuarkdownReferenceParser {
 
     /** Computes all reference anchors for the given document text. */
     fun computeAnchors(fileText: String): List<Anchor> {
-        val anchors = mutableListOf<Anchor>()
+        return labelAnchors(fileText) +
+                varUsageAnchors(fileText) +
+                varDeclAnchors(fileText) +
+                refAnchors(fileText) +
+                filePathAnchors(fileText) +
+                imagePathAnchors(fileText)
+    }
 
-        // ---- `{#id}` label declarations ----
+    /** `{#id}` label declarations. */
+    private fun labelAnchors(fileText: String): List<Anchor> {
+        val anchors = mutableListOf<Anchor>()
         for (match in labelPattern.findAll(fileText)) {
             val id = match.groupValues[1]
             if (id.isEmpty()) continue
@@ -54,20 +62,27 @@ object QuarkdownReferenceParser {
             val end = match.groups[1]!!.range.last + 1
             anchors.add(Anchor(start, end, id, "label"))
         }
+        return anchors
+    }
 
-        // ---- .var { <name> } declared variables: `.name` usages ----
+    /** `.var { <name> }` declared variables: every `.name` usage that refers to them. */
+    private fun varUsageAnchors(fileText: String): List<Anchor> {
         val vars = QuarkdownCallParser.findVarDeclarations(fileText)
-        if (vars.isNotEmpty()) {
-            for (match in varRefPattern.findAll(fileText)) {
-                val varName = match.groupValues[1].lowercase()
-                if (varName !in vars) continue
-                val start = match.groups[1]!!.range.first
-                val end = match.groups[1]!!.range.last + 1
-                anchors.add(Anchor(start, end, varName, "var"))
-            }
+        if (vars.isEmpty()) return emptyList()
+        val anchors = mutableListOf<Anchor>()
+        for (match in varRefPattern.findAll(fileText)) {
+            val varName = match.groupValues[1].lowercase()
+            if (varName !in vars) continue
+            val start = match.groups[1]!!.range.first
+            val end = match.groups[1]!!.range.last + 1
+            anchors.add(Anchor(start, end, varName, "var"))
         }
+        return anchors
+    }
 
-        // ---- `.var { <name> }` declarations (so the declaration itself is navigable) ----
+    /** `.var { <name> }` declarations (so the declaration itself is navigable). */
+    private fun varDeclAnchors(fileText: String): List<Anchor> {
+        val anchors = mutableListOf<Anchor>()
         val varDeclPattern = Regex("""\.var\s*\{\s*([a-zA-Z][a-zA-Z0-9]*)\s*\}""", RegexOption.IGNORE_CASE)
         for (match in varDeclPattern.findAll(fileText)) {
             val name = match.groupValues[1]
@@ -76,8 +91,12 @@ object QuarkdownReferenceParser {
             val end = match.groups[1]!!.range.last + 1
             anchors.add(Anchor(start, end, name, "var-decl"))
         }
+        return anchors
+    }
 
-        // ---- .ref { <id> } ----
+    /** `.ref { <id> }` usages. */
+    private fun refAnchors(fileText: String): List<Anchor> {
+        val anchors = mutableListOf<Anchor>()
         for (match in refBlockPattern.findAll(fileText)) {
             val contentText = match.groupValues[1].trim()
             if (contentText.isEmpty()) continue
@@ -85,18 +104,26 @@ object QuarkdownReferenceParser {
             val end = match.groups[1]!!.range.last + 1
             anchors.add(Anchor(start, end, contentText, "ref"))
         }
+        return anchors
+    }
 
-        // ---- .read / .include / .css / .code { "path" } or { path } ----
+    /** `.read / .include / .css / .code { "path" }` or `{ path }` paths. */
+    private fun filePathAnchors(fileText: String): List<Anchor> {
+        val anchors = mutableListOf<Anchor>()
         for (match in filePattern.findAll(fileText)) {
-            val pathText = (match.groupValues[2].ifEmpty { match.groupValues[3] }).trim()
+            val pathText = match.groupValues[2].ifEmpty { match.groupValues[3] }.trim()
             if (pathText.isEmpty()) continue
             val groupIndex = if (match.groupValues[2].isNotEmpty()) 2 else 3
             val start = match.groups[groupIndex]!!.range.first
             val end = match.groups[groupIndex]!!.range.last + 1
             anchors.add(Anchor(start, end, pathText, match.groupValues[1].lowercase()))
         }
+        return anchors
+    }
 
-        // ---- Image paths ![](<path>) and ![size](<path>) ----
+    /** Image paths `![](<path>)` and `![size](<path>)`. */
+    private fun imagePathAnchors(fileText: String): List<Anchor> {
+        val anchors = mutableListOf<Anchor>()
         for (match in imgPathPattern.findAll(fileText)) {
             val pathText = match.groupValues[1].trim()
             if (pathText.isEmpty()) continue
@@ -112,7 +139,6 @@ object QuarkdownReferenceParser {
                 )
             }
         }
-
         return anchors
     }
 

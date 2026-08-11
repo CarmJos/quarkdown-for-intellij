@@ -207,104 +207,16 @@ object QuarkdownCallParser {
         val nameEnd = nameM.range.last + 1
         val name = nameM.value.lowercase()
 
-        val args = mutableListOf<Arg>()
-        var pos = nameEnd
-        val n = text.length
-
-        while (pos < n) {
-            val c = text[pos]
-            when {
-                c.isWhitespace() -> pos++
-                c == '\\' -> {
-                    // line continuation: consume `\` and the newline
-                    pos++
-                    if (pos < n && text[pos] == '\n') pos++
-                }
-
-                c == '{' -> {
-                    val close = findClosingBrace(text, pos)
-                    val rawStart = pos + 1
-                    val rawEnd = close
-                    args.add(
-                        Arg(
-                            paramName = null,
-                            raw = text.substring(rawStart, rawEnd),
-                            rawStart = rawStart,
-                            rawEnd = rawEnd,
-                            braceStart = pos,
-                            braceEnd = close + 1
-                        )
-                    )
-                    pos = close + 1
-                }
-
-                else -> {
-                    // maybe a named argument `name:{...}`
-                    val nm = namedArgRegex.find(text, pos)
-                    if (nm != null && nm.range.first == pos) {
-                        var afterColon = nm.range.last + 1
-                        while (afterColon < n && text[afterColon].isWhitespace()) afterColon++
-                        if (afterColon < n && text[afterColon] == '{') {
-                            val nameStartIdx = nm.range.first
-                            val nameEndIdx = nm.range.last + 1
-                            val close = findClosingBrace(text, afterColon)
-                            val rawStart = afterColon + 1
-                            val rawEnd = close
-                            args.add(
-                                Arg(
-                                    paramName = nm.groupValues[1].lowercase(),
-                                    raw = text.substring(rawStart, rawEnd),
-                                    rawStart = rawStart,
-                                    rawEnd = rawEnd,
-                                    braceStart = afterColon,
-                                    braceEnd = close + 1,
-                                    nameStart = nameStartIdx,
-                                    nameEnd = nameEndIdx
-                                )
-                            )
-                            pos = close + 1
-                            continue
-                        }
-                    }
-                    break
-                }
-            }
-        }
+        val (args, pos) = parseArguments(text, nameEnd)
 
         // Detect an indented body argument following the call: right after the last
         // argument's closing brace (or the name when there are no args), a newline
         // followed by a line indented by at least two spaces or one tab marks a body.
-        var hasBodyArgument = false
         val afterArgs = args.lastOrNull()?.braceEnd ?: nameEnd
-        if (afterArgs < n) {
-            var scan = afterArgs
-            while (scan < n && (text[scan] == ' ' || text[scan] == '\t')) scan++
-            if (scan < n && text[scan] == '\n') {
-                var lineStart = scan + 1
-                if (lineStart < n && text[lineStart] == '\r') lineStart++
-                var indent = 0
-                var j = lineStart
-                while (j < n && (text[j] == ' ' || text[j] == '\t')) {
-                    indent++
-                    j++
-                }
-                if (j < n && text[j] != '\n' && indent >= 2) {
-                    hasBodyArgument = true
-                }
-            }
-        }
+        val hasBodyArgument = detectBodyArgument(text, afterArgs)
 
         // Determine chain root: the previous call whose end is immediately followed by `::`
-        var chainRoot: String? = null
-        if (chained) {
-            val prevStart = findCallStart(text, start - 1)
-            if (prevStart >= 0) {
-                val prevCall = parseCall(text, prevStart)
-                if (prevCall != null && prevCall.end == start) {
-                    chainRoot = prevCall.name
-                }
-            }
-        }
+        val chainRoot = detectChainRoot(text, start, chained)
 
         return Call(
             name = name,
@@ -317,6 +229,99 @@ object QuarkdownCallParser {
             isChained = chained,
             chainRoot = chainRoot
         )
+    }
+
+    /** Parses the argument list of a call, returning the parsed args and the position after the list. */
+    private fun parseArguments(text: String, nameEnd: Int): Pair<List<Arg>, Int> {
+        val args = mutableListOf<Arg>()
+        var pos = nameEnd
+        val n = text.length
+
+        while (pos < n) {
+            val c = text[pos]
+            when {
+                c.isWhitespace() -> pos++
+
+                c == '\\' -> {
+                    // line continuation: consume `\` and the newline
+                    pos++
+                    if (pos < n && text[pos] == '\n') pos++
+                }
+
+                c == '{' -> {
+                    val close = findClosingBrace(text, pos)
+                    args.add(
+                        Arg(
+                            paramName = null,
+                            raw = text.substring(pos + 1, close),
+                            rawStart = pos + 1,
+                            rawEnd = close,
+                            braceStart = pos,
+                            braceEnd = close + 1
+                        )
+                    )
+                    pos = close + 1
+                }
+
+                else -> {
+                    // maybe a named argument `name:{...}`
+                    val named = parseNamedArgument(text, pos) ?: break
+                    args.add(named)
+                    pos = named.braceEnd
+                }
+            }
+        }
+        return args to pos
+    }
+
+    /** Parses a named argument `name:{...}` at [pos]; returns the [Arg], or `null` when [pos] is not one. */
+    private fun parseNamedArgument(text: String, pos: Int): Arg? {
+        val nm = namedArgRegex.find(text, pos) ?: return null
+        if (nm.range.first != pos) return null
+        var afterColon = nm.range.last + 1
+        while (afterColon < text.length && text[afterColon].isWhitespace()) afterColon++
+        if (afterColon >= text.length || text[afterColon] != '{') return null
+        val close = findClosingBrace(text, afterColon)
+        return Arg(
+            paramName = nm.groupValues[1].lowercase(),
+            raw = text.substring(afterColon + 1, close),
+            rawStart = afterColon + 1,
+            rawEnd = close,
+            braceStart = afterColon,
+            braceEnd = close + 1,
+            nameStart = nm.range.first,
+            nameEnd = nm.range.last + 1
+        )
+    }
+
+    /**
+     * Detects an indented body argument following the call: right after the last
+     * argument's closing brace (or the name when there are no args), a newline
+     * followed by a line indented by at least two spaces or one tab marks a body.
+     */
+    private fun detectBodyArgument(text: String, afterArgs: Int): Boolean {
+        if (afterArgs >= text.length) return false
+        var scan = afterArgs
+        while (scan < text.length && (text[scan] == ' ' || text[scan] == '\t')) scan++
+        if (scan >= text.length || text[scan] != '\n') return false
+        var lineStart = scan + 1
+        if (lineStart < text.length && text[lineStart] == '\r') lineStart++
+        var indent = 0
+        var j = lineStart
+        while (j < text.length && (text[j] == ' ' || text[j] == '\t')) {
+            indent++
+            j++
+        }
+        return j < text.length && text[j] != '\n' && indent >= 2
+    }
+
+    /** Determines the chain root: the previous call whose end is immediately followed by `::`. */
+    private fun detectChainRoot(text: String, start: Int, chained: Boolean): String? {
+        if (!chained) return null
+        val prevStart = findCallStart(text, start - 1)
+        if (prevStart < 0) return null
+        val prevCall = parseCall(text, prevStart)
+        return if (prevCall != null && prevCall.end == start) prevCall.name else null
     }
 
     /**

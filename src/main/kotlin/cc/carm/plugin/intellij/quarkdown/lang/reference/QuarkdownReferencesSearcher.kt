@@ -4,6 +4,8 @@ import cc.carm.plugin.intellij.quarkdown.QuarkdownFileType
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.QueryExecutorBase
 import com.intellij.openapi.util.TextRange
+import com.intellij.psi.PsiElement
+import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiReference
 import com.intellij.psi.search.searches.ReferencesSearch
 import com.intellij.util.Processor
@@ -35,14 +37,7 @@ class QuarkdownReferencesSearcher :
             if (targetFile.fileType != QuarkdownFileType.INSTANCE) return@runReadAction
 
             // The target must sit inside a reference anchor (otherwise it has no references).
-            val targetAnchors = QuarkdownReferenceAnchors.of(targetFile)
-            val targetRange = target.textRange
-            val targetId = targetAnchors
-                .firstOrNull { TextRange(it.start, it.end).intersects(targetRange) }
-                ?.referenceText
-                ?.trim()
-                ?: return@runReadAction
-            if (targetId.isEmpty()) return@runReadAction
+            val targetId = resolveTargetId(target, targetFile) ?: return@runReadAction
 
             val searchScope = com.intellij.psi.search.GlobalSearchScopeUtil.toGlobalSearchScope(
                 parameters.effectiveSearchScope, target.project
@@ -52,27 +47,56 @@ class QuarkdownReferencesSearcher :
             val files = QuarkdownReferenceFiles.collect(target.project, targetFile, searchScope)
 
             for (psiFile in files) {
-                for (anchor in QuarkdownReferenceAnchors.of(psiFile)) {
-                    // Only id-based references participate in label/ref cross-referencing.
-                    if (anchor.referenceType != "ref" && anchor.referenceType != "label" &&
-                        anchor.referenceType != "var" && anchor.referenceType != "var-decl"
-                    ) continue
-                    if (!anchor.referenceText.trim().equals(targetId, ignoreCase = true)) continue
-                    // The declaration itself is not a reference to itself — a `{#id}` with
-                    // no `.ref` usages must have zero references, not a self-reference.
-                    if (psiFile === targetFile && TextRange(anchor.start, anchor.end).intersects(targetRange)) continue
-
-                    // Attach the reference to the FILE with document-absolute ranges so that
-                    // handleElementRename can replace the whole (possibly hyphenated) id at once.
-                    val ref = QuarkdownReference(
-                        psiFile, anchor.referenceText, anchor.referenceType,
-                        TextRange(anchor.start, anchor.end)
-                    )
-                    if (ref.isReferenceTo(target)) {
-                        if (!consumer.process(ref)) return@runReadAction
-                    }
+                if (!processFileReferences(psiFile, targetFile, target, targetId, consumer)) {
+                    return@runReadAction
                 }
             }
         }
+    }
+
+    /** Resolves the id of the reference anchor that contains [target], or `null`. */
+    private fun resolveTargetId(target: PsiElement, targetFile: PsiFile): String? {
+        val targetAnchors = QuarkdownReferenceAnchors.of(targetFile)
+        val targetRange = target.textRange
+        return targetAnchors
+            .firstOrNull { TextRange(it.start, it.end).intersects(targetRange) }
+            ?.referenceText
+            ?.trim()
+            ?.takeIf { it.isNotEmpty() }
+    }
+
+    /**
+     * Reports the references of [target] found in [psiFile]; returns `false` when the
+     * consumer is done and the search must stop.
+     */
+    private fun processFileReferences(
+        psiFile: PsiFile,
+        targetFile: PsiFile,
+        target: PsiElement,
+        targetId: String,
+        consumer: Processor<in PsiReference>
+    ): Boolean {
+        val targetRange = target.textRange
+        for (anchor in QuarkdownReferenceAnchors.of(psiFile)) {
+            // Only id-based references participate in label/ref cross-referencing.
+            if (anchor.referenceType != "ref" && anchor.referenceType != "label" &&
+                anchor.referenceType != "var" && anchor.referenceType != "var-decl"
+            ) continue
+            if (!anchor.referenceText.trim().equals(targetId, ignoreCase = true)) continue
+            // The declaration itself is not a reference to itself — a `{#id}` with
+            // no `.ref` usages must have zero references, not a self-reference.
+            if (psiFile === targetFile && TextRange(anchor.start, anchor.end).intersects(targetRange)) continue
+
+            // Attach the reference to the FILE with document-absolute ranges so that
+            // handleElementRename can replace the whole (possibly hyphenated) id at once.
+            val ref = QuarkdownReference(
+                psiFile, anchor.referenceText, anchor.referenceType,
+                TextRange(anchor.start, anchor.end)
+            )
+            if (ref.isReferenceTo(target)) {
+                if (!consumer.process(ref)) return false
+            }
+        }
+        return true
     }
 }

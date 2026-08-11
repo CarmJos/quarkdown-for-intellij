@@ -62,34 +62,45 @@ class QuarkdownEnterHandlerDelegate : EnterHandlerDelegateAdapter() {
         val curLine = chars.subSequence(lineStart, caret).toString()
         if (curLine.isNotBlank()) return EnterHandlerDelegate.Result.Continue
 
-        // The line before this one ends with `\`?
-        if (lineStart <= 0) return EnterHandlerDelegate.Result.Continue
-        var prevLineEnd = lineStart
-        if (chars[prevLineEnd - 1] == '\n' || chars[prevLineEnd - 1] == '\r') prevLineEnd--
-        var prevLineStart = prevLineEnd
-        while (prevLineStart > 0 && chars[prevLineStart - 1] != '\n' && chars[prevLineStart - 1] != '\r') prevLineStart--
-        val prevLine = chars.subSequence(prevLineStart, prevLineEnd).toString()
-        val trimmed = prevLine.trimEnd()
-        if (!trimmed.endsWith("\\")) return EnterHandlerDelegate.Result.Continue
-
-        // Compute the indentation.
-        val prevIndent = prevLine.takeWhile { it == ' ' || it == '\t' }.length
-        // Nested continuation (the line before ALSO ended with `\`) → keep the same indent.
-        var nested = false
-        if (prevLineStart > 0) {
-            var p2End = prevLineStart
-            if (chars[p2End - 1] == '\n' || chars[p2End - 1] == '\r') p2End--
-            var p2Start = p2End
-            while (p2Start > 0 && chars[p2Start - 1] != '\n' && chars[p2Start - 1] != '\r') p2Start--
-            if (chars.subSequence(p2Start, p2End).toString().trimEnd().endsWith("\\")) nested = true
-        }
-        val indent = if (nested) prevIndent else prevIndent + 4
+        // The line before this one ends with `\`? Then compute the continuation indent.
+        val indent = computeContinuationIndent(chars, lineStart)
+            ?: return EnterHandlerDelegate.Result.Continue
 
         // Replace any existing indentation on the new line with the computed one.
         val spaces = " ".repeat(indent)
         document.replaceString(lineStart, caret, spaces)
         editor.caretModel.moveToOffset(lineStart + spaces.length)
         return EnterHandlerDelegate.Result.Stop
+    }
+
+    /**
+     * Computes the continuation indentation for the line starting at [lineStart].
+     * Returns `null` when the line before it does not end with `\`.
+     * Nested continuations (the line before also ends with `\`) keep the same indent
+     * level as their parent continuation.
+     */
+    private fun computeContinuationIndent(chars: CharSequence, lineStart: Int): Int? {
+        if (lineStart <= 0) return null
+        var prevLineEnd = lineStart
+        if (chars[prevLineEnd - 1] == '\n' || chars[prevLineEnd - 1] == '\r') prevLineEnd--
+        var prevLineStart = prevLineEnd
+        while (prevLineStart > 0 && chars[prevLineStart - 1] != '\n' && chars[prevLineStart - 1] != '\r') prevLineStart--
+        val prevLine = chars.subSequence(prevLineStart, prevLineEnd).toString()
+        if (!prevLine.trimEnd().endsWith("\\")) return null
+
+        val prevIndent = prevLine.takeWhile { it == ' ' || it == '\t' }.length
+        val nested = isNestedContinuation(chars, prevLineStart)
+        return if (nested) prevIndent else prevIndent + 4
+    }
+
+    /** True when the line starting at [lineStart] is itself a continuation (ends with `\`). */
+    private fun isNestedContinuation(chars: CharSequence, lineStart: Int): Boolean {
+        if (lineStart <= 0) return false
+        var p2End = lineStart
+        if (chars[p2End - 1] == '\n' || chars[p2End - 1] == '\r') p2End--
+        var p2Start = p2End
+        while (p2Start > 0 && chars[p2Start - 1] != '\n' && chars[p2Start - 1] != '\r') p2Start--
+        return chars.subSequence(p2Start, p2End).toString().trimEnd().endsWith("\\")
     }
 
     private fun currentLineEndsWithBackslash(editor: Editor): Boolean {

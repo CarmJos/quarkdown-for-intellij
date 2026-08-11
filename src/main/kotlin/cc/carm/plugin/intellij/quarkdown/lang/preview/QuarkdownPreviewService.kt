@@ -342,51 +342,7 @@ class QuarkdownPreviewService(private val project: Project) : Disposable {
                 }
                 if (generation != serverGeneration) return@executeOnPooledThread
 
-                val executable = QuarkdownCli.resolveExecutable(project)
-                if (executable == null) {
-                    if (generation == serverGeneration) {
-                        setState(State.ERROR, QuarkdownBundle.message("quarkdown.preview.cli.not.found"))
-                        setBusy(false)
-                    }
-                    return@executeOnPooledThread
-                }
-
-                val outputDir = resolveOutputDir(file)
-                if (clean) outputDir.deleteRecursively()
-                outputDir.mkdirs()
-
-                val settings = QuarkdownSettings.getInstance(project)
-                val args = QuarkdownCli.previewServerArgs(
-                    executable = executable,
-                    source = File(file.path),
-                    port = port,
-                    outputDir = outputDir,
-                    watch = watchEnabled,
-                    extraArgs = settings.state.previewCliArgs.orEmpty(),
-                )
-                logger.info("Starting preview server: ${args.joinToString(" ")}")
-
-                val process = try {
-                    ProcessBuilder(args)
-                        .also { pb ->
-                            pb.redirectErrorStream(true)
-                            project.basePath?.let { pb.directory(File(it)) }
-                        }
-                        .start()
-                } catch (e: Exception) {
-                    logger.warn("Failed to start preview server", e)
-                    if (generation == serverGeneration) {
-                        setState(
-                            State.ERROR,
-                            QuarkdownBundle.message(
-                                "quarkdown.preview.status.start.failed",
-                                e.message ?: e.javaClass.simpleName
-                            )
-                        )
-                        setBusy(false)
-                    }
-                    return@executeOnPooledThread
-                }
+                val process = startServerProcess(file, clean, generation) ?: return@executeOnPooledThread
 
                 synchronized(serverProcessLock) {
                     if (generation != serverGeneration) {
@@ -397,63 +353,13 @@ class QuarkdownPreviewService(private val project: Project) : Disposable {
                 }
 
                 // Stream the server output (for debugging / error reporting).
-                val reader = process.inputStream.bufferedReader(Charset.forName("UTF-8"))
-                executeOnPooledThread {
-                    try {
-                        reader.forEachLine { line -> onServerOutput(line) }
-                    } catch (_: Exception) {
-                        // Closing the stream is expected when the server process exits;
-                        // the exit-code watcher below reports unexpected termination.
-                    }
-                }
+                streamServerOutput(process)
 
                 // Watch for unexpected termination.
-                executeOnPooledThread {
-                    val exitCode = process.waitFor()
-                    synchronized(serverProcessLock) {
-                        if (serverProcess === process) serverProcess = null
-                    }
-                    if (generation == serverGeneration) {
-                        val lastError = synchronized(recentOutput) { recentOutput.lastOrNull() }
-                        if (exitCode != 0) {
-                            setState(
-                                State.ERROR,
-                                QuarkdownBundle.message(
-                                    "quarkdown.preview.status.exited",
-                                    exitCode.toString(),
-                                    lastError ?: "",
-                                ),
-                            )
-                        } else {
-                            setState(State.STOPPED)
-                        }
-                        setBusy(false)
-                    }
-                }
+                watchServerExit(process, generation)
 
                 // Wait until the server is reachable.
-                executeOnPooledThread {
-                    val ready = QuarkdownCli.waitForPortReady(port)
-                    if (generation != serverGeneration) return@executeOnPooledThread
-                    setBusy(false)
-                    if (ready) {
-                        setState(State.RUNNING)
-                        if (pendingOpenBrowser) {
-                            pendingOpenBrowser = false
-                            openUrlInBrowser()
-                        }
-                    } else {
-                        val lastError = synchronized(recentOutput) { recentOutput.lastOrNull() }
-                        setState(
-                            State.ERROR,
-                            QuarkdownBundle.message(
-                                "quarkdown.preview.status.start.timeout",
-                                port.toString(),
-                                lastError ?: "",
-                            ),
-                        )
-                    }
-                }
+                waitForServerReady(generation)
             } catch (e: Exception) {
                 logger.warn("Preview server restart failed", e)
                 if (generation == serverGeneration) {
@@ -466,6 +372,123 @@ class QuarkdownPreviewService(private val project: Project) : Disposable {
                     )
                     setBusy(false)
                 }
+            }
+        }
+    }
+
+    /**
+     * Resolves the CLI, prepares the output directory and starts the preview server
+     * process. Reports failure state and returns `null` when the server cannot start.
+     */
+    private fun startServerProcess(file: VirtualFile, clean: Boolean, generation: Int): Process? {
+        val executable = QuarkdownCli.resolveExecutable(project)
+        if (executable == null) {
+            if (generation == serverGeneration) {
+                setState(State.ERROR, QuarkdownBundle.message("quarkdown.preview.cli.not.found"))
+                setBusy(false)
+            }
+            return null
+        }
+
+        val outputDir = resolveOutputDir(file)
+        if (clean) outputDir.deleteRecursively()
+        outputDir.mkdirs()
+
+        val settings = QuarkdownSettings.getInstance(project)
+        val args = QuarkdownCli.previewServerArgs(
+            executable = executable,
+            source = File(file.path),
+            port = port,
+            outputDir = outputDir,
+            watch = watchEnabled,
+            extraArgs = settings.state.previewCliArgs.orEmpty(),
+        )
+        logger.info("Starting preview server: ${args.joinToString(" ")}")
+
+        return try {
+            ProcessBuilder(args)
+                .also { pb ->
+                    pb.redirectErrorStream(true)
+                    project.basePath?.let { pb.directory(File(it)) }
+                }
+                .start()
+        } catch (e: Exception) {
+            logger.warn("Failed to start preview server", e)
+            if (generation == serverGeneration) {
+                setState(
+                    State.ERROR,
+                    QuarkdownBundle.message(
+                        "quarkdown.preview.status.start.failed",
+                        e.message ?: e.javaClass.simpleName
+                    )
+                )
+                setBusy(false)
+            }
+            null
+        }
+    }
+
+    /** Streams the server output (for debugging / error reporting). */
+    private fun streamServerOutput(process: Process) {
+        val reader = process.inputStream.bufferedReader(Charset.forName("UTF-8"))
+        executeOnPooledThread {
+            try {
+                reader.forEachLine { line -> onServerOutput(line) }
+            } catch (_: Exception) {
+                // Closing the stream is expected when the server process exits;
+                // the exit-code watcher below reports unexpected termination.
+            }
+        }
+    }
+
+    /** Watches for unexpected termination of the server process. */
+    private fun watchServerExit(process: Process, generation: Int) {
+        executeOnPooledThread {
+            val exitCode = process.waitFor()
+            synchronized(serverProcessLock) {
+                if (serverProcess === process) serverProcess = null
+            }
+            if (generation == serverGeneration) {
+                val lastError = synchronized(recentOutput) { recentOutput.lastOrNull() }
+                if (exitCode != 0) {
+                    setState(
+                        State.ERROR,
+                        QuarkdownBundle.message(
+                            "quarkdown.preview.status.exited",
+                            exitCode.toString(),
+                            lastError ?: "",
+                        ),
+                    )
+                } else {
+                    setState(State.STOPPED)
+                }
+                setBusy(false)
+            }
+        }
+    }
+
+    /** Waits until the server is reachable and updates the state / opens the browser. */
+    private fun waitForServerReady(generation: Int) {
+        executeOnPooledThread {
+            val ready = QuarkdownCli.waitForPortReady(port)
+            if (generation != serverGeneration) return@executeOnPooledThread
+            setBusy(false)
+            if (ready) {
+                setState(State.RUNNING)
+                if (pendingOpenBrowser) {
+                    pendingOpenBrowser = false
+                    openUrlInBrowser()
+                }
+            } else {
+                val lastError = synchronized(recentOutput) { recentOutput.lastOrNull() }
+                setState(
+                    State.ERROR,
+                    QuarkdownBundle.message(
+                        "quarkdown.preview.status.start.timeout",
+                        port.toString(),
+                        lastError ?: "",
+                    ),
+                )
             }
         }
     }

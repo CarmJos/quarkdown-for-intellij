@@ -114,31 +114,43 @@ object QuarkdownCallValidator {
         functions: List<FunctionMetadata>,
         knownVariables: Set<String> = emptySet()
     ): List<Issue> {
-        val issues = mutableListOf<Issue>()
         val fn = resolveFunction(call, functions)
-
         if (fn == null) {
-            if (call.name in knownVariables) {
-                // Variable reference (e.g. `.version` after `.var {version} {…}`).
-                return emptyList()
-            }
-            issues.add(
-                Issue(
-                    Severity.ERROR,
-                    call.nameStart,
-                    call.nameEnd,
-                    "Unknown function '${call.name}'",
-                    messageKey = "quarkdown.validator.unknown.function",
-                    messageArgs = listOf(call.name)
-                )
-            )
-            return issues
+            return unknownFunctionIssue(call, knownVariables)
         }
 
+        val issues = mutableListOf<Issue>()
         val (resolved, resolveIssues) = resolveArgs(call, fn)
         issues.addAll(resolveIssues)
+        issues.addAll(valueValidationIssues(resolved))
+        issues.addAll(missingArgsIssues(call, fn, resolved))
+        return issues
+    }
 
-        // Value validation (enum / constrained values)
+    /**
+     * Reports an unknown function, unless [call] is a document-level variable
+     * reference (e.g. `.version` after `.var {version} {…}`).
+     */
+    private fun unknownFunctionIssue(call: Call, knownVariables: Set<String>): List<Issue> {
+        if (call.name in knownVariables) {
+            // Variable reference (e.g. `.version` after `.var {version} {…}`).
+            return emptyList()
+        }
+        return listOf(
+            Issue(
+                Severity.ERROR,
+                call.nameStart,
+                call.nameEnd,
+                "Unknown function '${call.name}'",
+                messageKey = "quarkdown.validator.unknown.function",
+                messageArgs = listOf(call.name)
+            )
+        )
+    }
+
+    /** Value validation (enum / constrained values) for resolved arguments. */
+    private fun valueValidationIssues(resolved: List<ResolvedArg>): List<Issue> {
+        val issues = mutableListOf<Issue>()
         for (r in resolved) {
             val param = r.param ?: continue
             val allowed = param.allowedValues ?: continue
@@ -161,29 +173,32 @@ object QuarkdownCallValidator {
                 )
             }
         }
-
-        // Missing required arguments → warning (matches the compiler's arity checks).
-        // The chained value and an indented body argument each count as one argument.
-        val required = fn.parameters.filter { !it.isInjected && !it.isOptional && !it.isLikelyBody }
-        val implicitCount = (if (call.isChained) 1 else 0) + (if (call.hasBodyArgument) 1 else 0)
-        val writtenCount = resolved.count { it.param != null } + implicitCount
-        if (required.isNotEmpty() &&
-            writtenCount < required.size &&
-            (call.args.isNotEmpty() || call.isChained || call.hasBodyArgument)
-        ) {
-            issues.add(
-                Issue(
-                    Severity.WARNING,
-                    call.nameStart,
-                    call.nameEnd,
-                    "Expected ${required.size} arguments, but $writtenCount found",
-                    messageKey = "quarkdown.validator.missing.args",
-                    messageArgs = listOf(required.size, writtenCount)
-                )
-            )
-        }
-
         return issues
+    }
+
+    /**
+     * Missing required arguments → warning (matches the compiler's arity checks).
+     * The chained value and an indented body argument each count as one argument.
+     */
+    private fun missingArgsIssues(call: Call, fn: FunctionMetadata, resolved: List<ResolvedArg>): List<Issue> {
+        val required = fn.parameters.filter { !it.isInjected && !it.isOptional && !it.isLikelyBody }
+        val implicitCount = (if (call.isChained) 1 else 0) + if (call.hasBodyArgument) 1 else 0
+        val writtenCount = resolved.count { it.param != null } + implicitCount
+        if (required.isEmpty() || writtenCount >= required.size ||
+            (call.args.isEmpty() && !call.isChained && !call.hasBodyArgument)
+        ) {
+            return emptyList()
+        }
+        return listOf(
+            Issue(
+                Severity.WARNING,
+                call.nameStart,
+                call.nameEnd,
+                "Expected ${required.size} arguments, but $writtenCount found",
+                messageKey = "quarkdown.validator.missing.args",
+                messageArgs = listOf(required.size, writtenCount)
+            )
+        )
     }
 
     /**

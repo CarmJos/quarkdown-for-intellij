@@ -128,7 +128,7 @@ class ImageDialog(
                         val hPair = parseSizeUnit(parts[1])
                         widthField?.text = wPair.first ?: ""
                         heightField?.text = hPair.first ?: ""
-                        val unit = (wPair.second ?: hPair.second) ?: "px"
+                        val unit = wPair.second ?: hPair.second ?: "px"
                         unitCombo?.selectedItem = unit
                     }
                 }

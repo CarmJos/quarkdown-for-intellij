@@ -57,49 +57,60 @@ object QuarkdownTableModificationUtils {
         val n = text.length
         while (i < n) {
             val lineStart = i
-            var lineEnd = i
-            while (lineEnd < n && text[lineEnd] != '\n') lineEnd++
-            val line = text.subSequence(lineStart, lineEnd).toString()
+            val (line, lineEnd) = readLine(text, i)
+            val nextStart = nextLineStart(lineEnd, n)
+            i = nextStart
 
             if (line.contains('|') && isFollowedBySeparator(text, lineEnd)) {
                 val blockLines = mutableListOf(line)
                 val blockStarts = mutableListOf(lineStart)
-                var k = if (lineEnd < n) lineEnd + 1 else lineEnd // skip the newline
+                var k = nextStart
                 while (k < n) {
-                    val lStart = k
-                    var lEnd = k
-                    while (lEnd < n && text[lEnd] != '\n') lEnd++
-                    val lText = text.subSequence(lStart, lEnd).toString()
+                    val (lText, lEnd) = readLine(text, k)
                     if (!lText.contains('|')) break
                     blockLines += lText
-                    blockStarts += lStart
-                    k = if (lEnd < n) lEnd + 1 else lEnd
+                    blockStarts += k
+                    k = nextLineStart(lEnd, n)
                 }
                 val end = blockStarts.last() + blockLines.last().length
 
                 // Check for a trailing label/id line immediately after the table.
-                var labelLine: String? = null
-                var labelLineStart = -1
-                var fullEndOffset = end
-                if (k < n) {
-                    var lStart = k
-                    var lEnd = k
-                    while (lEnd < n && text[lEnd] != '\n') lEnd++
-                    val lText = text.subSequence(lStart, lEnd).toString()
-                    if (lText.isNotBlank() && labelLineRegex.matches(lText)) {
-                        labelLine = lText
-                        labelLineStart = lStart
-                        fullEndOffset = lEnd
-                    }
-                }
-
-                blocks += TableBlock(lineStart, end, blockStarts, blockLines, labelLine, labelLineStart, fullEndOffset)
+                val label = findLabelLine(text, k)
+                blocks += TableBlock(
+                    lineStart,
+                    end,
+                    blockStarts,
+                    blockLines,
+                    label?.first,
+                    label?.second ?: -1,
+                    label?.third ?: end
+                )
                 i = k
-            } else {
-                i = if (lineEnd < n) lineEnd + 1 else lineEnd
             }
         }
         return blocks
+    }
+
+    /** Reads the line starting at [start]; returns its text and the offset of its newline (or `text.length`). */
+    private fun readLine(text: CharSequence, start: Int): Pair<String, Int> {
+        var lineEnd = start
+        while (lineEnd < text.length && text[lineEnd] != '\n') lineEnd++
+        return text.subSequence(start, lineEnd).toString() to lineEnd
+    }
+
+    /** Offset just after the newline at [lineEnd] (or [n] at end of input). */
+    private fun nextLineStart(lineEnd: Int, n: Int): Int = if (lineEnd < n) lineEnd + 1 else lineEnd
+
+    /**
+     * Detects a trailing `"label" {#id}` line immediately after a table block.
+     * Returns `(text, start, end)` of the label line, or `null` when the next line
+     * is not a label.
+     */
+    private fun findLabelLine(text: CharSequence, start: Int): Triple<String, Int, Int>? {
+        if (start >= text.length) return null
+        val (lText, lEnd) = readLine(text, start)
+        if (lText.isBlank() || !labelLineRegex.matches(lText)) return null
+        return Triple(lText, start, lEnd)
     }
 
     private fun isFollowedBySeparator(text: CharSequence, afterLineEnd: Int): Boolean {
@@ -332,10 +343,10 @@ object QuarkdownTableModificationUtils {
         while (i < line.length) {
             val pipe = line.indexOf('|', i)
             if (pipe < 0) {
-                ranges += colStart to (lineStart + line.length)
+                ranges += colStart to lineStart + line.length
                 break
             }
-            ranges += colStart to (lineStart + pipe)
+            ranges += colStart to lineStart + pipe
             i = pipe + 1
             colStart = lineStart + i
         }

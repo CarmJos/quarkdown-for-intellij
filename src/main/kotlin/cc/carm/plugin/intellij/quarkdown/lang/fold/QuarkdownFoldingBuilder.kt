@@ -34,23 +34,22 @@ class QuarkdownFoldingBuilder : FoldingBuilderEx() {
         val text = document.text
         val lines = text.split("\n")
 
-        // Collect headings: (lineIndex, level)
-        val headings = mutableListOf<Pair<Int, Int>>()
-        for ((i, line) in lines.withIndex()) {
-            val trimmed = line.trimStart()
-            if (trimmed.startsWith("#")) {
-                var hCount = 0
-                while (hCount < trimmed.length && trimmed[hCount] == '#') hCount++
-                if (hCount in 1..6) {
-                    val after = hCount
-                    if (after < trimmed.length && (trimmed[after] == ' ' || trimmed[after] == '\t')) {
-                        headings.add(i to hCount)
-                    }
-                }
-            }
-        }
+        descriptors += sectionFoldingDescriptors(root, lines, text)
+        descriptors += codeBlockFoldingDescriptors(root, text)
+        descriptors += tableFoldingDescriptors(root, lines, text)
 
-        // --- Section folding ---
+        return descriptors.toTypedArray()
+    }
+
+    // ------------------------------------------------------------------
+    // Fold-region builders (one per foldable construct)
+    // ------------------------------------------------------------------
+
+    /** Builds section folds: from a heading line to the next heading of same or higher level. */
+    private fun sectionFoldingDescriptors(root: PsiElement, lines: List<String>, text: String): List<FoldingDescriptor> {
+        val headings = collectHeadings(lines)
+        val descriptors = mutableListOf<FoldingDescriptor>()
+
         for (i in headings.indices) {
             val (lineIdx, level) = headings[i]
             val startLine = lines[lineIdx]
@@ -60,7 +59,7 @@ class QuarkdownFoldingBuilder : FoldingBuilderEx() {
 
             // Find the end: next heading of same or higher level
             var foldEnd = text.length
-            for (j in (i + 1) until headings.size) {
+            for (j in i + 1 until headings.size) {
                 if (headings[j].second <= level) {
                     foldEnd = offsetOfLine(lines, headings[j].first)
                     break
@@ -90,42 +89,60 @@ class QuarkdownFoldingBuilder : FoldingBuilderEx() {
                 }
             }
         }
+        return descriptors
+    }
 
-        // --- Code block folding ---
+    /** Collects `(lineIndex, level)` pairs for every heading line. */
+    private fun collectHeadings(lines: List<String>): List<Pair<Int, Int>> {
+        val headings = mutableListOf<Pair<Int, Int>>()
+        for ((i, line) in lines.withIndex()) {
+            val trimmed = line.trimStart()
+            if (trimmed.startsWith("#")) {
+                var hCount = 0
+                while (hCount < trimmed.length && trimmed[hCount] == '#') hCount++
+                if (hCount in 1..6) {
+                    val after = hCount
+                    if (after < trimmed.length && (trimmed[after] == ' ' || trimmed[after] == '\t')) {
+                        headings.add(i to hCount)
+                    }
+                }
+            }
+        }
+        return headings
+    }
+
+    /** Builds fenced-code-block folds: from the opening fence line to the closing fence line. */
+    private fun codeBlockFoldingDescriptors(root: PsiElement, text: String): List<FoldingDescriptor> {
         val fenceRanges = findFenceRanges(text)
         val codeGroup = FoldingGroup.newGroup("quarkdown.code")
-        for ((from, to) in fenceRanges) {
+        return fenceRanges.map { (from, to) ->
             val nlIdx = text.indexOf('\n', from)
             val openingLine = text.substring(from, if (nlIdx < 0 || nlIdx > to) to else nlIdx)
             val lang = openingLine.trim().removeSurrounding("`").trim()
             val placeholder = if (lang.isNotEmpty()) "```$lang ... ```" else "```...```"
-            descriptors.add(
-                FoldingDescriptor(root, from, to, codeGroup, placeholder)
-            )
+            FoldingDescriptor(root, from, to, codeGroup, placeholder)
         }
+    }
 
-        // --- Table folding ---
+    /** Builds table folds: consecutive lines containing `|`. */
+    private fun tableFoldingDescriptors(root: PsiElement, lines: List<String>, text: String): List<FoldingDescriptor> {
         val tableRanges = findTableRanges(lines)
         val tableGroup = FoldingGroup.newGroup("quarkdown.table")
-        for ((startIdx, endIdx) in tableRanges) {
+        return tableRanges.map { (startIdx, endIdx) ->
             val foldStart = offsetOfLine(lines, startIdx)
             val foldEnd = offsetOfLine(lines, endIdx) + lines[endIdx].length
             val rowCount = endIdx - startIdx + 1
             val unit = QuarkdownBundle.message(
                 if (rowCount == 1) "quarkdown.fold.row" else "quarkdown.fold.rows"
             )
-            descriptors.add(
-                FoldingDescriptor(
-                    root,
-                    foldStart,
-                    foldEnd,
-                    tableGroup,
-                    QuarkdownBundle.message("quarkdown.fold.table.placeholder", rowCount, unit)
-                )
+            FoldingDescriptor(
+                root,
+                foldStart,
+                foldEnd,
+                tableGroup,
+                QuarkdownBundle.message("quarkdown.fold.table.placeholder", rowCount, unit)
             )
         }
-
-        return descriptors.toTypedArray()
     }
 
     override fun getPlaceholderText(node: ASTNode): String = "..."
@@ -174,27 +191,21 @@ class QuarkdownFoldingBuilder : FoldingBuilderEx() {
 
                 if (contentPos < text.length) {
                     val c = text[contentPos]
-                    if ((c == '`' || c == '~') && fenceStart < 0) {
-                        var count = 0
-                        while (contentPos + count < text.length && text[contentPos + count] == c) count++
+                    if (c == '`' || c == '~') {
+                        val count = countFenceChars(text, contentPos, c)
                         if (count >= 3) {
-                            val after = contentPos + count
-                            if (after >= text.length || text[after] == ' ' || text[after] == '\t' || text[after] == '\n' || text[after] == '\r') {
-                                fenceStart = i
-                                fenceChars = c
-                            }
-                        }
-                    } else if (c == fenceChars && fenceStart >= 0) {
-                        var count = 0
-                        while (contentPos + count < text.length && text[contentPos + count] == c) count++
-                        if (count >= 3) {
-                            val after = contentPos + count
-                            if (after >= text.length || text[after] == ' ' || text[after] == '\t' || text[after] == '\n' || text[after] == '\r') {
-                                var lineEnd = after
-                                while (lineEnd < text.length && text[lineEnd] != '\n') lineEnd++
-                                if (lineEnd < text.length) lineEnd++
-                                ranges.add(fenceStart to lineEnd)
-                                fenceStart = -1
+                            if (fenceStart < 0) {
+                                // Opening fence.
+                                if (isFenceBoundary(text, contentPos + count)) {
+                                    fenceStart = i
+                                    fenceChars = c
+                                }
+                            } else if (c == fenceChars) {
+                                // Closing fence.
+                                if (isFenceBoundary(text, contentPos + count)) {
+                                    ranges.add(fenceStart to scanFenceLineEnd(text, contentPos + count))
+                                    fenceStart = -1
+                                }
                             }
                         }
                     }
@@ -203,6 +214,26 @@ class QuarkdownFoldingBuilder : FoldingBuilderEx() {
             i++
         }
         return ranges
+    }
+
+    /** Counts consecutive occurrences of fence char [c] starting at [pos]. */
+    private fun countFenceChars(text: String, pos: Int, c: Char): Int {
+        var count = 0
+        while (pos + count < text.length && text[pos + count] == c) count++
+        return count
+    }
+
+    /** True when the position right after a fence run is whitespace or end of input. */
+    private fun isFenceBoundary(text: String, after: Int): Boolean =
+        after >= text.length || text[after] == ' ' || text[after] == '\t' ||
+                text[after] == '\n' || text[after] == '\r'
+
+    /** Scans from [after] to the end of the line, including the trailing newline. */
+    private fun scanFenceLineEnd(text: String, after: Int): Int {
+        var lineEnd = after
+        while (lineEnd < text.length && text[lineEnd] != '\n') lineEnd++
+        if (lineEnd < text.length) lineEnd++
+        return lineEnd
     }
 
     /**

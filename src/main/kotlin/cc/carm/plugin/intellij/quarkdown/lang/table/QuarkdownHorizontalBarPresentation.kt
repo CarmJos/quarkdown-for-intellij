@@ -162,7 +162,7 @@ internal class QuarkdownHorizontalBarPresentation(
         document: Document
     ): List<Rectangle> {
         val positions = calculatePositions(fontMetrics, document)
-        val sectors = positions.windowed(2).map { (left, right) -> left to (right - left) }
+        val sectors = positions.windowed(2).map { (left, right) -> left to right - left }
         return sectors.map { (offset, sectorWidth) ->
             Rectangle(offset - barHeight / 2, 0, sectorWidth + barHeight, barHeight)
         }
