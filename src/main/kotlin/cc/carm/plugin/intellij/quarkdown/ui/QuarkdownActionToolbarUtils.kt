@@ -3,6 +3,7 @@ package cc.carm.plugin.intellij.quarkdown.ui
 import com.intellij.openapi.actionSystem.ActionGroup
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.ActionToolbar
+import java.awt.GraphicsEnvironment
 import java.awt.Point
 import javax.swing.JComponent
 import javax.swing.JLayeredPane
@@ -25,7 +26,9 @@ import javax.swing.SwingUtilities
  *    synchronously whenever the component is showing;
  *  - if that does not produce visible actions (e.g. the window is not currently visible), the
  *    container is instead attached to a temporary off-screen [JWindow] that is shown for the
- *    duration of the update, which always makes it "showing".
+ *    duration of the update, which always makes it "showing";
+ *  - in a headless environment (e.g. CI test runner) no window can be created, so the update
+ *    is run directly instead - the platform executes it synchronously in unit-test mode.
  *
  * Either way the container is detached again before anything is painted, so no flicker is
  * visible and the hint is built with an already-populated toolbar.
@@ -65,6 +68,13 @@ object QuarkdownActionToolbarUtils {
                 layeredPane.repaint()
             }
             if (toolbar.hasVisibleActions()) return
+        }
+        if (GraphicsEnvironment.isHeadless()) {
+            // No display is available (e.g. CI test runner), so the off-screen window
+            // fallback below cannot work. The platform's update still runs synchronously
+            // in unit-test mode and populates the toolbar without a visible window.
+            toolbar.updateActionsAsync()
+            return
         }
         populateViaWindow(toolbar, anchor)
     }
