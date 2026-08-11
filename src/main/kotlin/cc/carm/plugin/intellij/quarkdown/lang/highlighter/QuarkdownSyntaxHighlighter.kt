@@ -126,6 +126,9 @@ class QuarkdownSyntaxHighlighter : SyntaxHighlighterBase() {
         )
 
         // ---- Element ID tag {#id} ----
+        val ID_TAG_MARKER = TextAttributesKey.createTextAttributesKey(
+            "QUARKDOWN_ID_TAG_MARKER", DefaultLanguageHighlighterColors.KEYWORD
+        )
         val ID_TAG = TextAttributesKey.createTextAttributesKey(
             "QUARKDOWN_ID_TAG", DefaultLanguageHighlighterColors.METADATA
         )
@@ -241,7 +244,8 @@ class QuarkdownSyntaxHighlighter : SyntaxHighlighterBase() {
             QuarkdownTokenTypes.FUNCTION_BRACE_CLOSE to FUNCTION_BRACE,
             QuarkdownTokenTypes.FUNCTION_PARAMS to FUNCTION_PARAMS,
 
-            // Element ID tag
+            // Element ID tag {#id}
+            QuarkdownTokenTypes.ID_TAG_MARKER to ID_TAG_MARKER,
             QuarkdownTokenTypes.ID_TAG to ID_TAG,
 
             // Escape

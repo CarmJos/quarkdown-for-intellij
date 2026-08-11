@@ -194,18 +194,14 @@
         <nameSuggestionProvider
                 implementation="cc.carm.plugin.intellij.quarkdown.lang.reference.QuarkdownNameSuggestionProvider"/>
 
-        <!-- Ctrl+Click navigation: .ref usages → {#id} declaration, file paths → target file.
-             {#id}/.var declarations: GotoDeclarationHandler returns no targets (Symbol model
-             provides the hover underline via PsiNameIdentifierOwner). The click is intercepted
-             by QuarkdownCtrlClickInterceptor (no Choose Declaration, no Cannot find declaration),
-             and QuarkdownEditorMouseListener shows the usages popup at the declaration. -->
+        <!-- Ctrl+Click navigation:
+             - .ref {id} / .name usages → the {#id} / .var {name} declaration (navigate directly).
+             - {#id} / .var {name} declarations → with a SINGLE usage, navigate directly; with
+               several usages, return no targets so the platform's Symbol model shows the native
+               Show Usages window (real .ref usages, anchored at the declaration, no caret jump).
+             - .include / .read / .css / .code and image paths → the target file. -->
         <gotoDeclarationHandler
                 implementation="cc.carm.plugin.intellij.quarkdown.lang.reference.QuarkdownGotoDeclarationHandler"/>
-
-        <!-- Show the usages popup on Ctrl+Click over a label/var declaration -->
-        <editorFactoryMouseListener
-                implementation="cc.carm.plugin.intellij.quarkdown.lang.reference.QuarkdownEditorMouseListener"
-                order="first"/>
 
         <!-- Provides a searchable word for Quarkdown text leaves so the word-based
              reference search can discover .ref/.var usages -->

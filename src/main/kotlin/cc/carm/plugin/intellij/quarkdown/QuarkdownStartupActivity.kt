@@ -2,11 +2,9 @@ package cc.carm.plugin.intellij.quarkdown
 
 import cc.carm.plugin.intellij.quarkdown.action.image.ImagePasteHandler
 import cc.carm.plugin.intellij.quarkdown.lang.function.FunctionRegistry
-import cc.carm.plugin.intellij.quarkdown.lang.reference.QuarkdownCtrlClickInterceptor
 import cc.carm.plugin.intellij.quarkdown.settings.QuarkdownPathDetector
 import cc.carm.plugin.intellij.quarkdown.settings.QuarkdownSettings
 import cc.carm.plugin.intellij.quarkdown.ui.floating.FloatingToolbarCustomizer
-import com.intellij.ide.IdeEventQueue
 import com.intellij.openapi.actionSystem.IdeActions
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.service
@@ -22,7 +20,6 @@ class QuarkdownStartupActivity : ProjectActivity {
 
     companion object {
         private val pasteHandlerInstalled = AtomicBoolean(false)
-        private val ctrlClickInterceptorInstalled = AtomicBoolean(false)
     }
 
     override suspend fun execute(project: Project) {
@@ -33,8 +30,6 @@ class QuarkdownStartupActivity : ProjectActivity {
         // Install the floating formatting toolbar via the public EditorFactoryListener API
         // (replaces the internal TextEditorCustomizer extension point).
         FloatingToolbarCustomizer.install()
-
-        installCtrlClickInterceptorIfNeeded()
 
         installPasteHandlerIfNeeded()
 
@@ -51,28 +46,6 @@ class QuarkdownStartupActivity : ProjectActivity {
         } else {
             logger.info("Using existing Quarkdown path: $path")
             project.service<FunctionRegistry>().refresh(path)
-        }
-    }
-
-    /**
-     * Registers [QuarkdownCtrlClickInterceptor] once on the application event queue.
-     *
-     * The dispatcher runs BEFORE the keymap mouse dispatcher, so consuming a Ctrl+Click over
-     * a Quarkdown declaration prevents the platform's `GotoDeclaration` action from firing —
-     * no "Choose Declaration" popup and no "Cannot find declaration to go to" hint. The
-     * usages popup / navigation is then handled by [QuarkdownEditorMouseListener].
-     */
-    private fun installCtrlClickInterceptorIfNeeded() {
-        if (!ctrlClickInterceptorInstalled.compareAndSet(false, true)) return
-        try {
-            IdeEventQueue.getInstance().addDispatcher(
-                QuarkdownCtrlClickInterceptor(),
-                ApplicationManager.getApplication()
-            )
-            logger.info("Installed QuarkdownCtrlClickInterceptor on the IDE event queue")
-        } catch (e: Exception) {
-            logger.warn("Failed to install QuarkdownCtrlClickInterceptor", e)
-            ctrlClickInterceptorInstalled.set(false)
         }
     }
 

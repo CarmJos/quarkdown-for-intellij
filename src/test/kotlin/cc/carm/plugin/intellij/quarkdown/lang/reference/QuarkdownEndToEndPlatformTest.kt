@@ -24,13 +24,16 @@ class QuarkdownEndToEndPlatformTest : BasePlatformTestCase() {
         // split into `plc` / `symbol` / `table` / `output`.
         val refContentStart = text.indexOf("{plc-symbol-table-output}") + 1
         val refLeaf = psiFile.findElementAt(refContentStart)
-        val labelLeaf = psiFile.findElementAt(text.indexOf("{#plc-symbol-table-output}") + 1)
+        // In `{#id}`, the id is a separate ID_TAG leaf after the `{#` marker — this keeps
+        // the Ctrl+hover underline / GTD navigation on just the id, not the whole token.
+        val labelIdStart = text.indexOf("{#plc-symbol-table-output}") + 2
+        val labelLeaf = psiFile.findElementAt(labelIdStart)
 
         System.out.println("ref leaf='${refLeaf?.text}' class=${refLeaf?.javaClass?.simpleName}")
         System.out.println("label leaf='${labelLeaf?.text}' class=${labelLeaf?.javaClass?.simpleName}")
 
         assertTrue("ref id content should be one token", refLeaf?.text == "plc-symbol-table-output")
-        assertTrue("label id should be one token", labelLeaf?.text == "{#plc-symbol-table-output}")
+        assertTrue("label id should be one token", labelLeaf?.text == "plc-symbol-table-output")
     }
 
     fun `test ctrl click on label shows all usages via multiResolve`() {

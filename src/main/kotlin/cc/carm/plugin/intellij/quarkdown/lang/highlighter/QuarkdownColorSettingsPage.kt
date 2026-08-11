@@ -69,6 +69,7 @@ class QuarkdownColorSettingsPage : ColorSettingsPage {
             attr("quarkdown.color.attr.semantic.valid.enum", QuarkdownSyntaxHighlighter.SEMANTIC_VALID_ENUM),
             attr("quarkdown.color.attr.semantic.parameter", QuarkdownSyntaxHighlighter.SEMANTIC_PARAMETER),
 
+            attr("quarkdown.color.attr.id.tag.marker", QuarkdownSyntaxHighlighter.ID_TAG_MARKER),
             attr("quarkdown.color.attr.id.tag", QuarkdownSyntaxHighlighter.ID_TAG),
 
             attr("quarkdown.color.attr.html.comment", QuarkdownSyntaxHighlighter.HTML_COMMENT),

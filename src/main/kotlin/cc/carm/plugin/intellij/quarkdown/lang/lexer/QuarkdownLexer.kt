@@ -341,8 +341,11 @@ class QuarkdownLexer : LexerBase() {
             '(' -> return emit(QuarkdownTokenTypes.PAREN_OPEN, 1)
             ')' -> return emit(QuarkdownTokenTypes.PAREN_CLOSE, 1)
             '{' -> {
-                // Check if this is an ID tag: {#...}  (function-call braces are handled
-                // by lexFunctionArgument while inside a call).
+                // An element id tag `{#id}` is split into three tokens so the id is its own
+                // leaf (like `.ref {id}`'s FUNCTION_PARAMS): `{#` ID_TAG_MARKER + `id`
+                // ID_TAG + `}` BRACE_CLOSE. This keeps the Ctrl+hover underline / GTD
+                // navigation on just the id, never the whole `{#id}` token.
+                // (Function-call braces are handled by lexFunctionArgument while inside a call.)
                 if (ch(start + 1) == '#') {
                     // Scan until closing }
                     var len = 2 // '{' + '#'
@@ -350,8 +353,12 @@ class QuarkdownLexer : LexerBase() {
                         len++
                     }
                     if (start + len < endOffset && ch(start + len) == '}') {
-                        len++ // include the closing }
-                        return emit(QuarkdownTokenTypes.ID_TAG, len)
+                        val idLen = len - 2
+                        if (idLen > 0) {
+                            pendingTokens.addLast(QuarkdownTokenTypes.ID_TAG to idLen)
+                        }
+                        pendingTokens.addLast(QuarkdownTokenTypes.BRACE_CLOSE to 1)
+                        return emit(QuarkdownTokenTypes.ID_TAG_MARKER, 2) // "{#"
                     }
                 }
                 return emit(QuarkdownTokenTypes.BRACE_OPEN, 1)

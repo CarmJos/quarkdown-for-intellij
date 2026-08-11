@@ -289,7 +289,7 @@ class QuarkdownCtrlClickDiagnosticTest : BasePlatformTestCase() {
         assertTrue("plain text should return no targets", targets.isNullOrEmpty())
     }
 
-    fun `test var declaration returns no goto targets (Symbol model handles it)`() {
+    fun `test single-usage var declaration navigates directly to the usage`() {
         val text = ".var {version} {v12}\n.include {.version/file.qd}"
         myFixture.configureByText("su-var.qd", text)
 
@@ -301,10 +301,14 @@ class QuarkdownCtrlClickDiagnosticTest : BasePlatformTestCase() {
         val handlers = com.intellij.codeInsight.navigation.actions.GotoDeclarationHandler.EP_NAME.extensionList
         val ourHandler = handlers.firstOrNull { it is QuarkdownGotoDeclarationHandler }
         assertNotNull("QuarkdownGotoDeclarationHandler must be registered", ourHandler)
-        // The handler returns no targets for var-decl so the platform falls back to the
-        // Symbol model, which produces a Show Usages (SU) result.
+        // A `.var {version}` with EXACTLY ONE `.version` usage returns that usage so the
+        // platform navigates directly (GTD) — no usages window, no flash.
         val targets = ourHandler!!.getGotoDeclarationTargets(varLeaf, varNameStart, myFixture.editor) ?: emptyArray()
-        assertTrue("var declaration should return no targets, got ${targets.size}", targets.isEmpty())
+        assertEquals("var declaration with one usage should return it", 1, targets.size)
+        assertTrue(
+            "target should be at the .version usage",
+            targets[0].textOffset > text.indexOf(".var")
+        )
 
         // The PsiNameIdentifierOwner ensures the name identifier covers only the name.
         assertTrue("var leaf must be PsiNameIdentifierOwner", varLeaf is com.intellij.psi.PsiNameIdentifierOwner)

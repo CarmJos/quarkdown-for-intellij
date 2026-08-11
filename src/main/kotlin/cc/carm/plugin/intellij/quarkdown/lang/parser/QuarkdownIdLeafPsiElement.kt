@@ -14,16 +14,18 @@ import com.intellij.psi.impl.source.tree.LeafPsiElement
 import com.intellij.psi.tree.IElementType
 
 /**
- * Leaf PSI element for id-bearing tokens: `{#id}` (ID_TAG) and `{id}` (FUNCTION_PARAMS,
- * e.g. `.ref {id}` / `.var {name}`).
+ * Leaf PSI element for id-bearing tokens: the id content of `{#id}` (ID_TAG — the `{#`
+ * prefix and `}` are separate `ID_TAG_MARKER` / `BRACE_CLOSE` leaves) and the content of
+ * `.ref {id}` / `.var {name}` (FUNCTION_PARAMS).
  *
  * Implements [PsiNamedElement] so the platform's Symbol model recognises the token as a
  * declaration, and [PsiNameIdentifierOwner] so the Symbol model uses the **id-only** range
- * (not the whole `{#id}` token) for the Ctrl+hover underline and declaration navigation.
+ * for the Ctrl+hover underline and declaration navigation. Because the leaf itself IS the
+ * bare id (no surrounding `{#`/`}`), the name identifier covers the whole leaf.
  *
  * The [GotoDeclarationHandler][cc.carm.plugin.intellij.quarkdown.lang.reference.QuarkdownGotoDeclarationHandler]
- * returns no targets for `label`/`var-decl` declarations, so the platform falls back to the
- * Symbol model which produces a Show Usages (SU) result — no "Choose Declaration" popup.
+ * returns the single usage (or no target for the SU path), so the platform underlines only
+ * the id — never the whole `{#id}` token.
  *
  * Ordinary plain-text leaves use [QuarkdownLeafPsiElement] and deliberately do NOT
  * implement [PsiNamedElement] (otherwise every word would be a Ctrl+Click target).

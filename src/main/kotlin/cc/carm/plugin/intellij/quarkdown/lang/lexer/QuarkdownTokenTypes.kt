@@ -84,7 +84,8 @@ object QuarkdownTokenTypes {
     // -------------------------------------------------------------------------
     // Element ID tag  {#id-name}
     // -------------------------------------------------------------------------
-    val ID_TAG = createToken("ID_TAG")                    // {#actual-screen-a}
+    val ID_TAG_MARKER = createToken("ID_TAG_MARKER")      // {#  prefix of an id tag
+    val ID_TAG = createToken("ID_TAG")                    // actual-screen-a  (the id only)
 
     // -------------------------------------------------------------------------
     // HTML

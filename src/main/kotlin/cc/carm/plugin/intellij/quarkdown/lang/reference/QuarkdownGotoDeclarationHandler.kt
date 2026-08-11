@@ -12,12 +12,13 @@ import com.intellij.psi.PsiFile
 /**
  * Ctrl+Click navigation for Quarkdown references.
  *
- * **Declarations** (`{#id}` label, `.var { name }`): return **no targets** so the platform
- * falls back to the Symbol model. The Symbol model recognises the [PsiNamedElement] +
- * [PsiNameIdentifierOwner] on [QuarkdownIdLeafPsiElement] and produces a Show Usages (SU)
- * result — the official Show Usages popup with no "Choose Declaration" and no "Cannot find
- * declaration to go to". The [PsiNameIdentifierOwner] also ensures the Ctrl+hover underline
- * covers only the id (not the whole `{#id}` token).
+ * **Declarations** (`{#id}` label, `.var { name }`):
+ *  - with exactly ONE usage: return that usage so the platform navigates directly (no
+ *    usages window, no flash);
+ *  - with several usages: return **no targets** so the platform falls back to the Symbol
+ *    model and shows the native Show Usages window listing every `.ref { id }` usage,
+ *    anchored at the declaration (no caret jump);
+ *  - with no usages: return **no targets**; the Symbol model then shows "No usages found".
  *
  * **Usages** (`.ref { id }`, `.name`): return the single declaration so Ctrl+Click navigates
  * directly.
@@ -56,11 +57,13 @@ class QuarkdownGotoDeclarationHandler : GotoDeclarationHandler {
 
         val project: Project = psiFile.project
         return when (anchor.referenceType) {
-            // Declarations: return no targets so the platform falls back to the Symbol model,
-            // which produces a Show Usages (SU) result via ShowUsagesGTDUActionData.
-            // The PsiNameIdentifierOwner on QuarkdownIdLeafPsiElement ensures the underline
-            // covers only the id.
-            "label", "var-decl" -> PsiElement.EMPTY_ARRAY
+            // Declarations (`{#id}` label / `.var {name}`):
+            //  - with exactly ONE usage: return it so the platform navigates directly (GTD),
+            //    no usages window and no flash.
+            //  - with several or no usages: return EMPTY so the platform falls back to the
+            //    Symbol model and shows the native Show Usages window (which lists the real
+            //    `.ref {id}` usages, anchored at the declaration).
+            "label", "var-decl" -> declarationTargets(project, psiFile, anchor)
             // Usages: navigate directly to the declaration.
             "ref" -> findLabelDeclaration(project, psiFile, id)
             "var" -> findVarDeclaration(project, psiFile, id)
@@ -69,6 +72,33 @@ class QuarkdownGotoDeclarationHandler : GotoDeclarationHandler {
             "image-dir" -> resolveFileTarget(psiFile, anchor.referenceText)
             else -> PsiElement.EMPTY_ARRAY
         }
+    }
+
+    /**
+     * Navigation targets for a declaration anchor (`label` / `var-decl`).
+     *
+     * Exactly ONE usage → return that usage so Ctrl+Click navigates directly. Otherwise
+     * return EMPTY so the platform produces the native "Show Usages" outcome (listing every
+     * usage), which is exactly what a multi-usage declaration needs — and a zero-usage
+     * declaration simply shows "No usages found".
+     */
+    private fun declarationTargets(project: Project, sourceFile: PsiFile, anchor: QuarkdownReferenceParser.Anchor): Array<PsiElement> {
+        val id = anchor.referenceText.trim()
+        if (id.isEmpty()) return PsiElement.EMPTY_ARRAY
+        val usages = when (anchor.referenceType) {
+            "label" -> collectRaw(
+                project, sourceFile,
+                Regex("""\.ref\s*\{\s*([^}]+?)\s*\}""", RegexOption.IGNORE_CASE), id
+            ) { match -> match.groupValues[1].trim().equals(id, ignoreCase = true) }
+
+            "var-decl" -> collectRaw(
+                project, sourceFile,
+                Regex("""\.([a-zA-Z][a-zA-Z0-9]*)\b"""), id
+            ) { match -> match.groupValues[1].equals(id, ignoreCase = true) }
+
+            else -> emptyList()
+        }
+        return if (usages.size == 1) arrayOf(usages.first()) else PsiElement.EMPTY_ARRAY
     }
 
     override fun getActionText(context: com.intellij.openapi.actionSystem.DataContext): String? = null
