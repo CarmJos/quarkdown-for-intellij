@@ -113,15 +113,20 @@ jobs:
 
           git checkout -b $BRANCH
           git commit -am "Changelog update - $VERSION"
-          git push --set-upstream origin $BRANCH
+
+          # Force-push so re-runs overwrite a branch left over from a previous run
+          git push --force --set-upstream origin $BRANCH
 
           gh label create "$LABEL" \
             --description "Pull requests with release changelog update" \
             --force \
             || true
 
-          gh pr create \
-            --title "Changelog update - \`$VERSION\`" \
-            --body "Current pull request contains patched \`CHANGELOG.md\` file for the \`$VERSION\` version." \
-            --label "$LABEL" \
-            --head $BRANCH
+          # Reuse an existing PR for this branch (workflow re-runs), otherwise create one
+          if ! gh pr view --head "$BRANCH" --json number >/dev/null 2>&1; then
+            gh pr create \
+              --title "Changelog update - \`$VERSION\`" \
+              --body "Current pull request contains patched \`CHANGELOG.md\` file for the \`$VERSION\` version." \
+              --label "$LABEL" \
+              --head $BRANCH
+          fi
