@@ -1,13 +1,11 @@
 package cc.carm.plugin.intellij.quarkdown.lang.reference
 
-import cc.carm.plugin.intellij.quarkdown.QuarkdownFileType
 import com.intellij.find.findUsages.FindUsagesHandler
 import com.intellij.find.findUsages.FindUsagesOptions
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
-import com.intellij.psi.PsiManager
-import com.intellij.psi.search.FileTypeIndex
 import com.intellij.psi.search.GlobalSearchScope
 import com.intellij.usageView.UsageInfo
 import com.intellij.util.Processor
@@ -34,17 +32,21 @@ class QuarkdownFindUsagesHandler(psiElement: PsiElement) : FindUsagesHandler(psi
         options: FindUsagesOptions
     ): Boolean = ApplicationManager.getApplication().runReadAction<Boolean> {
         val targetId = targetIdOf(element) ?: return@runReadAction true
+        // The declaration itself is not a "usage" of itself — a `{#id}` with no `.ref`
+        // usages must report ZERO usages so the platform shows "No usages found" instead
+        // of a self-reference masquerading as "This is the only reference".
+        val targetRange = if (element.isValid) element.textRange else null
 
         val scope = options.searchScope as? GlobalSearchScope
             ?: GlobalSearchScope.projectScope(element.project)
-        val psiManager = PsiManager.getInstance(element.project)
-        val files = FileTypeIndex.getFiles(QuarkdownFileType.INSTANCE, scope)
-            .mapNotNull { psiManager.findFile(it) }
+        val files = QuarkdownReferenceFiles.collect(element.project, element.containingFile, scope)
 
         for (file in files) {
             for (anchor in QuarkdownReferenceAnchors.of(file)) {
                 if (anchor.referenceType !in ID_REFERENCE_TYPES) continue
                 if (!anchor.referenceText.trim().equals(targetId, ignoreCase = true)) continue
+                // Skip the anchor that IS the target element itself.
+                if (targetRange != null && TextRange(anchor.start, anchor.end).intersects(targetRange)) continue
 
                 val usage = usageInfoAt(file, anchor.start, anchor.end) ?: continue
                 if (!processor.process(usage)) return@runReadAction false

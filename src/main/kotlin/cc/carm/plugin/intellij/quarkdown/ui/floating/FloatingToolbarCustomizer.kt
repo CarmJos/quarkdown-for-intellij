@@ -1,58 +1,67 @@
 package cc.carm.plugin.intellij.quarkdown.ui.floating
 
 import cc.carm.plugin.intellij.quarkdown.QuarkdownFileType
-import com.intellij.openapi.fileEditor.TextEditor
-import com.intellij.openapi.fileEditor.impl.text.TextEditorCustomizer
+import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.editor.Editor
+import com.intellij.openapi.editor.EditorFactory
+import com.intellij.openapi.editor.EditorKind
+import com.intellij.openapi.editor.event.EditorFactoryEvent
+import com.intellij.openapi.editor.event.EditorFactoryListener
+import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.util.Disposer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
- * Installs the [FormattingFloatingToolbar] on every text editor that shows a Quarkdown
- * file (mirrors the Markdown plugin's AddFloatingToolbarTextEditorCustomizer).
+ * Installs the [FormattingFloatingToolbar] on every Quarkdown text editor.
  *
- * The `TextEditorCustomizer` interface changed across IDE generations:
- *  - ≤ 2026.1 the abstract method was `customize(TextEditor)` (now deprecated);
- *  - ≥ 2026.2 the abstract method is `customize(TextEditor, CoroutineScope)`.
+ * The platform's `<textEditorCustomizer>` extension point (backed by the internal
+ * `com.intellij.openapi.fileEditor.impl.text.TextEditorCustomizer`) is not available to
+ * third-party plugins — using it fails the Marketplace verification
+ * (`INTERNAL_API_USAGES`). It is therefore replaced by the **public** [EditorFactoryListener]
+ * API: a single listener is registered once per application (guarded by [installed]) and
+ * installs the toolbar when a main text editor for a `.qd` file is created. The toolbar is
+ * disposed when the editor is released.
  *
- * Both overloads are provided so the class stays concrete (and the floating toolbar keeps
- * working) on every supported IDE generation. On 2026.2+ the JVM binds
- * `customize(TextEditor, CoroutineScope)` to the interface's abstract method even though it
- * cannot be declared with `override` while compiling against the older 2025.2 SDK.
+ * Behaviour is identical to the previous implementation (mirroring the Markdown plugin's
+ * `AddFloatingToolbarTextEditorCustomizer`): the floating toolbar appears above a text
+ * selection in Quarkdown files only.
  */
-class FloatingToolbarCustomizer : TextEditorCustomizer {
+class FloatingToolbarCustomizer private constructor() {
 
-    // Legacy overload, called by IDE generations ≤ 2026.1.
-    @Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
-    override fun customize(textEditor: TextEditor) {
-        // Own scope tied to the editor's disposal.
-        val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-        if (installToolbar(textEditor, scope)) {
-            Disposer.register(textEditor) { scope.cancel() }
-        } else {
-            scope.cancel()
-        }
-    }
+    companion object {
+        private val installed = AtomicBoolean(false)
 
-    // Abstract method on IDEA 2026.2+. The passed scope is owned by the platform and is
-    // cancelled when the editor is closed, so no extra bookkeeping is required here.
-    fun customize(textEditor: TextEditor, coroutineScope: CoroutineScope) {
-        installToolbar(textEditor, coroutineScope)
-    }
+        /** Tracks the toolbar installed per live editor so it can be disposed on release. */
+        private val toolbars = ConcurrentHashMap<Editor, FormattingFloatingToolbar>()
 
-    /** Installs the toolbar and registers it for disposal with the editor. */
-    private fun installToolbar(textEditor: TextEditor, scope: CoroutineScope): Boolean {
-        val file = textEditor.file
-        if (file.fileType !is QuarkdownFileType) return false
+        /**
+         * Registers the editor-factory listener (once) so every new Quarkdown editor gets
+         * the floating formatting toolbar. Safe to call from any project startup.
+         */
+        fun install() {
+            if (!installed.compareAndSet(false, true)) return
+            val listener = object : EditorFactoryListener {
+                override fun editorCreated(event: EditorFactoryEvent) {
+                    val editor = event.editor
+                    if (editor.editorKind != EditorKind.MAIN_EDITOR) return
+                    val file = FileDocumentManager.getInstance().getFile(editor.document) ?: return
+                    if (file.fileType !is QuarkdownFileType) return
 
-        val toolbar = FormattingFloatingToolbar(editor = textEditor.editor, coroutineScope = scope)
-        return if (Disposer.tryRegister(textEditor, toolbar)) {
-            true
-        } else {
-            Disposer.dispose(toolbar)
-            false
+                    val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+                    val toolbar = FormattingFloatingToolbar(editor = editor, coroutineScope = scope)
+                    toolbars[editor] = toolbar
+                }
+
+                override fun editorReleased(event: EditorFactoryEvent) {
+                    toolbars.remove(event.editor)?.let(Disposer::dispose)
+                }
+            }
+            EditorFactory.getInstance()
+                .addEditorFactoryListener(listener, ApplicationManager.getApplication())
         }
     }
 }

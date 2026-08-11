@@ -9,6 +9,7 @@ import com.intellij.openapi.editor.Document
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.psi.PsiDocumentManager
+import com.intellij.psi.PsiFile
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBTextField
 import com.intellij.uiDesigner.core.GridConstraints
@@ -163,8 +164,34 @@ class TableDialog(
         val targetProject = project
         if (targetProject != null) {
             val psiFile = PsiDocumentManager.getInstance(targetProject).getPsiFile(document)
-            if (psiFile != null) DaemonCodeAnalyzer.getInstance(targetProject).restart(psiFile)
+            if (psiFile != null) nudgeDaemonRestart(targetProject, psiFile)
         }
+    }
+
+    /**
+     * Forces the daemon to re-highlight [psiFile] so the table bars (inlay hints) re-collect
+     * immediately. IDEA 2026.2+ deprecated `DaemonCodeAnalyzer.restart(PsiFile)` in favour of
+     * `restart(PsiFile, Object reason)`, but the new overload is not present in the 2025.2
+     * compile SDK. To stay compatible with both generations without referencing a deprecated
+     * method in the bytecode, the matching `restart` overload is resolved and invoked
+     * reflectively: `restart(PsiFile, Object)` when available, else `restart(PsiFile)`.
+     */
+    private fun nudgeDaemonRestart(project: Project, psiFile: PsiFile) {
+        val daemon = DaemonCodeAnalyzer.getInstance(project)
+        val methods = daemon.javaClass.methods
+        val modern = methods.firstOrNull {
+            it.name == "restart" && it.parameterCount == 2 && it.parameterTypes[0] == PsiFile::class.java
+        }
+        val legacy = methods.firstOrNull {
+            it.name == "restart" && it.parameterCount == 1 && it.parameterTypes[0] == PsiFile::class.java
+        }
+        val method = modern ?: legacy ?: return
+        val args: Array<Any> = if (method === modern) {
+            arrayOf(psiFile, "quarkdown table format")
+        } else {
+            arrayOf(psiFile)
+        }
+        method.invoke(daemon, *args)
     }
 
     /**

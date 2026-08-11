@@ -1,14 +1,13 @@
 package cc.carm.plugin.intellij.quarkdown.lang.reference
 
-import cc.carm.plugin.intellij.quarkdown.lang.function.QuarkdownCallParser
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
 
 /**
- * Verifies the var/ref anchor computation against a real-world `.qd` document
- * (mirrors `D:\IOT-Practical\doc\_main_12.qd`).
+ * Verifies the var/ref anchor computation against the bundled sample `.qd` document
+ * (`src/test/resources/reference-sample.qd`).
  */
 class RealFileReferenceTest {
 
@@ -16,26 +15,32 @@ class RealFileReferenceTest {
         File(System.getProperty("user.dir"), "src/test/resources/reference-sample.qd").readText()
 
     @Test
-    fun `findVarDeclarations detects version`() {
-        val vars = QuarkdownCallParser.findVarDeclarations(sampleText)
-        assertTrue("expected 'version' in $vars", vars.containsKey("version"))
-    }
-
-    @Test
-    fun `var usage anchors point at version usages`() {
+    fun `ref usage anchors point at every ref id`() {
         val anchors = QuarkdownReferenceParser.computeAnchors(sampleText)
-        val varAnchors = anchors.filter { it.referenceType == "var" }
-        assertTrue("expected >=1 var anchor, got ${varAnchors.size}", varAnchors.size >= 1)
-        assertEquals("version", varAnchors.first().referenceText)
-        // each var anchor should point at a `.version` usage after the declaration
-        for (a in varAnchors) {
+        val refAnchors = anchors.filter { it.referenceType == "ref" }
+        // The sample declares three .ref usages: {first} {first} {table}.
+        assertEquals("first", refAnchors.first().referenceText)
+        assertTrue("expected >=3 ref anchors, got ${refAnchors.size}", refAnchors.size >= 3)
+        // Each ref anchor should point at the id text inside a `.ref { ... }`.
+        for (a in refAnchors) {
             val at = sampleText.substring(a.start, a.end)
-            assertEquals("version", at)
+            assertEquals(a.referenceText, at)
         }
     }
 
     @Test
-    fun `version usage text is present`() {
-        assertTrue(sampleText.contains(".include {.version/03.02-hardware.qd}"))
+    fun `label anchors point at declared ids`() {
+        val anchors = QuarkdownReferenceParser.computeAnchors(sampleText)
+        val labelAnchors = anchors.filter { it.referenceType == "label" }
+        assertTrue("expected >=1 label anchor, got ${labelAnchors.size}", labelAnchors.size >= 1)
+        for (a in labelAnchors) {
+            val at = sampleText.substring(a.start, a.end)
+            assertEquals(a.referenceText, at)
+        }
+    }
+
+    @Test
+    fun `ref usage text is present`() {
+        assertTrue(sampleText.contains(".ref {first}"))
     }
 }

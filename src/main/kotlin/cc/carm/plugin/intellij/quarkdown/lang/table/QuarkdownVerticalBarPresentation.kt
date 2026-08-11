@@ -7,6 +7,7 @@ import cc.carm.plugin.intellij.quarkdown.action.table.TableActionPlaces
 import cc.carm.plugin.intellij.quarkdown.lang.table.QuarkdownGraphicsUtils.clearHalfOvalOverEditor
 import cc.carm.plugin.intellij.quarkdown.lang.table.QuarkdownGraphicsUtils.fillHalfOval
 import cc.carm.plugin.intellij.quarkdown.lang.table.QuarkdownGraphicsUtils.useCopy
+import cc.carm.plugin.intellij.quarkdown.ui.QuarkdownActionToolbarUtils
 import com.intellij.codeInsight.hint.HintManager
 import com.intellij.codeInsight.hint.HintManagerImpl
 import com.intellij.codeInsight.hints.presentation.BasePresentation
@@ -14,8 +15,8 @@ import com.intellij.codeInsight.hints.presentation.InlayPresentation
 import com.intellij.codeInsight.hints.presentation.PresentationFactory
 import com.intellij.openapi.actionSystem.ActionGroup
 import com.intellij.openapi.actionSystem.ActionManager
-import com.intellij.openapi.actionSystem.ActionToolbar
-import com.intellij.openapi.actionSystem.impl.ToolbarUtils
+import com.intellij.openapi.actionSystem.DataSink
+import com.intellij.openapi.actionSystem.UiDataProvider
 import com.intellij.openapi.command.executeCommand
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.markup.TextAttributes
@@ -25,6 +26,7 @@ import java.awt.Graphics2D
 import java.awt.Point
 import java.awt.Rectangle
 import java.awt.event.MouseEvent
+import javax.swing.JComponent
 import javax.swing.SwingUtilities
 
 internal class QuarkdownVerticalBarPresentation(
@@ -127,20 +129,29 @@ internal class QuarkdownVerticalBarPresentation(
     }
 
     private fun showToolbar() {
-        val targetComponent = ToolbarUtils.createTargetComponent(editor) { sink ->
-            TableActionKeys.putRowSnapshot(sink, block, rowIndex)
+        // Public-API replacement for the internal ToolbarUtils.createTargetComponent.
+        val targetComponent = object : JComponent(), UiDataProvider {
+            override fun uiDataSnapshot(sink: DataSink) {
+                TableActionKeys.putRowSnapshot(sink, block, rowIndex)
+            }
         }
-        ToolbarUtils.createImmediatelyUpdatedToolbar(
-            group = rowActionGroup,
-            place = TableActionPlaces.TABLE_INLAY_TOOLBAR,
-            targetComponent,
-            horizontal = true,
-            onUpdated = { toolbar -> createAndShowHint(toolbar) }
+        // Public-API replacement for ToolbarUtils.createImmediatelyUpdatedToolbar.
+        val toolbar = QuarkdownActionToolbarUtils.createToolbar(
+            TableActionPlaces.TABLE_INLAY_TOOLBAR, rowActionGroup, true, targetComponent
         )
+        // The toolbar must be attached to a container AND populated before its actions are
+        // usable; populateImmediately runs the platform's forced synchronous update while
+        // the panel is briefly attached to the window's layered pane (see
+        // QuarkdownActionToolbarUtils). The panel below becomes the hint content.
+        val content = com.intellij.util.ui.components.BorderLayoutPanel().apply {
+            addToCenter(toolbar.component)
+        }
+        QuarkdownActionToolbarUtils.populateImmediately(toolbar, editor.contentComponent)
+        createAndShowHint(content)
     }
 
-    private fun createAndShowHint(toolbar: ActionToolbar) {
-        val hint = LightweightHint(toolbar.component)
+    private fun createAndShowHint(content: JComponent) {
+        val hint = LightweightHint(content)
         hint.setForceShowAsPopup(true)
         val targetPoint = calculateToolbarPosition(hint.component.preferredSize.height)
         val hintManager = HintManagerImpl.getInstanceImpl()

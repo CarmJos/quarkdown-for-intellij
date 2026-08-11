@@ -4,9 +4,7 @@ import cc.carm.plugin.intellij.quarkdown.QuarkdownFileType
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.QueryExecutorBase
 import com.intellij.openapi.util.TextRange
-import com.intellij.psi.PsiManager
 import com.intellij.psi.PsiReference
-import com.intellij.psi.search.FileTypeIndex
 import com.intellij.psi.search.searches.ReferencesSearch
 import com.intellij.util.Processor
 
@@ -46,12 +44,12 @@ class QuarkdownReferencesSearcher :
                 ?: return@runReadAction
             if (targetId.isEmpty()) return@runReadAction
 
-            val psiManager = PsiManager.getInstance(target.project)
             val searchScope = com.intellij.psi.search.GlobalSearchScopeUtil.toGlobalSearchScope(
                 parameters.effectiveSearchScope, target.project
             )
-            val files = FileTypeIndex.getFiles(QuarkdownFileType.INSTANCE, searchScope)
-                .mapNotNull { psiManager.findFile(it) }
+            // Always scan the file that contains the target first (it may be a brand-new,
+            // unsaved file invisible to FileTypeIndex), then the indexed project files.
+            val files = QuarkdownReferenceFiles.collect(target.project, targetFile, searchScope)
 
             for (psiFile in files) {
                 for (anchor in QuarkdownReferenceAnchors.of(psiFile)) {
@@ -60,6 +58,9 @@ class QuarkdownReferencesSearcher :
                         anchor.referenceType != "var" && anchor.referenceType != "var-decl"
                     ) continue
                     if (!anchor.referenceText.trim().equals(targetId, ignoreCase = true)) continue
+                    // The declaration itself is not a reference to itself — a `{#id}` with
+                    // no `.ref` usages must have zero references, not a self-reference.
+                    if (psiFile === targetFile && TextRange(anchor.start, anchor.end).intersects(targetRange)) continue
 
                     // Attach the reference to the FILE with document-absolute ranges so that
                     // handleElementRename can replace the whole (possibly hyphenated) id at once.

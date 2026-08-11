@@ -442,6 +442,24 @@ intellijPlatform {
         }
     }
 
+    // IntelliJ Plugin Verifier configuration.
+    // By default `verifyPlugin` verifies against the "recommended" list of recent IDE
+    // versions, each of which is a ~1.5 GB distribution that must be downloaded in CI
+    // (and re-downloaded on every run because the CI cache is read-only). That makes the
+    // `verify` job hang for a very long time. Instead, verify against the IDE the plugin
+    // is built with (`current()` reuses the already-resolved 2025.2.6.2 distribution),
+    // which is exactly what the plugin declares as its minimum supported version.
+    //
+    // The failure level uses the plugin verifier's defaults
+    // (COMPATIBILITY_PROBLEMS + INTERNAL_API_USAGES + OVERRIDE_ONLY_API_USAGES), which is
+    // exactly what the JetBrains Marketplace enforces on submission. All internal API
+    // usages have been eliminated from the codebase, so these strict levels must pass.
+    pluginVerification {
+        ides {
+            current()
+        }
+    }
+
     // Publish to JetBrains Marketplace via `./gradlew publishPlugin`.
     // Requires the PUBLISH_TOKEN environment variable (set in CI secrets).
     publishing {

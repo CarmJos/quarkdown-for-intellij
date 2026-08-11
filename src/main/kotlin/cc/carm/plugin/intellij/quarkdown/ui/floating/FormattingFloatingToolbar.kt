@@ -2,26 +2,97 @@ package cc.carm.plugin.intellij.quarkdown.ui.floating
 
 import cc.carm.plugin.intellij.quarkdown.QuarkdownFileType
 import cc.carm.plugin.intellij.quarkdown.lang.function.QuarkdownCallParser
+import cc.carm.plugin.intellij.quarkdown.ui.QuarkdownActionToolbarUtils
+import com.intellij.codeInsight.hint.HintManager
+import com.intellij.codeInsight.hint.HintManagerImpl
+import com.intellij.ide.IdeEventQueue
 import com.intellij.ide.ui.customization.CustomActionsSchema
+import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.ActionGroup
-import com.intellij.openapi.actionSystem.impl.FloatingToolbar
+import com.intellij.openapi.actionSystem.ActionPlaces
+import com.intellij.openapi.actionSystem.ActionToolbar
+import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.editor.Editor
+import com.intellij.openapi.editor.event.DocumentEvent
+import com.intellij.openapi.editor.event.DocumentListener
+import com.intellij.openapi.editor.event.EditorMouseEvent
+import com.intellij.openapi.editor.event.EditorMouseListener
+import com.intellij.openapi.editor.event.EditorMouseMotionListener
+import com.intellij.openapi.editor.event.SelectionEvent
+import com.intellij.openapi.editor.event.SelectionListener
+import com.intellij.openapi.util.Disposer
+import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.PsiElement
+import com.intellij.psi.util.PsiUtilCore
+import com.intellij.ui.LightweightHint
+import com.intellij.util.ui.components.BorderLayoutPanel
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.awt.AWTEvent
+import java.awt.Point
+import java.awt.event.KeyAdapter
+import java.awt.event.KeyEvent
+import java.awt.event.MouseEvent
+import javax.swing.JComponent
+import kotlin.time.Duration.Companion.milliseconds
 
 /**
- * Floating formatting toolbar for Quarkdown documents, shown when the user selects text
- * (mirrors the IntelliJ Markdown plugin's MarkdownFloatingToolbar).
+ * Floating formatting toolbar for Quarkdown documents, shown when the user selects text.
  *
- * The toolbar is hidden when the caret/selection is inside an element that must not be
- * styled inline (fenced code blocks, inline code spans, links).
+ * This is a self-contained re-implementation of the platform's internal
+ * `com.intellij.openapi.actionSystem.impl.FloatingToolbar` using **public** APIs only:
+ *  - [QuarkdownActionToolbarUtils] builds the toolbar the same way the official
+ *    `ToolbarUtils.createImmediatelyUpdatedToolbar` does (forced synchronous update);
+ *  - [HintManagerImpl.showEditorHint] / [getHintPosition] position it above the selection;
+ *  - editor listeners (selection / mouse / document) drive show & hide.
+ *
+ * Behaviour mirrors the original (and the IntelliJ Markdown plugin's MarkdownFloatingToolbar):
+ * the toolbar appears above the selection and hides when the selection is cleared, the caret
+ * leaves the selection, a document change happens, or Escape is pressed.
  */
 class FormattingFloatingToolbar(
-    editor: Editor,
-    coroutineScope: CoroutineScope
-) : FloatingToolbar(editor, coroutineScope) {
+    private val editor: Editor,
+    private val coroutineScope: CoroutineScope
+) : Disposable {
 
-    override fun createActionGroup(): ActionGroup? {
+    private var hint: LightweightHint? = null
+    private var buttonSize = 0
+    private var lastSelection: String? = null
+    private var preventHintFromShowing = false
+
+    private enum class HintRequest { SHOW, HIDE }
+
+    private val hintRequests =
+        MutableSharedFlow<HintRequest>(replay = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+
+    private val hintCollectorJob: Job = coroutineScope.launch {
+        hintRequests.debounce(50.milliseconds).collectLatest { request ->
+            withContext(Dispatchers.Main) {
+                when (request) {
+                    HintRequest.SHOW -> showIfHidden()
+                    HintRequest.HIDE -> hide()
+                }
+            }
+        }
+    }
+
+    init {
+        editor.addEditorMouseListener(MouseListener(), this)
+        editor.addEditorMouseMotionListener(MouseMotionListener(), this)
+        editor.contentComponent.addKeyListener(KeyboardListener(), this)
+        editor.selectionModel.addSelectionListener(EditorSelectionListener(), this)
+        editor.document.addDocumentListener(DocumentChangeListener(), this)
+    }
+
+    fun createActionGroup(): ActionGroup? {
         return CustomActionsSchema.getInstance().getCorrectedAction("Quarkdown.Toolbar.Floating") as? ActionGroup
     }
 
@@ -32,7 +103,7 @@ class FormattingFloatingToolbar(
      *  - Quarkdown function-call arguments (e.g. `.fullwidth { … }`), and
      *  - front matter / HTML blocks.
      */
-    override fun hasIgnoredParent(element: PsiElement): Boolean {
+    fun hasIgnoredParent(element: PsiElement): Boolean {
         val file = element.containingFile ?: return true
         if (file.fileType !is QuarkdownFileType) return true
 
@@ -46,7 +117,194 @@ class FormattingFloatingToolbar(
         return isNonProseContext(editor.document.immutableCharSequence, offset)
     }
 
-    override fun isEnabled(): Boolean = true
+    fun isEnabled(): Boolean = true
+
+    fun isShown(): Boolean = hint?.isVisible == true
+
+    fun scheduleShow() {
+        if (isEnabled() && !preventHintFromShowing) {
+            check(hintRequests.tryEmit(HintRequest.SHOW))
+        }
+    }
+
+    fun scheduleHide() {
+        check(hintRequests.tryEmit(HintRequest.HIDE))
+    }
+
+    fun show(callback: Runnable) {
+        coroutineScope.launch {
+            withContext(Dispatchers.Main) {
+                showIfHidden()
+                callback.run()
+            }
+        }
+    }
+
+    private fun hide() {
+        hint?.hide()
+        hint = null
+    }
+
+    private fun showIfHidden() {
+        preventHintFromShowing = true
+        if (isShown() || !isEnabled()) return
+        // Mirrors the official FloatingToolbar: PSI access is done under a read action.
+        val canBeShown = com.intellij.openapi.application.ReadAction.compute<Boolean, RuntimeException> {
+            canBeShownAtCurrentSelection()
+        }
+        if (!canBeShown) return
+        val newHint = createHint()
+        showHint(newHint)
+        newHint.addHintListener {
+            hint = null
+        }
+        hint = newHint
+    }
+
+    private fun createHint(): LightweightHint {
+        val component = BorderLayoutPanel()
+        val toolbar = createUpdatedActionToolbar(editor.contentComponent, component)
+        return LightweightHint(component).apply {
+            setForceShowAsPopup(true)
+        }
+    }
+
+    private fun createUpdatedActionToolbar(
+        targetComponent: JComponent,
+        parent: BorderLayoutPanel
+    ): ActionToolbar {
+        val group = createActionGroup() ?: DefaultActionGroup()
+        // Mirrors the official ToolbarUtils.createImmediatelyUpdatedToolbar (public APIs):
+        // the toolbar is populated by a FORCED synchronous update (updateActionsImmediately(true))
+        // while briefly attached to the window's layered pane, so it has buttons before the
+        // hint is built — identical to the platform's own FloatingToolbar behaviour.
+        val toolbar = QuarkdownActionToolbarUtils.createToolbar(
+            ActionPlaces.EDITOR_FLOATING_TOOLBAR, group, true, targetComponent
+        )
+        parent.addToCenter(toolbar.component)
+        QuarkdownActionToolbarUtils.populateImmediately(toolbar, editor.contentComponent)
+        buttonSize = toolbar.maxButtonHeight
+        return toolbar
+    }
+
+    private fun showHint(newHint: LightweightHint) {
+        HintManagerImpl.getInstanceImpl().showEditorHint(
+            newHint,
+            editor,
+            getHintPosition(newHint),
+            HintManager.HIDE_BY_ESCAPE or HintManager.UPDATE_BY_SCROLLING,
+            0,
+            true
+        )
+    }
+
+    private fun getHintPosition(newHint: LightweightHint): Point {
+        val hintPos = HintManagerImpl.getInstanceImpl().getHintPosition(newHint, editor, HintManager.DEFAULT)
+        // because of `hint.setForceShowAsPopup(true)`, HintManager.ABOVE does not place the hint above
+        // the hint remains on the line, so we need to move it up ourselves
+        val verticalGap = 2
+        val dy = -(newHint.component.preferredSize.height + verticalGap)
+        val dx = buttonSize * -2
+        hintPos.translate(dx, dy)
+        return hintPos
+    }
+
+    private fun canBeShownAtCurrentSelection(): Boolean {
+        if (!isEnabled()) return false
+        val project = editor.project ?: return false
+        val document = editor.document
+        val file = PsiDocumentManager.getInstance(project).getPsiFile(document) ?: return false
+        if (!PsiDocumentManager.getInstance(project).isCommitted(document)) return false
+        val selectionModel = editor.selectionModel
+        val elementAtStart = PsiUtilCore.getElementAtOffset(file, selectionModel.selectionStart)
+        val elementAtEnd = PsiUtilCore.getElementAtOffset(file, selectionModel.selectionEnd)
+        return !(hasIgnoredParent(elementAtStart) || hasIgnoredParent(elementAtEnd))
+    }
+
+    private fun updateLocationIfShown() {
+        hint?.let(::showHint)
+    }
+
+    private fun updateOnProbablyChangedSelection(onSelectionChanged: (String) -> Unit) {
+        val newSelection = editor.selectionModel.selectedText
+        when (newSelection) {
+            null -> scheduleHide()
+            lastSelection -> Unit
+            else -> onSelectionChanged(newSelection)
+        }
+        lastSelection = newSelection
+    }
+
+    override fun dispose() {
+        hintCollectorJob.cancel()
+        hide()
+        coroutineScope.cancel()
+    }
+
+    private inner class MouseListener : EditorMouseListener {
+        override fun mouseReleased(event: EditorMouseEvent) {
+            updateOnProbablyChangedSelection {
+                if (isShown()) {
+                    updateLocationIfShown()
+                } else {
+                    scheduleShow()
+                }
+            }
+        }
+    }
+
+    private inner class KeyboardListener : KeyAdapter() {
+        override fun keyReleased(event: KeyEvent) {
+            super.keyReleased(event)
+            if (event.source != editor.contentComponent) return
+            updateOnProbablyChangedSelection {
+                scheduleHide()
+            }
+        }
+    }
+
+    private inner class MouseMotionListener : EditorMouseMotionListener {
+        override fun mouseMoved(event: EditorMouseEvent) {
+            val visualPosition = event.visualPosition
+            val hoverSelected = editor.caretModel.allCarets.any { caret ->
+                val beforeSelectionEnd = caret.selectionEndPosition.after(visualPosition)
+                val afterSelectionStart = visualPosition.after(caret.selectionStartPosition)
+                beforeSelectionEnd && afterSelectionStart
+            }
+            if (hoverSelected) {
+                scheduleShow()
+            } else if (!isShown()) {
+                preventHintFromShowing = false
+            }
+        }
+    }
+
+    private inner class EditorSelectionListener : SelectionListener {
+        override fun selectionChanged(event: SelectionEvent) {
+            preventHintFromShowing = false
+            if (isIgnoredEvent(IdeEventQueue.getInstance().trueCurrentEvent)) {
+                preventHintFromShowing = true
+            }
+        }
+
+        private fun isIgnoredEvent(event: AWTEvent): Boolean {
+            return (event as? MouseEvent)?.clickCount == 2
+        }
+    }
+
+    private inner class DocumentChangeListener : DocumentListener {
+        override fun documentChanged(event: DocumentEvent) {
+            preventHintFromShowing = false
+            scheduleHide()
+        }
+    }
+
+    private fun JComponent.addKeyListener(listener: KeyAdapter, parentDisposable: Disposable) {
+        addKeyListener(listener)
+        Disposer.register(parentDisposable) {
+            removeKeyListener(listener)
+        }
+    }
 
     companion object {
         /** Token types whose content must never get inline styling from the toolbar. */

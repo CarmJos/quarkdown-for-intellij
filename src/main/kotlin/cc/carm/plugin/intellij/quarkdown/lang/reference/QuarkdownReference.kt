@@ -7,15 +7,13 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.TextRange
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.*
-import com.intellij.psi.search.FileTypeIndex
-import com.intellij.psi.search.GlobalSearchScope
 
 /**
  * A PSI reference that resolves to a target element.
  *
  * Supported types:
  *   "ref"        → `{#id}` label declaration or heading anchor
- *   "label"      → every `.ref { id }` usage of the label (go-to-usage / multi resolve)
+ *   "label"      → the declaration itself (resolve); `multiResolve` returns every `.ref { id }`
  *   "var"        → .var { name } declaration
  *   "read/include/css/code" → file path resolved relative to source file
  *   "image"      → image filename segment (resolves to PsiFile)
@@ -33,13 +31,29 @@ class QuarkdownReference(
         val virtualFile = element.containingFile?.virtualFile ?: return null
         return when (referenceType) {
             "ref" -> resolveRef(project, virtualFile)
-            "label" -> resolveFirstUsage(project, virtualFile)
+            // Declarations (`{#id}` / `.var {name}`) resolve to THEMSELVES, not to their
+            // first usage. Resolving to a usage makes the platform's GotoDeclaration
+            // outcome GTD and Ctrl+Click would jump to the first usage instead of showing
+            // the usages popup at the declaration.
+            "label", "var-decl" -> resolveDeclarationLeaf()
             "var" -> resolveVar(project, virtualFile)
-            "var-decl" -> resolveFirstVarUsage(project, virtualFile)
             "read", "include", "css", "code", "image" -> resolveFile(project, virtualFile)
             "image-dir" -> resolveDirectory(project, virtualFile)
             else -> null
         }
+    }
+
+    /**
+     * Returns the declaration leaf this reference sits on. The reference may be attached to
+     * the file (file-level, absolute range) or to the leaf itself (leaf-local range), so the
+     * absolute offset is recomputed from [rangeInElement] and [element.textRange].
+     */
+    private fun resolveDeclarationLeaf(): PsiElement? {
+        val file = element.containingFile ?: return element
+        if (!file.isValid) return element
+        val absStart = element.textRange.startOffset + rangeInElement.startOffset
+        if (absStart < 0 || absStart >= file.textLength) return element
+        return file.findElementAt(absStart) ?: element
     }
 
     /**
@@ -115,9 +129,7 @@ class QuarkdownReference(
         if (id.isEmpty()) return emptyList()
         val pattern = Regex("""\.ref\s*\{\s*([^}]+?)\s*\}""", RegexOption.IGNORE_CASE)
         val result = mutableListOf<PsiElement>()
-        val psiManager = PsiManager.getInstance(project)
-        val scope = GlobalSearchScope.projectScope(project)
-        val qdFiles = FileTypeIndex.getFiles(QuarkdownFileType.INSTANCE, scope).mapNotNull { psiManager.findFile(it) }
+        val qdFiles = QuarkdownReferenceFiles.collect(project, element.containingFile)
         for (psiFile in qdFiles) {
             for (match in pattern.findAll(psiFile.text)) {
                 if (match.groupValues[1].trim().lowercase() != id) continue
@@ -134,7 +146,7 @@ class QuarkdownReference(
         val id = referenceText.trim().lowercase()
         if (id.isEmpty()) return null
         val pattern = Regex("""\.ref\s*\{\s*([^}]+?)\s*\}""", RegexOption.IGNORE_CASE)
-        return findElementInQdFiles(project, sourceFile, pattern, sourceFileFirst = false) { match ->
+        return findElementInQdFiles(project, pattern) { match ->
             match.groupValues[1].trim().lowercase() == id
         }
     }
@@ -144,7 +156,7 @@ class QuarkdownReference(
         val name = referenceText.trim().lowercase()
         if (name.isEmpty()) return null
         val pattern = Regex("""\.([a-zA-Z][a-zA-Z0-9]*)\b""")
-        return findElementInQdFiles(project, sourceFile, pattern, sourceFileFirst = false) { match ->
+        return findElementInQdFiles(project, pattern) { match ->
             match.groupValues[1].lowercase() == name
         }
     }
@@ -155,9 +167,7 @@ class QuarkdownReference(
         if (name.isEmpty()) return emptyList()
         val pattern = Regex("""\.([a-zA-Z][a-zA-Z0-9]*)\b""")
         val result = mutableListOf<PsiElement>()
-        val psiManager = PsiManager.getInstance(project)
-        val scope = GlobalSearchScope.projectScope(project)
-        val qdFiles = FileTypeIndex.getFiles(QuarkdownFileType.INSTANCE, scope).mapNotNull { psiManager.findFile(it) }
+        val qdFiles = QuarkdownReferenceFiles.collect(project, element.containingFile)
         for (psiFile in qdFiles) {
             for (match in pattern.findAll(psiFile.text)) {
                 if (match.groupValues[1].lowercase() != name) continue
@@ -173,7 +183,7 @@ class QuarkdownReference(
         val name = referenceText.trim().lowercase()
         if (name.isEmpty()) return null
         val pattern = Regex("""\.var\s*\{\s*([a-zA-Z][a-zA-Z0-9]*)\s*\}""", RegexOption.IGNORE_CASE)
-        return findElementInQdFiles(project, sourceFile, pattern, sourceFileFirst = true) { match ->
+        return findElementInQdFiles(project, pattern) { match ->
             match.groupValues[1].lowercase() == name
         }
     }
@@ -181,20 +191,17 @@ class QuarkdownReference(
     /**
      * Scans all Quarkdown files in the project for [pattern]; for the first match that
      * satisfies [predicate], returns the PSI element at the captured group's position.
-     * When [sourceFileFirst] is true, the source file is checked before the others.
+     *
+     * The file that contains this reference's element is always scanned first — even if
+     * it is a brand-new (unsaved) file not yet visible through [FileTypeIndex] — so
+     * `.ref {id}` / `{#id}` declared in the same buffer resolve correctly.
      */
     private fun findElementInQdFiles(
         project: Project,
-        sourceFile: VirtualFile,
         pattern: Regex,
-        sourceFileFirst: Boolean,
         predicate: (MatchResult) -> Boolean
     ): PsiElement? {
-        val psiManager = PsiManager.getInstance(project)
-        val scope = GlobalSearchScope.projectScope(project)
-        val fileType = QuarkdownFileType.INSTANCE
-        val qdFiles = FileTypeIndex.getFiles(fileType, scope).mapNotNull { psiManager.findFile(it) }
-        val orderedFiles = if (sourceFileFirst) listOfNotNull(psiManager.findFile(sourceFile)) + qdFiles else qdFiles
+        val orderedFiles = QuarkdownReferenceFiles.collect(project, element.containingFile)
 
         for (psiFile in orderedFiles) {
             for (match in pattern.findAll(psiFile.text)) {
@@ -247,13 +254,13 @@ class QuarkdownReference(
 
         // 1) Look for `{#id}` label declaration (case-insensitive id).
         val labelPattern = Regex("""\{#\s*$escapedId\s*}""", RegexOption.IGNORE_CASE)
-        findElementInQdFiles(project, sourceFile, labelPattern, sourceFileFirst = false) { true }
+        findElementInQdFiles(project, labelPattern) { true }
             ?.let { return it }
 
         // 2) Look for a heading whose text or trailing `{#id}` matches the id.
         val headingPattern = Regex("""#{1,6}\s+(.+?)(?:\s*#+\s*)?$""", RegexOption.MULTILINE)
         val slugTarget = id.replace(Regex("""[^a-z0-9]+"""), "-").trim('-')
-        return findElementInQdFiles(project, sourceFile, headingPattern, sourceFileFirst = false) { hMatch ->
+        return findElementInQdFiles(project, headingPattern) { hMatch ->
             val headingText = hMatch.groupValues[1].trim()
             // explicit label on the heading: `# Heading {#id}`, or slug fallback
             Regex("""\{#\s*$escapedId\s*}""", RegexOption.IGNORE_CASE).find(headingText) != null ||

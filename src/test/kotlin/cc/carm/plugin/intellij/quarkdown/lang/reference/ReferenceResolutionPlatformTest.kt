@@ -33,7 +33,8 @@ class ReferenceResolutionPlatformTest : BasePlatformTestCase() {
     }
 
     fun `test var usage reference resolves`() {
-        val text = myFixture.file.text
+        val text = ".var {version} {v12}\n.include {.version/file.qd}"
+        myFixture.configureByText("var-resolve.qd", text)
         val usageOffset = text.indexOf(".version")
         assertTrue("expected .version usage", usageOffset >= 0)
 
@@ -54,7 +55,8 @@ class ReferenceResolutionPlatformTest : BasePlatformTestCase() {
     }
 
     fun `test ctrl click on version usage resolves to var declaration`() {
-        val text = myFixture.file.text
+        val text = ".var {version} {v12}\n.include {.version/file.qd}"
+        myFixture.configureByText("var-ctrlclick.qd", text)
         val usageOffset = text.indexOf(".version")
         assertTrue("expected .version usage", usageOffset >= 0)
 
@@ -94,7 +96,8 @@ class ReferenceResolutionPlatformTest : BasePlatformTestCase() {
     }
 
     fun `test var declaration is navigable via find usages`() {
-        val text = myFixture.file.text
+        val text = ".var {version} {v12}\n.include {.version/file.qd}"
+        myFixture.configureByText("var-nav.qd", text)
         val varOffset = text.indexOf(".var")
         assertTrue(varOffset >= 0)
         // target = the `version` name inside `.var {version}`
@@ -111,7 +114,8 @@ class ReferenceResolutionPlatformTest : BasePlatformTestCase() {
     }
 
     fun `test isReferenceTo for var usage`() {
-        val text = myFixture.file.text
+        val text = ".var {version} {v12}\n.include {.version/file.qd}"
+        myFixture.configureByText("var-isto.qd", text)
         val varOffset = text.indexOf(".var")
         val nameOffset = text.indexOf("version", varOffset)
         val target = myFixture.file.findElementAt(nameOffset)
@@ -151,21 +155,23 @@ class ReferenceResolutionPlatformTest : BasePlatformTestCase() {
         )
     }
 
-    fun `test clicking the label declaration navigates back to a ref usage`() {
+    fun `test label reference resolves to the declaration itself`() {
         val text = "See .ref {chapter-1}.\n\n# Heading {#chapter-1}"
         myFixture.configureByText("b.qd", text)
 
         val labelStart = text.indexOf("{#chapter-1}")
         // click on the label id (middle)
         val ref = myFixture.file.findReferenceAt(labelStart + 3)
-        assertNotNull("findReferenceAt on the label should find a back-reference", ref)
+        assertNotNull("findReferenceAt on the label should find a reference", ref)
         assertEquals("chapter-1", ref!!.canonicalText)
 
+        // A declaration resolves to ITSELF, not to its first usage — this is what makes the
+        // platform compute the Show-Usages outcome and keep the caret at the declaration.
         val target = ref.resolve()
-        assertNotNull("label reference should resolve to a .ref usage", target)
+        assertNotNull("label reference should resolve", target)
         assertTrue(
-            "target should be at the .ref usage",
-            target!!.textOffset <= text.indexOf(".ref") + 20
+            "target should be at the {#chapter-1} declaration itself",
+            target!!.textOffset >= text.indexOf("{#chapter-1}")
         )
     }
 
@@ -282,9 +288,10 @@ class ReferenceResolutionPlatformTest : BasePlatformTestCase() {
         val target = file.findElementAt(refIdStart)
         assertNotNull("no element at ref id", target)
 
-        // ReferencesSearch must find the label declaration AND both .ref usages.
+        // ReferencesSearch must find the label declaration AND the other .ref usage.
+        // (The first .ref is not a reference to itself, so it is excluded.)
         val refs = ReferencesSearch.search(target!!, GlobalSearchScope.projectScope(project)).findAll()
-        assertTrue("expected label + refs, got ${refs.size}", refs.size >= 3)
+        assertTrue("expected label + other refs, got ${refs.size}", refs.size >= 2)
     }
 
     fun `test handleElementRename rewrites current element`() {
@@ -329,11 +336,16 @@ class ReferenceResolutionPlatformTest : BasePlatformTestCase() {
                     "name=${(labelLeaf as? com.intellij.psi.PsiNamedElement)?.name}"
         )
 
-        // Id leaves must be PsiNamedElement (Symbol model) with the bare id as name.
-        assertTrue("ref leaf must be PsiNamedElement", refLeaf is com.intellij.psi.PsiNamedElement)
+        // The `{#id}` label is the DECLARATION — it must be a named element with the bare id.
         assertTrue("label leaf must be PsiNamedElement", labelLeaf is com.intellij.psi.PsiNamedElement)
-        assertEquals("plc-symbol-output", (refLeaf as com.intellij.psi.PsiNamedElement).name)
         assertEquals("plc-symbol-output", (labelLeaf as com.intellij.psi.PsiNamedElement).name)
+
+        // A `.ref {id}` usage is a REFERENCE, not a declaration: it must not expose a name,
+        // otherwise the Symbol model would treat every usage as a declaration.
+        assertFalse(
+            "ref leaf must NOT be a named declaration (it is a reference)",
+            refLeaf is com.intellij.psi.PsiNamedElement && (refLeaf as com.intellij.psi.PsiNamedElement).name != null
+        )
 
         // Ordinary prose leaves must NOT be PsiNamedElement (no ctrl+click underline).
         val proseLeaf = myFixture.file.findElementAt(text.indexOf("See") + 1)

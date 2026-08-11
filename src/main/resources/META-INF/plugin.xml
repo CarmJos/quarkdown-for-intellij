@@ -1,7 +1,7 @@
 <idea-plugin>
     <id>cc.carm.plugin.quarkdown</id>
     <name>Quarkdown</name>
-    <vendor url="https://github.com/CarmJos/quarkdown-for-intellij">CarmJos</vendor>
+    <vendor url="https://github.com/CarmJos">CarmJos</vendor>
     <description><![CDATA[
         <p><b>Quarkdown for IntelliJ</b> is an IntelliJ IDEA plugin that provides comprehensive support for <a href="https://github.com/iamgio/quarkdown">Quarkdown</a> language syntax with <code>.qd</code> files, enabling developers to write and edit Quarkdown documents with full IDE assistance.</p>
 
@@ -160,9 +160,8 @@
         <codeInsight.inlayProvider
                 language="Quarkdown"
                 implementationClass="cc.carm.plugin.intellij.quarkdown.lang.table.QuarkdownTableEditorProvider"/>
-        <!-- Floating formatting toolbar shown on text selection -->
-        <textEditorCustomizer
-                implementation="cc.carm.plugin.intellij.quarkdown.ui.floating.FloatingToolbarCustomizer"/>
+        <!-- Floating formatting toolbar shown on text selection (installed via
+             EditorFactoryListener in FloatingToolbarCustomizer, see QuarkdownStartupActivity) -->
         <!-- Makes the floating toolbar customizable in Settings -->
         <customizableActionGroupProvider
                 implementation="cc.carm.plugin.intellij.quarkdown.ui.floating.FloatingToolbarGroupProvider"/>
@@ -195,11 +194,15 @@
         <nameSuggestionProvider
                 implementation="cc.carm.plugin.intellij.quarkdown.lang.reference.QuarkdownNameSuggestionProvider"/>
 
-        <!-- Ctrl+Click on a {#id} label pops up all .ref usages -->
+        <!-- Ctrl+Click navigation: .ref usages → {#id} declaration, file paths → target file.
+             {#id}/.var declarations: GotoDeclarationHandler returns no targets (Symbol model
+             provides the hover underline via PsiNameIdentifierOwner). The click is intercepted
+             by QuarkdownCtrlClickInterceptor (no Choose Declaration, no Cannot find declaration),
+             and QuarkdownEditorMouseListener shows the usages popup at the declaration. -->
         <gotoDeclarationHandler
                 implementation="cc.carm.plugin.intellij.quarkdown.lang.reference.QuarkdownGotoDeclarationHandler"/>
 
-        <!-- Show the custom Show Usages popup on Ctrl+Click over a label declaration -->
+        <!-- Show the usages popup on Ctrl+Click over a label/var declaration -->
         <editorFactoryMouseListener
                 implementation="cc.carm.plugin.intellij.quarkdown.lang.reference.QuarkdownEditorMouseListener"
                 order="first"/>
@@ -234,7 +237,7 @@
                 language="Quarkdown"
                 implementationClass="cc.carm.plugin.intellij.quarkdown.lang.fold.QuarkdownFoldingBuilder"/>
 
-        <!-- TODO / FIXME highlighting in comments (shows in IDE TODO panel) -->
+        <!-- TO-DO / FIX-ME highlighting in comments (shows in IDE TO-DO panel) -->
         <annotator
                 language="Quarkdown"
                 implementationClass="cc.carm.plugin.intellij.quarkdown.lang.todo.QuarkdownTodoAnnotator"/>
@@ -260,7 +263,8 @@
         <configurationType
                 implementation="cc.carm.plugin.intellij.quarkdown.lang.preview.QuarkdownBuildConfigurationType"/>
 
-        <notificationGroup id="Quarkdown" displayType="BALLOON"/>
+        <notificationGroup id="Quarkdown" displayType="BALLOON" bundle="messages.QuarkdownBundle"
+                           key="notification.group.quarkdown"/>
     </extensions>
 
     <actions>

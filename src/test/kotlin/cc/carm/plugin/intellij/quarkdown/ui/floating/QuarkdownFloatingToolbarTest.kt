@@ -51,4 +51,41 @@ class QuarkdownFloatingToolbarTest : BasePlatformTestCase() {
             withIcons.size == children.size
         )
     }
+
+    fun `test toolbar populates visible actions when not yet shown`() {
+        myFixture.configureByText("populate.qd", "Some selected text.")
+
+        val group = ActionManager.getInstance().getAction("Quarkdown.Toolbar.Floating") as ActionGroup
+        val toolbar = cc.carm.plugin.intellij.quarkdown.ui.QuarkdownActionToolbarUtils.createToolbar(
+            com.intellij.openapi.actionSystem.ActionPlaces.EDITOR_FLOATING_TOOLBAR,
+            group,
+            true,
+            myFixture.editor.contentComponent
+        )
+        toolbar.setReservePlaceAutoPopupIcon(false)
+
+        // Mirror the real usage: attach the toolbar to a container that becomes the hint
+        // content, then populate it before the container is displayed anywhere.
+        val panel = com.intellij.util.ui.components.BorderLayoutPanel().apply {
+            addToCenter(toolbar.component)
+        }
+        cc.carm.plugin.intellij.quarkdown.ui.QuarkdownActionToolbarUtils.populateImmediately(
+            toolbar, myFixture.editor.contentComponent
+        )
+
+        assertTrue(
+            "toolbar should have visible actions after populateImmediately, " +
+                    "component children=${toolbar.component.componentCount}",
+            toolbar.hasVisibleActions()
+        )
+        assertTrue(
+            "toolbar component should contain action buttons, children=${toolbar.component.componentCount}",
+            toolbar.component.componentCount > 0
+        )
+        assertEquals(
+            "hint content should be attached to the toolbar",
+            toolbar.component.parent,
+            panel
+        )
+    }
 }

@@ -142,9 +142,10 @@ class QuarkdownCtrlClickDiagnosticTest : BasePlatformTestCase() {
         for (u in usages) {
             System.out.println("  usage at ${u.element?.textOffset} text='${u.element?.text}' range=${u.rangeInElement}")
         }
-        assertTrue(
-            "handler should report both .ref usages + declaration, got ${usages.size}",
-            usages.size >= 3
+        // The declaration itself is not a usage of itself — only the two .ref usages.
+        assertEquals(
+            "handler should report exactly the two .ref usages",
+            2, usages.size
         )
     }
 
@@ -172,14 +173,18 @@ class QuarkdownCtrlClickDiagnosticTest : BasePlatformTestCase() {
         val refIdStart = text.indexOf("{sym-ref}") + 1
         val refLeaf = myFixture.file.findElementAt(refIdStart)
         assertNotNull("no leaf at ref", refLeaf)
-        assertTrue("ref leaf must be PsiNamedElement", refLeaf is com.intellij.psi.PsiNamedElement)
+        // `.ref {id}` is a REFERENCE, not a declaration — it must not expose a bare name.
+        assertFalse(
+            "ref leaf must not be a named declaration",
+            refLeaf is com.intellij.psi.PsiNamedElement && (refLeaf as com.intellij.psi.PsiNamedElement).name != null
+        )
 
         val outcome = com.intellij.codeInsight.navigation.actions.GotoDeclarationOrUsageHandler2
             .testGTDUOutcomeInNonBlockingReadAction(myFixture.editor, myFixture.file, refIdStart + 2)
         System.out.println("symbol-path outcome at ref=$outcome")
     }
 
-    fun `test label declaration returns usages for hover underline`() {
+    fun `test label declaration returns no goto targets (Symbol model handles it)`() {
         val text = "First .ref {java-style}.\nSecond .ref {java-style}.\n\n{#java-style}"
         myFixture.configureByText("su-label.qd", text)
 
@@ -193,29 +198,33 @@ class QuarkdownCtrlClickDiagnosticTest : BasePlatformTestCase() {
         )
         assertEquals("name should be the bare id", "java-style", (labelLeaf as com.intellij.psi.PsiNamedElement).name)
 
-        // The handler returns every usage so the platform underlines the whole id on hover.
+        // The handler returns EMPTY for declarations so the platform falls back to the
+        // Symbol model, which produces a Show Usages (SU) result — no "Choose Declaration".
         val handlers = com.intellij.codeInsight.navigation.actions.GotoDeclarationHandler.EP_NAME.extensionList
         val ourHandler = handlers.firstOrNull { it is QuarkdownGotoDeclarationHandler }
         assertNotNull("QuarkdownGotoDeclarationHandler must be registered", ourHandler)
         val targets = ourHandler!!.getGotoDeclarationTargets(labelLeaf, labelStart, myFixture.editor) ?: emptyArray()
-        assertEquals("handler should return both .ref usages for the underline, got ${targets.size}", 2, targets.size)
+        assertTrue("handler should return no targets for label declaration, got ${targets.size}", targets.isEmpty())
 
-        // The FindUsagesHandler backing the Show Usages popup reports both usages + declaration.
-        val factory = QuarkdownFindUsagesHandlerFactory()
-        val handler = factory.createFindUsagesHandler(labelLeaf, false)
-        val usages = mutableListOf<com.intellij.usageView.UsageInfo>()
-        handler.processElementUsages(
-            labelLeaf, com.intellij.util.Processor { usages.add(it); true },
-            com.intellij.find.findUsages.FindUsagesOptions(
-                com.intellij.psi.search.GlobalSearchScope.projectScope(
-                    project
-                )
-            )
+        // The PsiNameIdentifierOwner ensures the name identifier covers only the id.
+        assertTrue("label leaf must be PsiNameIdentifierOwner", labelLeaf is com.intellij.psi.PsiNameIdentifierOwner)
+        val nameId = (labelLeaf as com.intellij.psi.PsiNameIdentifierOwner).nameIdentifier
+        assertNotNull("name identifier must not be null", nameId)
+        // The name identifier's text should be the bare id (no braces, no #).
+        assertEquals("name identifier text should be the bare id", "java-style", nameId!!.text)
+        // The name identifier's range should be within the leaf's range.
+        val leafRange = labelLeaf.textRange
+        val nameRange = nameId.textRange
+        assertTrue(
+            "name identifier range ${nameRange} must be within leaf range ${leafRange}",
+            leafRange.contains(nameRange)
         )
-        assertTrue("Show Usages popup should list both .ref usages + declaration, got ${usages.size}", usages.size >= 3)
+        // The name identifier should NOT cover the braces or #.
+        assertFalse("name identifier must not include '{'", nameId.text.contains('{'))
+        assertFalse("name identifier must not include '}'", nameId.text.contains('}'))
     }
 
-    fun `test hover on label returns usages and does not pop up (background thread)`() {
+    fun `test hover on label returns no goto targets (background thread)`() {
         val text = "First .ref {hover-no-popup}.\nSecond .ref {hover-no-popup}.\n\n{#hover-no-popup}"
         myFixture.configureByText("hover-label.qd", text)
 
@@ -229,8 +238,7 @@ class QuarkdownCtrlClickDiagnosticTest : BasePlatformTestCase() {
         val qdHandler = ourHandler as QuarkdownGotoDeclarationHandler
 
         // Simulate Ctrl+hover: the handler runs on a background pooled thread (NOT the EDT).
-        // It must return the usage targets (so the platform underlines the whole id) and
-        // must NOT schedule a popup (the popup is shown by the editor mouse listener).
+        // It must return NO targets (the Symbol model handles declarations via SU).
         val results = java.util.concurrent.CopyOnWriteArrayList<com.intellij.psi.PsiElement>()
         val errors = java.util.concurrent.CopyOnWriteArrayList<Throwable>()
         val done = java.util.concurrent.CountDownLatch(1)
@@ -248,14 +256,7 @@ class QuarkdownCtrlClickDiagnosticTest : BasePlatformTestCase() {
 
         assertTrue("hover computation should finish", done.await(30, java.util.concurrent.TimeUnit.SECONDS))
         assertTrue("no exceptions on hover, got ${errors.map { it.message }}", errors.isEmpty())
-        assertEquals("hover should return both .ref usages (for underline), got ${results.size}", 2, results.size)
-        for (r in results) {
-            // Targets are the .ref id leaves (QuarkdownIdLeafPsiElement).
-            assertTrue(
-                "hover target should be a PsiElement leaf",
-                r is com.intellij.psi.PsiElement && r.textRange.length > 0
-            )
-        }
+        assertTrue("hover should return no targets for declarations, got ${results.size}", results.isEmpty())
     }
 
     fun `test ref usage routes to single declaration`() {
@@ -288,7 +289,7 @@ class QuarkdownCtrlClickDiagnosticTest : BasePlatformTestCase() {
         assertTrue("plain text should return no targets", targets.isNullOrEmpty())
     }
 
-    fun `test var declaration returns usages for hover underline`() {
+    fun `test var declaration returns no goto targets (Symbol model handles it)`() {
         val text = ".var {version} {v12}\n.include {.version/file.qd}"
         myFixture.configureByText("su-var.qd", text)
 
@@ -300,9 +301,16 @@ class QuarkdownCtrlClickDiagnosticTest : BasePlatformTestCase() {
         val handlers = com.intellij.codeInsight.navigation.actions.GotoDeclarationHandler.EP_NAME.extensionList
         val ourHandler = handlers.firstOrNull { it is QuarkdownGotoDeclarationHandler }
         assertNotNull("QuarkdownGotoDeclarationHandler must be registered", ourHandler)
-        // The handler returns the `.name` usages so the platform underlines the whole id.
+        // The handler returns no targets for var-decl so the platform falls back to the
+        // Symbol model, which produces a Show Usages (SU) result.
         val targets = ourHandler!!.getGotoDeclarationTargets(varLeaf, varNameStart, myFixture.editor) ?: emptyArray()
-        assertEquals("var declaration should return the .version usage(s), got ${targets.size}", 1, targets.size)
+        assertTrue("var declaration should return no targets, got ${targets.size}", targets.isEmpty())
+
+        // The PsiNameIdentifierOwner ensures the name identifier covers only the name.
+        assertTrue("var leaf must be PsiNameIdentifierOwner", varLeaf is com.intellij.psi.PsiNameIdentifierOwner)
+        val nameId = (varLeaf as com.intellij.psi.PsiNameIdentifierOwner).nameIdentifier
+        assertNotNull("name identifier must not be null", nameId)
+        assertEquals("name identifier text should be the bare name", "version", nameId!!.text)
     }
 
     fun `test official show usages handler collects file line and preview`() {
@@ -334,7 +342,8 @@ class QuarkdownCtrlClickDiagnosticTest : BasePlatformTestCase() {
         for (u in usages) {
             System.out.println("  at ${u.element?.textOffset} text='${u.element?.text}' range=${u.rangeInElement}")
         }
-        assertEquals("declaration + 2 usages", 3, usages.size)
+        // Only the two .ref usages are reported (the declaration itself is excluded).
+        assertEquals("two .ref usages", 2, usages.size)
     }
 
     fun `test official show usages handler works on background thread`() {
@@ -373,28 +382,7 @@ class QuarkdownCtrlClickDiagnosticTest : BasePlatformTestCase() {
 
         assertTrue("search should finish", done.await(30, java.util.concurrent.TimeUnit.SECONDS))
         assertTrue("no exceptions on background thread, got ${errors.map { it.message }}", errors.isEmpty())
-        assertTrue("handler should report all usages, got ${usages.size}", usages.size >= 3)
-    }
-
-    fun `test mouse listener detects declaration on ctrl click offset`() {
-        val text = "First .ref {click-label}.\nSecond .ref {click-label}.\n\n{#click-label}"
-        myFixture.configureByText("click-label.qd", text)
-
-        val listener = QuarkdownEditorMouseListener()
-
-        // Offset inside the {#click-label} declaration.
-        val labelStart = text.indexOf("{#click-label}") + 2
-        val decl = listener.declarationElementAt(myFixture.file, labelStart)
-        assertNotNull("declaration element should be found at the label offset", decl)
-        assertTrue("declaration element must be a PsiNamedElement", decl is com.intellij.psi.PsiNamedElement)
-        assertEquals("name should be the bare id", "click-label", (decl as com.intellij.psi.PsiNamedElement).name)
-
-        // Offset inside a .ref usage is NOT a declaration.
-        val refIdStart = text.indexOf("{click-label}") + 1
-        assertNull("ref usage is not a declaration", listener.declarationElementAt(myFixture.file, refIdStart))
-
-        // Offset in plain text is not a declaration.
-        assertNull("plain text is not a declaration", listener.declarationElementAt(myFixture.file, 0))
+        assertEquals("handler should report the two .ref usages", 2, usages.size)
     }
 
     fun `test show usages title uses References type and bare id`() {
@@ -419,5 +407,59 @@ class QuarkdownCtrlClickDiagnosticTest : BasePlatformTestCase() {
         val provider = QuarkdownFindUsagesProvider()
         assertEquals("References", provider.getType(labelLeaf))
         assertEquals("title-test", provider.getDescriptiveName(labelLeaf))
+    }
+
+    fun `test label ctrl click outcome is show usages`() {
+        val text = "First .ref {native-label}.\nSecond .ref {native-label}.\n\n{#native-label}"
+        myFixture.configureByText("native-label.qd", text)
+
+        val labelStart = text.indexOf("{#native-label}") + 2
+        myFixture.editor.caretModel.moveToOffset(labelStart + 3)
+
+        // The label declaration resolves to itself, so the platform computes a
+        // "Show Usages" outcome and opens the usages popup AT the declaration —
+        // it never jumps to the first usage.
+        val outcome = com.intellij.codeInsight.navigation.actions.GotoDeclarationOrUsageHandler2
+            .testGTDUOutcomeInNonBlockingReadAction(myFixture.editor, myFixture.file, labelStart + 3)
+        System.out.println("label ctrl+click outcome=$outcome")
+        assertEquals("SU", outcome.toString())
+
+        // Ctrl+Mouse data must expose the declaration range (hover underline).
+        val data = com.intellij.codeInsight.navigation.actions.GotoDeclarationOrUsageHandler2
+            .getCtrlMouseData(myFixture.editor, myFixture.file, labelStart + 3)
+        System.out.println("label ctrlMouseData=${data?.ranges} navigatable=${data?.isNavigatable}")
+        assertNotNull("Ctrl+Mouse data should be available over the label", data)
+        assertTrue("label must be navigatable via the platform", data!!.isNavigatable)
+    }
+
+    fun `test no-ref label resolves to itself and reports no usages`() {
+        val text = "No refs.\n\n{#self-only}"
+        myFixture.configureByText("self-only.qd", text)
+
+        val labelStart = text.indexOf("{#self-only}") + 2
+        val ref = myFixture.file.findReferenceAt(labelStart + 2)
+        assertNotNull("should find reference at label", ref)
+
+        val target = ref!!.resolve()
+        assertNotNull("label should resolve to itself", target)
+        assertTrue(
+            "target should be at the {#self-only} declaration",
+            target!!.textOffset >= text.indexOf("{#self-only}")
+        )
+
+        // The declaration must not be reported as a usage of itself: the Find Usages handler
+        // (which the Show Usages popup uses) must report ZERO usages, so a no-ref declaration
+        // shows a clean "No references found" hint instead of a self-reference flash.
+        val factory = QuarkdownFindUsagesHandlerFactory()
+        assertTrue("factory should handle the label element", factory.canFindUsages(target))
+        val handler = factory.createFindUsagesHandler(target, false)
+        val usages = mutableListOf<com.intellij.usageView.UsageInfo>()
+        handler.processElementUsages(
+            target, com.intellij.util.Processor { usages.add(it); true },
+            com.intellij.find.findUsages.FindUsagesOptions(
+                com.intellij.psi.search.GlobalSearchScope.projectScope(project)
+            )
+        )
+        assertTrue("a no-ref declaration must report zero usages, got ${usages.size}", usages.isEmpty())
     }
 }

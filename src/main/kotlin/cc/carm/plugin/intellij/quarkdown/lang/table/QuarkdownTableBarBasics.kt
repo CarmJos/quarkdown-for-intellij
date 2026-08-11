@@ -2,11 +2,13 @@
 
 package cc.carm.plugin.intellij.quarkdown.lang.table
 
-import com.intellij.codeInsight.hints.presentation.DynamicDelegatePresentation
+import com.intellij.codeInsight.hints.presentation.BasePresentation
 import com.intellij.codeInsight.hints.presentation.InlayPresentation
+import com.intellij.codeInsight.hints.presentation.PresentationListener
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.colors.EditorColorsManager
 import com.intellij.openapi.editor.impl.EditorImpl
+import com.intellij.openapi.editor.markup.TextAttributes
 import com.intellij.ui.JBColor
 import com.intellij.util.ui.UIUtil
 import java.awt.*
@@ -57,17 +59,51 @@ internal object QuarkdownGraphicsUtils {
 
 internal class QuarkdownPresentationWithCustomCursor(
     private val editor: Editor,
-    delegate: InlayPresentation
-) : DynamicDelegatePresentation(delegate) {
+    private val delegate: InlayPresentation
+) : BasePresentation() {
+
+    private val delegateListener = object : PresentationListener {
+        override fun contentChanged(area: Rectangle) = fireContentChanged(area)
+        override fun sizeChanged(previousSize: Dimension, newSize: Dimension) =
+            fireSizeChanged(previousSize, newSize)
+    }
+
+    init {
+        // Forward size/content changes of the wrapped presentation to our listeners.
+        delegate.addListener(delegateListener)
+    }
+
+    override val width: Int get() = delegate.width
+    override val height: Int get() = delegate.height
+
+    override fun paint(graphics: Graphics2D, attributes: TextAttributes) =
+        delegate.paint(graphics, attributes)
+
+    override fun mouseClicked(event: MouseEvent, translated: Point) =
+        delegate.mouseClicked(event, translated)
+
+    override fun mousePressed(event: MouseEvent, translated: Point) =
+        delegate.mousePressed(event, translated)
+
+    override fun mouseReleased(event: MouseEvent, translated: Point) =
+        delegate.mouseReleased(event, translated)
+
     override fun mouseMoved(event: MouseEvent, translated: Point) {
-        super.mouseMoved(event, translated)
         (editor as? EditorImpl)?.setCustomCursor(cursorRequestor, Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR))
+        delegate.mouseMoved(event, translated)
     }
 
     override fun mouseExited() {
         (editor as? EditorImpl)?.setCustomCursor(cursorRequestor, null)
-        super.mouseExited()
+        delegate.mouseExited()
     }
+
+    override fun translatePoint(p: Point): Point = delegate.translatePoint(p)
+
+    override fun updateState(prevPresentation: InlayPresentation): Boolean =
+        delegate.updateState(prevPresentation)
+
+    override fun toString(): String = delegate.toString()
 
     companion object {
         private val cursorRequestor = Object()

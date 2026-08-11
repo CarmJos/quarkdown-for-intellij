@@ -8,20 +8,22 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
-import com.intellij.psi.PsiManager
-import com.intellij.psi.search.FileTypeIndex
-import com.intellij.psi.search.GlobalSearchScope
 
 /**
  * Ctrl+Click navigation for Quarkdown references.
  *
- * `{#id}` label and `.var { name }` declarations deliberately return NO target here: the
- * platform then falls back to the Symbol model (`TargetsKt.declaredReferencedData`), where
- * our id leaves implement `PsiNamedElement` and become declared symbols. That routes to the
- * Java-style Show Usages popup listing every usage with file, line and context.
+ * **Declarations** (`{#id}` label, `.var { name }`): return **no targets** so the platform
+ * falls back to the Symbol model. The Symbol model recognises the [PsiNamedElement] +
+ * [PsiNameIdentifierOwner] on [QuarkdownIdLeafPsiElement] and produces a Show Usages (SU)
+ * result — the official Show Usages popup with no "Choose Declaration" and no "Cannot find
+ * declaration to go to". The [PsiNameIdentifierOwner] also ensures the Ctrl+hover underline
+ * covers only the id (not the whole `{#id}` token).
  *
- * `.ref { id }` usages return the single `{#id}` declaration (or heading) so they navigate
- * directly; `.include` / `.read` / `.css` / `.code` and image paths return the target file.
+ * **Usages** (`.ref { id }`, `.name`): return the single declaration so Ctrl+Click navigates
+ * directly.
+ *
+ * **File paths** (`.include` / `.read` / `.css` / `.code` and image paths): return the
+ * target file.
  */
 class QuarkdownGotoDeclarationHandler : GotoDeclarationHandler {
 
@@ -54,15 +56,14 @@ class QuarkdownGotoDeclarationHandler : GotoDeclarationHandler {
 
         val project: Project = psiFile.project
         return when (anchor.referenceType) {
-            // Declarations: return every usage so the platform underlines the whole id
-            // on hover (multipleTargetsCtrlMouseData uses reference ranges). The click is
-            // intercepted by QuarkdownEditorMouseListener, which shows the official
-            // Show Usages popup and consumes the event.
-            "label" -> showUsagesFor(project, id)
-            "var-decl" -> showVarUsagesFor(project, id)
+            // Declarations: return no targets so the platform falls back to the Symbol model,
+            // which produces a Show Usages (SU) result via ShowUsagesGTDUActionData.
+            // The PsiNameIdentifierOwner on QuarkdownIdLeafPsiElement ensures the underline
+            // covers only the id.
+            "label", "var-decl" -> PsiElement.EMPTY_ARRAY
             // Usages: navigate directly to the declaration.
-            "ref" -> findLabelDeclaration(project, id)
-            "var" -> findVarDeclaration(project, id)
+            "ref" -> findLabelDeclaration(project, psiFile, id)
+            "var" -> findVarDeclaration(project, psiFile, id)
             // File paths: navigate to the target file.
             "read", "include", "css", "code", "image" -> resolveFileTarget(psiFile, anchor.referenceText)
             "image-dir" -> resolveFileTarget(psiFile, anchor.referenceText)
@@ -71,22 +72,6 @@ class QuarkdownGotoDeclarationHandler : GotoDeclarationHandler {
     }
 
     override fun getActionText(context: com.intellij.openapi.actionSystem.DataContext): String? = null
-
-    /**
-     * For a `{#id}` label: returns every `.ref { id }` usage (as NavigationItems) so the
-     * platform draws the underline over the whole id on Ctrl+hover. The click itself is
-     * handled by [QuarkdownEditorMouseListener].
-     */
-    private fun showUsagesFor(project: Project, id: String): Array<PsiElement> =
-        collectElements(project, Regex("""\.ref\s*\{\s*([^}]+?)\s*\}""", RegexOption.IGNORE_CASE), id) { match ->
-            match.groupValues[1].trim().lowercase() == id.lowercase()
-        }
-
-    /** Same as [showUsagesFor] but for `.var { name }` declarations (`.name` usages). */
-    private fun showVarUsagesFor(project: Project, name: String): Array<PsiElement> =
-        collectElements(project, Regex("""\.([a-zA-Z][a-zA-Z0-9]*)\b"""), name) { match ->
-            match.groupValues[1].lowercase() == name.lowercase()
-        }
 
     /** Resolves a file-path reference to its target [PsiFile] (or directory). */
     private fun resolveFileTarget(sourceFile: PsiFile, referenceText: String): Array<PsiElement> {
@@ -107,17 +92,17 @@ class QuarkdownGotoDeclarationHandler : GotoDeclarationHandler {
      * a "Choose Declaration" dialog. The first declaration in the source file wins,
      * falling back to the first project-wide match.
      */
-    private fun findLabelDeclaration(project: Project, id: String): Array<PsiElement> {
+    private fun findLabelDeclaration(project: Project, sourceFile: PsiFile, id: String): Array<PsiElement> {
         val escaped = Regex.escape(id)
         val pattern = Regex("""\{#\s*$escaped\s*}""", RegexOption.IGNORE_CASE)
 
         // Prefer a declaration in the source file, then any other file.
-        val all = collectRaw(project, pattern, id) { true }
+        val all = collectRaw(project, sourceFile, pattern, id) { true }
         if (all.isEmpty()) {
             // Heading whose slug matches the id (no explicit {#id}).
             val slugTarget = id.lowercase().replace(Regex("""[^a-z0-9]+"""), "-").trim('-')
             val headingPattern = Regex("""#{1,6}\s+(.+?)(?:\s*#+\s*)?$""", RegexOption.MULTILINE)
-            val headings = collectRaw(project, headingPattern, id) { hMatch ->
+            val headings = collectRaw(project, sourceFile, headingPattern, id) { hMatch ->
                 val text = hMatch.groupValues[1].trim()
                 text.lowercase().replace(Regex("""[^a-z0-9]+"""), "-").trim('-') == slugTarget
             }
@@ -127,16 +112,20 @@ class QuarkdownGotoDeclarationHandler : GotoDeclarationHandler {
         return arrayOf(all.first())
     }
 
-    /** Collects raw leaves (without wrapping) for declaration navigation. */
+    /**
+     * Collects raw leaves (without wrapping) for declaration navigation. The file that
+     * contains the reference being resolved is always scanned first — even when it is a
+     * brand-new (unsaved) file not yet visible through [FileTypeIndex] — so `.ref {id}`
+     * can jump back to `{#id}` in the same buffer.
+     */
     private fun collectRaw(
         project: Project,
+        sourceFile: PsiFile,
         pattern: Regex,
         id: String,
         predicate: (MatchResult) -> Boolean
     ): List<PsiElement> {
-        val psiManager = PsiManager.getInstance(project)
-        val files = FileTypeIndex.getFiles(QuarkdownFileType.INSTANCE, GlobalSearchScope.projectScope(project))
-            .mapNotNull { psiManager.findFile(it) }
+        val files = QuarkdownReferenceFiles.collect(project, sourceFile)
         val result = mutableListOf<PsiElement>()
         for (f in files) {
             for (match in pattern.findAll(f.text)) {
@@ -152,36 +141,10 @@ class QuarkdownGotoDeclarationHandler : GotoDeclarationHandler {
     }
 
     /** The `.var { name }` declaration for a `.name` usage. */
-    private fun findVarDeclaration(project: Project, name: String): Array<PsiElement> {
+    private fun findVarDeclaration(project: Project, sourceFile: PsiFile, name: String): Array<PsiElement> {
         val escaped = Regex.escape(name)
         val pattern = Regex("""\.var\s*\{\s*$escaped\s*\}""", RegexOption.IGNORE_CASE)
-        return collectElements(project, pattern, name) { true }
-    }
-
-    /**
-     * Scans all Quarkdown files, finds matching anchor starts and returns the leaf at each
-     * position. Used as hover targets so the platform underlines the whole id.
-     */
-    private fun collectElements(
-        project: Project,
-        pattern: Regex,
-        id: String,
-        predicate: (MatchResult) -> Boolean
-    ): Array<PsiElement> {
-        val psiManager = PsiManager.getInstance(project)
-        val files = FileTypeIndex.getFiles(QuarkdownFileType.INSTANCE, GlobalSearchScope.projectScope(project))
-            .mapNotNull { psiManager.findFile(it) }
-        val result = mutableListOf<PsiElement>()
-        for (f in files) {
-            for (match in pattern.findAll(f.text)) {
-                if (!predicate(match)) continue
-                val contentStart = match.range.first + match.value.indexOf('{') + 1
-                val leaf = f.findElementAt(contentStart) ?: f.findElementAt(match.range.first)
-                if (leaf != null) {
-                    result.add(leaf)
-                }
-            }
-        }
-        return result.toTypedArray()
+        val all = collectRaw(project, sourceFile, pattern, name) { true }
+        return if (all.isEmpty()) PsiElement.EMPTY_ARRAY else arrayOf(all.first())
     }
 }
