@@ -55,6 +55,48 @@ _**"为 JetBrains IntelliJ 平台提供 Quarkdown 语言支持。"**_
 - **集中式设置** — Quarkdown 安装路径、编译与预览参数、编辑器外观均可在一处设置页面中配置。
 - **双语界面** — 插件界面支持中英双语，开箱即用。
 
+## 功能截图
+
+<details>
+<summary><b>📝 编写与编辑</b></summary>
+
+**完整语法高亮** — 编辑器为所有 Quarkdown 指令与 Markdown 元素着色，并配备一套可完全自定义的专属配色方案。
+
+<img src=".doc/screenshots/editor.png" alt="完整语法高亮的编辑器" width="80%"/>
+
+**智能代码补全** — 提示函数、参数与文件路径，并同步显示文档说明与参数提示。
+
+<img src=".doc/screenshots/code-completion.png" alt="带文档说明的智能代码补全" width="80%"/>
+
+</details>
+
+<details>
+<summary><b>🧭 轻松代码导航</b></summary>
+
+**查找引用** — 快速定位某个引用的所有使用位置，并在各处之间一键跳转。
+
+<img src=".doc/screenshots/reference-usages.png" alt="查找引用使用位置" width="80%"/>
+
+</details>
+
+<details>
+<summary><b>🚀 预览与构建</b></summary>
+
+**一键构建** — 直接在 IDE 中将文档编译为 PDF 等最终产物。
+
+<img src=".doc/screenshots/build.png" alt="IDE 中的构建输出" width="80%"/>
+
+</details>
+
+<details>
+<summary><b>⚙️ 集中式设置</b></summary>
+
+**一个设置页面** — Quarkdown 安装路径、编译与预览参数、编辑器外观均可在一处集中配置。
+
+<img src=".doc/screenshots/settings.png" alt="插件设置页面" width="80%"/>
+
+</details>
+
 ## 安装方法
 
 ### 从 JetBrains 插件市场安装 _(推荐)_

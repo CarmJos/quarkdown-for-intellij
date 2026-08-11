@@ -55,6 +55,48 @@ enabling developers to write and edit Quarkdown documents with full IDE assistan
 - **Centralized Settings** — Configure the Quarkdown installation path, compile and preview options, and editor appearance all from one settings page.
 - **Bilingual Interface** — The entire plugin UI is available in both English and Chinese.
 
+## Screenshots
+
+<details>
+<summary><b>📝 Writing & Editing</b></summary>
+
+**Full Syntax Highlighting** — the editor colors every Quarkdown directive and Markdown element with a fully customizable color scheme.
+
+<img src=".doc/screenshots/editor.png" alt="Editor with full syntax highlighting" width="80%"/>
+
+**Smart Code Completion** — suggestions for functions, parameters and file paths, with documentation tooltips and parameter hints.
+
+<img src=".doc/screenshots/code-completion.png" alt="Smart code completion with documentation" width="80%"/>
+
+</details>
+
+<details>
+<summary><b>🧭 Effortless Navigation</b></summary>
+
+**Find Usages** — locate every usage of a reference at a glance and jump between them instantly.
+
+<img src=".doc/screenshots/reference-usages.png" alt="Find usages of a reference" width="80%"/>
+
+</details>
+
+<details>
+<summary><b>🚀 Preview & Build</b></summary>
+
+**One-click Build** — compile your document into PDF and other output formats right from the IDE.
+
+<img src=".doc/screenshots/build.png" alt="Build output in the IDE" width="80%"/>
+
+</details>
+
+<details>
+<summary><b>⚙️ Centralized Settings</b></summary>
+
+**One Settings Page** — configure the Quarkdown installation path, compile and preview options, and editor appearance all in one place.
+
+<img src=".doc/screenshots/settings.png" alt="Plugin settings page" width="80%"/>
+
+</details>
+
 ## Installation
 
 ### From JetBrains Marketplace _(Recommended)_
