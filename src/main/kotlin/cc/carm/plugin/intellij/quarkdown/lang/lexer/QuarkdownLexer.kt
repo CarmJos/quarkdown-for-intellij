@@ -151,14 +151,7 @@ class QuarkdownLexer : LexerBase() {
 
         // -------- Function name (right after a function-call dot) --------
         if (atFunctionName) {
-            if (c.isLetter()) {
-                val nameLen = scanIdentifier(start)
-                atFunctionName = false
-                inFunctionCall = true
-                return emit(QuarkdownTokenTypes.FUNCTION_NAME, nameLen)
-            }
-            // No name follows the dot (e.g. `.` at end of input): drop the expectation.
-            atFunctionName = false
+            lexFunctionName(start, c)?.let { return it }
         }
 
         // -------- Inside a function call's argument list --------
@@ -174,11 +167,7 @@ class QuarkdownLexer : LexerBase() {
         }
 
         // -------- NEWLINE --------
-        if (c == '\n' || c == '\r') {
-            inImageSyntax = false
-            val len = if (c == '\r' && ch(start + 1) == '\n') 2 else 1
-            return emit(QuarkdownTokenTypes.NEWLINE, len)
-        }
+        lexNewline(start, c)?.let { return it }
 
         // -------- HTML comment <!‑‑ ... ‑‑> --------
         if (matchAt(start, "<!--")) {
@@ -187,51 +176,57 @@ class QuarkdownLexer : LexerBase() {
         }
 
         // -------- Front matter --- (only when it's the very first thing) --------
-        if (start == startOffset && matchAt(start, "---")) {
-            val restLen = scanToEol(start + 3)
-            if (restLen == 0) {
-                // Standalone --- on first line → front matter delimiter
-                return emit(QuarkdownTokenTypes.FRONT_MATTER_DELIMITER, 3)
-            }
-        }
+        lexFrontMatter(start)?.let { return it }
 
         // -------- Line-beginning patterns --------
         lexAtLineStart(start)?.let { return it }
 
-        // -------- Inline formatting --------
-        if (c == '*' || c == '_') {
-            val double = ch(start + 1) == c
-            return emit(
-                if (double) QuarkdownTokenTypes.BOLD_MARKER else QuarkdownTokenTypes.ITALIC_MARKER,
-                if (double) 2 else 1
-            )
-        }
-        if (c == '~' && ch(start + 1) == '~') {
-            return emit(QuarkdownTokenTypes.STRIKETHROUGH_MARKER, 2)
-        }
+        // -------- Inline formatting, delimiters and fallbacks --------
+        return lexInlineOrFallback(start, c)
+    }
 
-        // -------- Inline code `...` --------
-        if (c == '`') return lexInlineCode(start)
-
-        // -------- Image ! --------
-        if (c == '!') {
-            inImageSyntax = true
-            return emit(QuarkdownTokenTypes.IMAGE_PREFIX, 1)
+    /**
+     * Lexes the function name right after a function-call dot. Returns `null` when
+     * no name follows (so the caller falls through to the normal tokenizer).
+     */
+    private fun lexFunctionName(start: Int, c: Char): IElementType? {
+        if (c.isLetter()) {
+            val nameLen = scanIdentifier(start)
+            atFunctionName = false
+            inFunctionCall = true
+            return emit(QuarkdownTokenTypes.FUNCTION_NAME, nameLen)
         }
+        // No name follows the dot (e.g. `.` at end of input): drop the expectation.
+        atFunctionName = false
+        return null
+    }
 
-        if (inImageSyntax && c == '"') {
-            return emit(QuarkdownTokenTypes.IMAGE_LABEL, scanQuotedText(start))
-        }
+    /** Lexes a NEWLINE token; returns `null` when [c] is not a line break. */
+    private fun lexNewline(start: Int, c: Char): IElementType? {
+        if (c != '\n' && c != '\r') return null
+        inImageSyntax = false
+        val len = if (c == '\r' && ch(start + 1) == '\n') 2 else 1
+        return emit(QuarkdownTokenTypes.NEWLINE, len)
+    }
 
-        // -------- Brackets / Parens / Braces --------
-        when (c) {
-            '[' -> return emit(QuarkdownTokenTypes.BRACKET_OPEN, 1)
-            ']' -> return emit(QuarkdownTokenTypes.BRACKET_CLOSE, 1)
-            '(' -> return emit(QuarkdownTokenTypes.PAREN_OPEN, 1)
-            ')' -> return emit(QuarkdownTokenTypes.PAREN_CLOSE, 1)
-            '{' -> return lexBraceOpen(start)
-            '}' -> return emit(QuarkdownTokenTypes.BRACE_CLOSE, 1)
+    /**
+     * Lexes the front matter delimiter `---`, but only when it is the very first
+     * thing in the buffer. Returns `null` otherwise.
+     */
+    private fun lexFrontMatter(start: Int): IElementType? {
+        if (start != startOffset || !matchAt(start, "---")) return null
+        val restLen = scanToEol(start + 3)
+        if (restLen == 0) {
+            // Standalone --- on first line → front matter delimiter
+            return emit(QuarkdownTokenTypes.FRONT_MATTER_DELIMITER, 3)
         }
+        return null
+    }
+
+    /** Lexes inline formatting, delimiters and the plain-text fallback. */
+    private fun lexInlineOrFallback(start: Int, c: Char): IElementType {
+        lexInlineFormatting(start, c)?.let { return it }
+        lexBracket(start, c)?.let { return it }
 
         // -------- Table pipe --------
         if (c == '|') return emit(QuarkdownTokenTypes.TABLE_PIPE, 1)
@@ -255,6 +250,42 @@ class QuarkdownLexer : LexerBase() {
 
         // -------- Consume any remaining single character as text --------
         return emit(QuarkdownTokenTypes.TEXT, 1)
+    }
+
+    /** Lexes inline formatting: bold/italic, strikethrough, inline code and images. */
+    private fun lexInlineFormatting(start: Int, c: Char): IElementType? {
+        if (c == '*' || c == '_') {
+            val double = ch(start + 1) == c
+            return emit(
+                if (double) QuarkdownTokenTypes.BOLD_MARKER else QuarkdownTokenTypes.ITALIC_MARKER,
+                if (double) 2 else 1
+            )
+        }
+        if (c == '~' && ch(start + 1) == '~') {
+            return emit(QuarkdownTokenTypes.STRIKETHROUGH_MARKER, 2)
+        }
+        if (c == '`') return lexInlineCode(start)
+        if (c == '!') {
+            inImageSyntax = true
+            return emit(QuarkdownTokenTypes.IMAGE_PREFIX, 1)
+        }
+        if (inImageSyntax && c == '"') {
+            return emit(QuarkdownTokenTypes.IMAGE_LABEL, scanQuotedText(start))
+        }
+        return null
+    }
+
+    /** Lexes brackets / parens / braces; returns `null` for any other character. */
+    private fun lexBracket(start: Int, c: Char): IElementType? {
+        when (c) {
+            '[' -> return emit(QuarkdownTokenTypes.BRACKET_OPEN, 1)
+            ']' -> return emit(QuarkdownTokenTypes.BRACKET_CLOSE, 1)
+            '(' -> return emit(QuarkdownTokenTypes.PAREN_OPEN, 1)
+            ')' -> return emit(QuarkdownTokenTypes.PAREN_CLOSE, 1)
+            '{' -> return lexBraceOpen(start)
+            '}' -> return emit(QuarkdownTokenTypes.BRACE_CLOSE, 1)
+        }
+        return null
     }
 
     /**
@@ -312,42 +343,10 @@ class QuarkdownLexer : LexerBase() {
         val contentPos = start + spaces
 
         // -------- Fenced code block start (``` or ~~~) --------
-        if (contentPos < endOffset) {
-            val fc = ch(contentPos)
-            if (fc == '`' || fc == '~') {
-                val fenceLen = scanFenceOpen(contentPos, fc)
-                if (fenceLen != null) {
-                    inFencedCode = true
-                    val totalLen = contentPos + fenceLen - start
-                    // Queue the language identifier (the rest of the opening line up to
-                    // the first whitespace / quote / brace) so it is emitted right after
-                    // the START token, e.g. "python" in ```python "caption" {#id}.
-                    val langStart = contentPos + fenceLen
-                    var langLen = 0
-                    while (langStart + langLen < endOffset) {
-                        val lc = ch(langStart + langLen)
-                        if (lc == ' ' || lc == '\t' || lc == '\n' || lc == '\r' ||
-                            lc == '"' || lc == '\'' || lc == '{'
-                        ) break
-                        langLen++
-                    }
-                    if (langLen > 0) {
-                        pendingTokens.addLast(QuarkdownTokenTypes.FENCED_CODE_LANGUAGE to langLen)
-                    }
-                    return emit(QuarkdownTokenTypes.FENCED_CODE_START, totalLen)
-                }
-            }
-        }
+        lexFenceStart(start, contentPos)?.let { return it }
 
         // Separator (---, ***, ___)
-        if (contentPos < endOffset && matchSeparatorOnly(contentPos)) {
-            val eolLen = scanToEol(contentPos)
-            val totalLen = contentPos + eolLen - start
-            return if (totalLen <= 0) emit(QuarkdownTokenTypes.TEXT, 1) else emit(
-                QuarkdownTokenTypes.SEPARATOR,
-                totalLen
-            )
-        }
+        lexSeparator(start, contentPos)?.let { return it }
 
         // Page break <<<
         if (matchAt(contentPos, "<<<")) {
@@ -355,16 +354,7 @@ class QuarkdownLexer : LexerBase() {
         }
 
         // Heading #
-        if (contentPos < endOffset && ch(contentPos) == '#') {
-            var hCount = 0
-            while (contentPos + hCount < endOffset && ch(contentPos + hCount) == '#') hCount++
-            if (hCount in 1..6) {
-                val after = contentPos + hCount
-                if (after >= endOffset || ch(after) == ' ' || ch(after) == '\t') {
-                    return emit(QuarkdownTokenTypes.HEADING_MARKER, contentPos + hCount - start)
-                }
-            }
-        }
+        lexHeading(start, contentPos)?.let { return it }
 
         // Blockquote >
         if (contentPos < endOffset && ch(contentPos) == '>') {
@@ -372,21 +362,76 @@ class QuarkdownLexer : LexerBase() {
         }
 
         // List markers: - * + (unordered), 1. 1) (ordered)
-        if (contentPos < endOffset) {
-            val lc = ch(contentPos)
-            if ((lc == '-' || lc == '*' || lc == '+') && safe(contentPos + 1)?.let { it == ' ' || it == '\t' } == true) {
-                return emit(QuarkdownTokenTypes.LIST_MARKER, contentPos + 1 - start)
-            }
-            if (lc.isDigit()) {
-                var d = 0
-                while (contentPos + d < endOffset && ch(contentPos + d).isDigit()) d++
-                val sep = safe(contentPos + d)
-                if ((sep == '.' || sep == ')') && safe(contentPos + d + 1)?.let { it == ' ' || it == '\t' } == true) {
-                    return emit(QuarkdownTokenTypes.LIST_MARKER, contentPos + d + 1 - start)
-                }
+        return lexListMarker(start, contentPos)
+    }
+
+    /**
+     * Lexes a fenced code block start (``` or ~~~) at [contentPos], queuing the
+     * language identifier as a pending token. Returns `null` when there is no fence.
+     */
+    private fun lexFenceStart(start: Int, contentPos: Int): IElementType? {
+        if (contentPos >= endOffset) return null
+        val fc = ch(contentPos)
+        if (fc != '`' && fc != '~') return null
+        val fenceLen = scanFenceOpen(contentPos, fc) ?: return null
+
+        inFencedCode = true
+        val totalLen = contentPos + fenceLen - start
+        // Queue the language identifier (the rest of the opening line up to
+        // the first whitespace / quote / brace) so it is emitted right after
+        // the START token, e.g. "python" in ```python "caption" {#id}.
+        val langStart = contentPos + fenceLen
+        var langLen = 0
+        while (langStart + langLen < endOffset) {
+            val lc = ch(langStart + langLen)
+            if (lc == ' ' || lc == '\t' || lc == '\n' || lc == '\r' ||
+                lc == '"' || lc == '\'' || lc == '{'
+            ) break
+            langLen++
+        }
+        if (langLen > 0) {
+            pendingTokens.addLast(QuarkdownTokenTypes.FENCED_CODE_LANGUAGE to langLen)
+        }
+        return emit(QuarkdownTokenTypes.FENCED_CODE_START, totalLen)
+    }
+
+    /** Lexes a separator line (`---`, `***`, `___`); returns `null` when not one. */
+    private fun lexSeparator(start: Int, contentPos: Int): IElementType? {
+        if (contentPos >= endOffset || !matchSeparatorOnly(contentPos)) return null
+        val eolLen = scanToEol(contentPos)
+        val totalLen = contentPos + eolLen - start
+        return if (totalLen <= 0) emit(QuarkdownTokenTypes.TEXT, 1) else emit(
+            QuarkdownTokenTypes.SEPARATOR,
+            totalLen
+        )
+    }
+
+    /** Lexes a heading marker (`#` … `######`); returns `null` when not a heading. */
+    private fun lexHeading(start: Int, contentPos: Int): IElementType? {
+        if (contentPos >= endOffset || ch(contentPos) != '#') return null
+        var hCount = 0
+        while (contentPos + hCount < endOffset && ch(contentPos + hCount) == '#') hCount++
+        if (hCount !in 1..6) return null
+        val after = contentPos + hCount
+        if (after < endOffset && ch(after) != ' ' && ch(after) != '\t') return null
+        return emit(QuarkdownTokenTypes.HEADING_MARKER, contentPos + hCount - start)
+    }
+
+    /** Lexes a list marker (`- * +`, `1.` or `1)`); returns `null` when not one. */
+    private fun lexListMarker(start: Int, contentPos: Int): IElementType? {
+        if (contentPos >= endOffset) return null
+        val lc = ch(contentPos)
+        if ((lc == '-' || lc == '*' || lc == '+') && safe(contentPos + 1)?.let { it == ' ' || it == '\t' } == true) {
+            return emit(QuarkdownTokenTypes.LIST_MARKER, contentPos + 1 - start)
+        }
+        if (lc.isDigit()) {
+            var d = 0
+            while (contentPos + d < endOffset && ch(contentPos + d).isDigit()) d++
+            val sep = safe(contentPos + d)
+            if ((sep == '.' || sep == ')') && safe(contentPos + d + 1)?.let { it == ' ' || it == '\t' } == true) {
+                return emit(QuarkdownTokenTypes.LIST_MARKER, contentPos + d + 1 - start)
             }
         }
-
         return null
     }
 
