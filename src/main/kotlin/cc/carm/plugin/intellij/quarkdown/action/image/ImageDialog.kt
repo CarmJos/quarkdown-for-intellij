@@ -421,6 +421,9 @@ class ImageDialog(
         }
     }
 
+    /** Test helper: read the current Anchor ID field content. */
+    internal fun getAnchorIdForTest(): String = anchorIdField?.text?.trim().orEmpty()
+
     override fun doOKAction() {
         if (pathField!!.text.trim().isEmpty()) return
         super.doOKAction()

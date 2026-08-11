@@ -4,6 +4,7 @@ import cc.carm.plugin.intellij.quarkdown.QuarkdownBundle
 import cc.carm.plugin.intellij.quarkdown.QuarkdownFileType
 import cc.carm.plugin.intellij.quarkdown.QuarkdownIcons
 import cc.carm.plugin.intellij.quarkdown.action.table.TableDialog
+import cc.carm.plugin.intellij.quarkdown.lang.reference.QuarkdownIdRenameUtils
 import com.intellij.codeInsight.daemon.GutterIconNavigationHandler
 import com.intellij.codeInsight.daemon.LineMarkerInfo
 import com.intellij.codeInsight.daemon.LineMarkerProvider
@@ -105,6 +106,8 @@ class QuarkdownTableLineMarkerProvider : LineMarkerProvider {
             dialog.setTarget(document, block)
 
             if (dialog.showAndGet()) {
+                val oldId = QuarkdownTableModificationUtils.parseLabelLineId(block.labelLine)
+                val newId = dialog.getIdForTest()
                 val replacement = dialog.buildTableLines()
                 // The dialog's live "Format Table" rewrites the table, which changes its
                 // length. Re-resolve the block against the current document so the
@@ -115,6 +118,11 @@ class QuarkdownTableLineMarkerProvider : LineMarkerProvider {
                 val end = if (current.labelLineStart >= 0) current.fullEndOffset else current.endOffset
                 WriteCommandAction.runWriteCommandAction(project) {
                     document.replaceString(start, end, replacement.joinToString("\n"))
+                }
+                // Renaming an existing id must also update every `.ref {oldId}` usage,
+                // just like a refactor rename.
+                if (oldId != newId) {
+                    QuarkdownIdRenameUtils.renameRefUsagesAndNotify(project, file, oldId, newId)
                 }
             }
         }

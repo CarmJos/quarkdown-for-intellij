@@ -6,6 +6,7 @@ import cc.carm.plugin.intellij.quarkdown.QuarkdownIcons
 import cc.carm.plugin.intellij.quarkdown.action.heading.HeadingDialog
 import cc.carm.plugin.intellij.quarkdown.lang.heading.QuarkdownHeadingSyntax
 import cc.carm.plugin.intellij.quarkdown.lang.lexer.QuarkdownTokenTypes
+import cc.carm.plugin.intellij.quarkdown.lang.reference.QuarkdownIdRenameUtils
 import com.intellij.codeInsight.daemon.GutterIconNavigationHandler
 import com.intellij.codeInsight.daemon.LineMarkerInfo
 import com.intellij.codeInsight.daemon.LineMarkerProvider
@@ -75,9 +76,13 @@ class QuarkdownHeadingLineMarkerProvider : LineMarkerProvider {
             dialog.parseHeading(info)
 
             if (dialog.showAndGet()) {
+                val newId = dialog.getIdForTest()
                 WriteCommandAction.runWriteCommandAction(project) {
                     val replacement = dialog.buildLine()
                     document.replaceString(start, end, replacement)
+                }
+                if (info.id != newId) {
+                    QuarkdownIdRenameUtils.renameRefUsagesAndNotify(project, file, info.id, newId)
                 }
             }
         }

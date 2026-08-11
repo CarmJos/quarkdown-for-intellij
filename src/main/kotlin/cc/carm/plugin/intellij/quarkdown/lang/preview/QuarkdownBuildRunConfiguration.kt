@@ -33,7 +33,10 @@ class QuarkdownBuildRunConfiguration(
         project.basePath?.let { line.setWorkDirectory(it) }
         return object : CommandLineState(environment) {
             override fun startProcess(): ProcessHandler =
-                ProcessHandlerFactory.getInstance().createProcessHandler(line)
+                // Colored process handler decodes ANSI escape sequences emitted by the
+                // Quarkdown CLI and renders them as colored console output (instead of
+                // showing raw `ESC[..m` garbage).
+                ProcessHandlerFactory.getInstance().createColoredProcessHandler(line)
         }
     }
 

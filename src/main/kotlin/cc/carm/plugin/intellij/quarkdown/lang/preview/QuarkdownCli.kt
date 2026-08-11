@@ -95,13 +95,17 @@ object QuarkdownCli {
     /**
      * Builds the argument list for a one-shot **build** (PDF export) that is executed
      * through the IDE *Run* tool window. The base command is minimal —
-     * `quarkdown compile <source> --pdf` — and every other option (`--timeout`,
-     * `--allow`, `--out-name`, `-o`, ...) is supplied by the user's build CLI
+     * `quarkdown compile <source> --pdf -o <outputDir>` — and every other option
+     * (`--timeout`, `--allow`, `--out-name`, ...) is supplied by the user's build CLI
      * arguments setting.
+     *
+     * `-o` is injected from the configured output directory unless the user's extra
+     * arguments already specify an output directory themselves.
      */
     fun buildRunArgs(
         executable: File,
         source: File,
+        outputDir: File?,
         extraArgs: String?,
     ): List<String> {
         val args = mutableListOf(
@@ -110,6 +114,10 @@ object QuarkdownCli {
             source.absolutePath,
             "--pdf",
         )
+        if (outputDir != null && !hasOutputOption(extraArgs)) {
+            args.add("-o")
+            args.add(outputDir.absolutePath)
+        }
         args.addAll(tokenizeArguments(extraArgs))
         return args
     }
@@ -117,6 +125,10 @@ object QuarkdownCli {
     /** True when the extra arguments already specify a `--browser` option. */
     private fun hasBrowserOption(extraArgs: String?): Boolean =
         tokenizeArguments(extraArgs).any { it == "--browser" || it == "-b" || it.startsWith("--browser=") }
+
+    /** True when the extra arguments already specify an `-o`/`--out` output directory. */
+    private fun hasOutputOption(extraArgs: String?): Boolean =
+        tokenizeArguments(extraArgs).any { it == "-o" || it == "--out" || it.startsWith("--out=") }
 
     /** True when an HTTP server answers on [port] (any status code means "ready"). */
     fun isPortReady(port: Int): Boolean = try {

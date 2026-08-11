@@ -195,6 +195,9 @@ class CodeBlockDialog(
     internal fun getLanguageForTest(): String =
         (languageCombo?.editor?.item as? String)?.trim().orEmpty()
 
+    /** Test helper: read the current ID field content. */
+    internal fun getIdForTest(): String = idField?.text?.trim().orEmpty()
+
     /**
      * Live-filters the language dropdown as the user types in the editor, narrowing the
      * items to languages starting with the typed prefix. The combo stays editable so

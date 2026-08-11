@@ -16,7 +16,13 @@ object QuarkdownTableModificationUtils {
     private val separatorRegex = Regex("""^\|?\s*:?-{3,}:?(?:\s*\|\s*:?-{3,}:?)*\s*\|?$""")
 
     /** Matches a Quarkdown table label/id line: `"label" {#id}` (both optional, but at least one). */
-    private val labelLineRegex = Regex("""^\s*(?:"([^"]*)"\s*)?(?:\{#([^}]+)}\s*)?$""")
+    internal val labelLineRegex = Regex("""^\s*(?:"([^"]*)"\s*)?(?:\{#([^}]+)}\s*)?$""")
+
+    /** Extracts the cross-reference id from a table `"label" {#id}` line, or empty. */
+    fun parseLabelLineId(labelLine: String?): String {
+        if (labelLine.isNullOrBlank()) return ""
+        return labelLineRegex.matchEntire(labelLine.trim())?.groupValues?.get(2)?.trim().orEmpty()
+    }
 
     /** A table block found in a document: consecutive `|`-containing lines. */
     data class TableBlock(

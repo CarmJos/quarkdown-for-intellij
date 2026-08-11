@@ -5,6 +5,7 @@ import cc.carm.plugin.intellij.quarkdown.QuarkdownFileType
 import cc.carm.plugin.intellij.quarkdown.QuarkdownIcons
 import cc.carm.plugin.intellij.quarkdown.action.equation.EquationDialog
 import cc.carm.plugin.intellij.quarkdown.lang.equation.QuarkdownEquationSyntax
+import cc.carm.plugin.intellij.quarkdown.lang.reference.QuarkdownIdRenameUtils
 import com.intellij.codeInsight.daemon.GutterIconNavigationHandler
 import com.intellij.codeInsight.daemon.LineMarkerInfo
 import com.intellij.codeInsight.daemon.LineMarkerProvider
@@ -104,22 +105,29 @@ class QuarkdownEquationLineMarkerProvider : LineMarkerProvider {
             val line = text.subSequence(start, end).toString()
 
             val dialog = EquationDialog(project, kind)
+            val oldId: String
             when (kind) {
                 QuarkdownEquationSyntax.Kind.INLINE -> {
                     val info = QuarkdownEquationSyntax.parseInlineEquationLine(line) ?: return
                     dialog.parseInline(info)
+                    oldId = info.id
                 }
 
                 QuarkdownEquationSyntax.Kind.FENCED -> {
                     val info = QuarkdownEquationSyntax.parseFenceEquationLine(line) ?: return
                     dialog.parseFence(info)
+                    oldId = info.id
                 }
             }
 
             if (dialog.showAndGet()) {
+                val newId = dialog.getIdForTest()
                 WriteCommandAction.runWriteCommandAction(project) {
                     val replacement = dialog.buildLine()
                     document.replaceString(start, end, replacement)
+                }
+                if (oldId != newId) {
+                    QuarkdownIdRenameUtils.renameRefUsagesAndNotify(project, file, oldId, newId)
                 }
             }
         }

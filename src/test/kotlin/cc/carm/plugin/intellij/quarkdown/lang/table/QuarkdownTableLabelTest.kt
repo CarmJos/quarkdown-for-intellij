@@ -59,6 +59,30 @@ class QuarkdownTableLabelTest : BasePlatformTestCase() {
         assertEquals(3, lines.size)
     }
 
+    fun `test dialog with id only keeps the id`() {
+        val text = "| A |\n|---|\n| 1 |\n{#table-id}\n"
+        val block = QuarkdownTableModificationUtils.findTableBlocks(text).first()
+        assertNotNull(block.labelLine)
+
+        val dialog = TableDialog(project)
+        dialog.parseExistingTable(block.lines, block.labelLine)
+        val lines = dialog.buildTableLines()
+        assertEquals(4, lines.size)
+        assertTrue("label line must be rebuilt with the id, got: ${lines.last()}", lines.last().contains("{#table-id}"))
+    }
+
+    fun `test dialog with label only keeps the label`() {
+        val text = "| A |\n|---|\n| 1 |\n\"Device Table\"\n"
+        val block = QuarkdownTableModificationUtils.findTableBlocks(text).first()
+        assertNotNull(block.labelLine)
+
+        val dialog = TableDialog(project)
+        dialog.parseExistingTable(block.lines, block.labelLine)
+        val lines = dialog.buildTableLines()
+        assertEquals(4, lines.size)
+        assertTrue("label line must be rebuilt with the label, got: ${lines.last()}", lines.last().contains("\"Device Table\""))
+    }
+
     fun `test format re-aligns internal lines`() {
         // An un-aligned table (cells not padded to a common column width).
         val raw = listOf("| A | B |", "|---|---|", "|x|yy|")

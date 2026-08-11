@@ -214,8 +214,16 @@ class QuarkdownPreviewService(private val project: Project) : Disposable {
         }
     }
 
-    /** URL served by the preview server. */
-    fun viewUrl(): String = "http://localhost:${port}/"
+    /**
+     * URL served by the preview server.
+     *
+     * In watch mode the page must be loaded through the `/live` endpoint: Quarkdown wraps it
+     * in a live-preview wrapper that subscribes to `/reload` events, which the CLI broadcasts
+     * after each recompilation. The plain `/` endpoint serves the raw HTML with no reload
+     * mechanism, so it would never refresh.
+     */
+    fun viewUrl(): String =
+        if (watchEnabled) "http://localhost:${port}/live" else "http://localhost:${port}/"
 
     /** Complete output log of the current server run (for the "View Full Log" dialog). */
     fun fullLogText(): String = synchronized(recentOutput) { fullLog.joinToString("\n") }
@@ -268,6 +276,7 @@ class QuarkdownPreviewService(private val project: Project) : Disposable {
         val args = QuarkdownCli.buildRunArgs(
             executable,
             File(file.path),
+            outputDir = resolveBuildOutputDir(),
             extraArgs = settings.state.compileCliArgs.orEmpty(),
         )
         ApplicationManager.getApplication().invokeLater {
@@ -411,7 +420,7 @@ class QuarkdownPreviewService(private val project: Project) : Disposable {
                                 State.ERROR,
                                 QuarkdownBundle.message(
                                     "quarkdown.preview.status.exited",
-                                    exitCode,
+                                    exitCode.toString(),
                                     lastError ?: "",
                                 ),
                             )
@@ -439,7 +448,7 @@ class QuarkdownPreviewService(private val project: Project) : Disposable {
                             State.ERROR,
                             QuarkdownBundle.message(
                                 "quarkdown.preview.status.start.timeout",
-                                port,
+                                port.toString(),
                                 lastError ?: "",
                             ),
                         )
@@ -471,14 +480,16 @@ class QuarkdownPreviewService(private val project: Project) : Disposable {
 
     private fun onServerOutput(line: String) {
         if (line.isBlank()) return
+        val clean = stripAnsi(line)
+        if (clean.isBlank()) return
         synchronized(recentOutput) {
-            recentOutput.addLast(line)
+            recentOutput.addLast(clean)
             while (recentOutput.size > 200) recentOutput.removeFirst()
-            fullLog.addLast(line)
+            fullLog.addLast(clean)
             while (fullLog.size > 10_000) fullLog.removeFirst()
         }
         ApplicationManager.getApplication().invokeLater {
-            listeners.forEach { it.onServerOutput(line) }
+            listeners.forEach { it.onServerOutput(clean) }
         }
     }
 
@@ -511,17 +522,23 @@ class QuarkdownPreviewService(private val project: Project) : Disposable {
      * Per-file output directory. Files are isolated in their own sub-folder so
      * `--clean` never wipes another document's output.
      */
-    private fun resolveOutputDir(file: VirtualFile): File {
+    private fun resolveOutputDir(file: VirtualFile): File =
+        File(resolveOutputRoot(), sanitize(file.nameWithoutExtension))
+
+    /** Output root for one-shot builds (PDF export): the configured directory itself. */
+    private fun resolveBuildOutputDir(): File = resolveOutputRoot()
+
+    /** Resolves the configured output directory (relative paths are based on the project dir). */
+    private fun resolveOutputRoot(): File {
         val settings = QuarkdownSettings.getInstance(project)
         val configured = settings.state.outputDirectory
-        val root = if (configured.isNullOrBlank()) {
-            File(PathManager.getSystemPath(), "quarkdown/preview/${sanitize(project.name)}")
+        return if (configured.isNullOrBlank()) {
+            File(PathManager.getSystemPath(), "quarkdown/${sanitize(project.name)}")
         } else {
             val f = File(configured)
             if (f.isAbsolute) f
             else File(project.basePath ?: System.getProperty("user.home"), configured)
         }
-        return File(root, sanitize(file.nameWithoutExtension))
     }
 
     /** Launches a browser executable directly (custom browser path from settings). */
@@ -562,5 +579,15 @@ class QuarkdownPreviewService(private val project: Project) : Disposable {
 
         fun getInstance(project: Project): QuarkdownPreviewService =
             project.getService(QuarkdownPreviewService::class.java)
+
+        /**
+         * ANSI escape sequences (color codes etc.) emitted by the Quarkdown CLI.
+         * Strips CSI (`ESC[...m`), OSC (`ESC]...BEL`), and other `ESC`-led sequences
+         * so logs render as plain text.
+         */
+        private val ANSI_ESCAPE =
+            Regex("\\u001B(?:\\[[0-9;?]*[ -/]*[@-~]|\\][^\\u0007]*(?:\\u0007|\\u001B\\\\)|[@-Z\\\\-_])")
+
+        private fun stripAnsi(text: String): String = ANSI_ESCAPE.replace(text, "")
     }
 }

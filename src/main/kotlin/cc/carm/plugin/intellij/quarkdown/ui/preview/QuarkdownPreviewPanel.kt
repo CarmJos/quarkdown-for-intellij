@@ -2,6 +2,7 @@ package cc.carm.plugin.intellij.quarkdown.ui.preview
 
 import cc.carm.plugin.intellij.quarkdown.QuarkdownBundle
 import cc.carm.plugin.intellij.quarkdown.QuarkdownFileType
+import cc.carm.plugin.intellij.quarkdown.QuarkdownIcons
 import cc.carm.plugin.intellij.quarkdown.lang.preview.QuarkdownPreviewService
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.ActionGroup
@@ -12,6 +13,7 @@ import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogBuilder
+import com.intellij.openapi.ui.TextBrowseFolderListener
 import com.intellij.openapi.ui.TextFieldWithBrowseButton
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.vfs.LocalFileSystem
@@ -31,6 +33,7 @@ import java.awt.Cursor
 import java.awt.FlowLayout
 import java.awt.Font
 import java.io.File
+import javax.swing.Icon
 import javax.swing.JButton
 import javax.swing.JComponent
 import javax.swing.JPanel
@@ -49,7 +52,7 @@ import kotlin.math.roundToInt
  *    the left and a **file selector** (text field + browse button) on the right,
  *  - an indeterminate progress bar (visible while the server starts or the page loads),
  *  - a [JBCefBrowser] rendering `http://localhost:<port>/`,
- *  - a bottom bar: "View Full Log" button (left), status label (center) and zoom
+ *  - a bottom bar: log icon button (left), status label (center) and compact zoom
  *    controls (right). Ctrl+wheel over the preview zooms it.
  */
 class QuarkdownPreviewPanel(private val project: Project) : Disposable {
@@ -88,7 +91,7 @@ class QuarkdownPreviewPanel(private val project: Project) : Disposable {
     private var zoomLevel = 1.0
 
     private val zoomLabel = JBLabel("100%").apply {
-        border = JBUI.Borders.empty(0, 6)
+        border = JBUI.Borders.empty(0, 3)
         foreground = UIUtil.getContextHelpForeground()
     }
 
@@ -212,11 +215,7 @@ class QuarkdownPreviewPanel(private val project: Project) : Disposable {
             preferredSize = JBUI.size(300, 28)
             maximumSize = JBUI.size(340, 28)
             (textField as? JBTextField)?.emptyText?.text = autoFileText()
-            addBrowseFolderListener(
-                project,
-                FileChooserDescriptorFactory.createSingleFileDescriptor(QuarkdownFileType.INSTANCE)
-                    .withTitle(QuarkdownBundle.message("quarkdown.preview.file.selector.browse")),
-            )
+            addBrowseFolderListener(createFileBrowseListener())
             addActionListener { applyFileFieldText() }
             textField.document.addDocumentListener(object : javax.swing.event.DocumentListener {
                 override fun insertUpdate(e: javax.swing.event.DocumentEvent) = scheduleFileApply()
@@ -231,6 +230,24 @@ class QuarkdownPreviewPanel(private val project: Project) : Disposable {
         panel.add(fileField, BorderLayout.CENTER)
         return panel
     }
+
+    /**
+     * Browse-listener for the file selector. The file chooser opens at the currently
+     * selected file's directory when one is set; otherwise it defaults to the project
+     * root instead of starting from the computer's root directory.
+     */
+    private fun createFileBrowseListener(): TextBrowseFolderListener =
+        object : TextBrowseFolderListener(
+            FileChooserDescriptorFactory.createSingleFileDescriptor(QuarkdownFileType.INSTANCE)
+                .withTitle(QuarkdownBundle.message("quarkdown.preview.file.selector.browse")),
+            project,
+        ) {
+            override fun getInitialFile(): VirtualFile? {
+                super.getInitialFile()?.let { return it }
+                val basePath = this@QuarkdownPreviewPanel.project.basePath ?: return null
+                return LocalFileSystem.getInstance().findFileByPath(basePath)
+            }
+        }
 
     private fun createContent(): JComponent {
         val b = browser
@@ -257,30 +274,37 @@ class QuarkdownPreviewPanel(private val project: Project) : Disposable {
         return bar
     }
 
-    private fun createLogButton(): JButton = JButton(QuarkdownBundle.message("quarkdown.preview.view.log")).apply {
+    private fun createLogButton(): JButton = JButton(QuarkdownIcons.PREVIEW_LOG).apply {
+        toolTipText = QuarkdownBundle.message("quarkdown.preview.view.log")
         isContentAreaFilled = false
         isFocusPainted = false
-        border = JBUI.Borders.empty(2, 8)
-        foreground = UIUtil.getContextHelpForeground()
+        border = JBUI.Borders.empty(2, 2, 2, 6)
         cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
         addActionListener { showFullLog() }
     }
 
     private fun createZoomControls(): JComponent {
-        val panel = JPanel(FlowLayout(FlowLayout.RIGHT, 2, 0))
-        panel.add(createZoomButton("-", QuarkdownBundle.message("quarkdown.preview.zoom.out")) { zoomBy(-0.1) })
+        val panel = JPanel(FlowLayout(FlowLayout.RIGHT, 0, 0))
+        panel.add(createSeparator())
+        panel.add(createZoomButton(QuarkdownIcons.PREVIEW_ZOOM_OUT, QuarkdownBundle.message("quarkdown.preview.zoom.out")) { zoomBy(-0.1) })
         panel.add(zoomLabel)
-        panel.add(createZoomButton("+", QuarkdownBundle.message("quarkdown.preview.zoom.in")) { zoomBy(0.1) })
-        panel.add(createZoomButton("100%", QuarkdownBundle.message("quarkdown.preview.zoom.reset")) { setZoom(1.0) })
+        panel.add(createZoomButton(QuarkdownIcons.PREVIEW_ZOOM_IN, QuarkdownBundle.message("quarkdown.preview.zoom.in")) { zoomBy(0.1) })
+        panel.add(createZoomButton(QuarkdownIcons.PREVIEW_ZOOM_RESET, QuarkdownBundle.message("quarkdown.preview.zoom.reset")) { setZoom(1.0) })
         return panel
     }
 
-    private fun createZoomButton(text: String, tooltip: String, action: () -> Unit): JButton =
-        JButton(text).apply {
+    private fun createSeparator(): JComponent =
+        JBLabel("|").apply {
+            border = JBUI.Borders.empty(0, 3)
+            foreground = UIUtil.getContextHelpForeground()
+        }
+
+    private fun createZoomButton(icon: Icon, tooltip: String, action: () -> Unit): JButton =
+        JButton(icon).apply {
             this.toolTipText = tooltip
             isContentAreaFilled = false
             isFocusPainted = false
-            border = JBUI.Borders.empty(2, 6)
+            border = JBUI.Borders.empty(2, 1)
             addActionListener { action() }
         }
 
@@ -374,10 +398,10 @@ class QuarkdownPreviewPanel(private val project: Project) : Disposable {
                 }
 
             QuarkdownPreviewService.State.STARTING ->
-                QuarkdownBundle.message("quarkdown.preview.status.starting", service.port)
+                QuarkdownBundle.message("quarkdown.preview.status.starting", service.port.toString())
 
             QuarkdownPreviewService.State.RUNNING ->
-                QuarkdownBundle.message("quarkdown.preview.status.running", service.port)
+                QuarkdownBundle.message("quarkdown.preview.status.running", service.port.toString())
 
             QuarkdownPreviewService.State.ERROR ->
                 service.lastError ?: QuarkdownBundle.message("quarkdown.preview.status.error.generic")
@@ -463,7 +487,7 @@ class QuarkdownPreviewPanel(private val project: Project) : Disposable {
         </head>
         <body>
           <div class="spinner"></div>
-          <p>${escapeHtml(QuarkdownBundle.message("quarkdown.preview.status.starting", port))}</p>
+          <p>${escapeHtml(QuarkdownBundle.message("quarkdown.preview.status.starting", port.toString()))}</p>
         </body>
         </html>
     """.trimIndent()

@@ -168,4 +168,25 @@ object QuarkdownIcons {
     /** Build (compile to PDF) through the IDE *Run* tool window (purple) */
     @JvmField
     val PREVIEW_BUILD: Icon = IconLoader.getIcon("/icons/action/preview/build.svg", QuarkdownIcons::class.java)
+
+    // ------------------------------------------------------------------
+    // Preview panel — bottom bar
+    // ------------------------------------------------------------------
+
+    /** View the full preview server log (bottom bar) */
+    @JvmField
+    val PREVIEW_LOG: Icon = IconLoader.getIcon("/icons/action/preview/log.svg", QuarkdownIcons::class.java)
+
+    /** Zoom in the preview (bottom bar) */
+    @JvmField
+    val PREVIEW_ZOOM_IN: Icon = IconLoader.getIcon("/icons/action/preview/zoom_in.svg", QuarkdownIcons::class.java)
+
+    /** Zoom out the preview (bottom bar) */
+    @JvmField
+    val PREVIEW_ZOOM_OUT: Icon = IconLoader.getIcon("/icons/action/preview/zoom_out.svg", QuarkdownIcons::class.java)
+
+    /** Reset the preview zoom to 100% (bottom bar, fullscreen-style icon) */
+    @JvmField
+    val PREVIEW_ZOOM_RESET: Icon =
+        IconLoader.getIcon("/icons/action/preview/fullscreen.svg", QuarkdownIcons::class.java)
 }

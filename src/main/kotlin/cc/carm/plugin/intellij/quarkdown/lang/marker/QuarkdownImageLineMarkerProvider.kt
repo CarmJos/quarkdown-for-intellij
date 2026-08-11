@@ -4,6 +4,7 @@ import cc.carm.plugin.intellij.quarkdown.QuarkdownBundle
 import cc.carm.plugin.intellij.quarkdown.QuarkdownFileType
 import cc.carm.plugin.intellij.quarkdown.QuarkdownIcons
 import cc.carm.plugin.intellij.quarkdown.action.image.ImageDialog
+import cc.carm.plugin.intellij.quarkdown.lang.reference.QuarkdownIdRenameUtils
 import com.intellij.codeInsight.daemon.GutterIconNavigationHandler
 import com.intellij.codeInsight.daemon.LineMarkerInfo
 import com.intellij.codeInsight.daemon.LineMarkerProvider
@@ -89,12 +90,18 @@ class QuarkdownImageLineMarkerProvider : LineMarkerProvider {
             val dialog = ImageDialog(project, ImageDialog.Mode.EDIT)
             dialog.setCurrentFileDir(fileDir)
             dialog.parseExistingLine(line)
+            // The anchor id field now holds the pre-edit value.
+            val oldAnchorId = dialog.getAnchorIdForTest()
 
             if (dialog.showAndGet()) {
+                val newAnchorId = dialog.getAnchorIdForTest()
                 WriteCommandAction.runWriteCommandAction(project) {
                     val lineStart = findLineStart(text, elementOffset)
                     val lineEnd = findLineEnd(text, elementOffset)
                     document.replaceString(lineStart, lineEnd, dialog.buildImageSyntax())
+                }
+                if (oldAnchorId != newAnchorId) {
+                    QuarkdownIdRenameUtils.renameRefUsagesAndNotify(project, file, oldAnchorId, newAnchorId)
                 }
             }
         }

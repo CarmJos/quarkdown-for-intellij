@@ -54,7 +54,9 @@ class TableDialog(
     /** Pre-populate from an existing table and its label/id line (if any). */
     fun parseExistingTable(lines: List<String>, labelLine: String?) {
         originalLines = lines
-        val labelMatch = labelLine?.let { Regex("""^\s*"([^"]*)"\s*(?:\{#([^}]+)}\s*)?$""").find(it.trim()) }
+        // Reuse the canonical label-line regex so ID-only lines (`{#id}`) are parsed too.
+        val labelMatch = labelLine?.trim()?.takeIf { it.isNotEmpty() }
+            ?.let { QuarkdownTableModificationUtils.labelLineRegex.matchEntire(it) }
         labelField?.text = labelMatch?.groupValues?.get(1)?.trim().orEmpty()
         idField?.text = labelMatch?.groupValues?.get(2)?.trim().orEmpty()
     }
@@ -235,6 +237,9 @@ class TableDialog(
     fun setIdForTest(id: String) {
         idField?.text = id
     }
+
+    /** Test helper: read the current ID field content. */
+    internal fun getIdForTest(): String = idField?.text?.trim().orEmpty()
 
     /** Recover leading whitespace from the original first line. */
     fun computeIndent(): String = indentOf(originalLines)

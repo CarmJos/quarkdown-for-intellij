@@ -5,6 +5,7 @@ import cc.carm.plugin.intellij.quarkdown.QuarkdownFileType
 import cc.carm.plugin.intellij.quarkdown.QuarkdownIcons
 import cc.carm.plugin.intellij.quarkdown.action.code.CodeBlockDialog
 import cc.carm.plugin.intellij.quarkdown.lang.codeblock.QuarkdownCodeBlockSyntax
+import cc.carm.plugin.intellij.quarkdown.lang.reference.QuarkdownIdRenameUtils
 import com.intellij.codeInsight.daemon.GutterIconNavigationHandler
 import com.intellij.codeInsight.daemon.LineMarkerInfo
 import com.intellij.codeInsight.daemon.LineMarkerProvider
@@ -104,22 +105,29 @@ class QuarkdownCodeBlockLineMarkerProvider : LineMarkerProvider {
             val line = text.subSequence(start, end).toString()
 
             val dialog = CodeBlockDialog(project, kind)
+            val oldId: String
             when (kind) {
                 QuarkdownCodeBlockSyntax.Kind.FENCED -> {
                     val info = QuarkdownCodeBlockSyntax.parseFenceLine(line) ?: return
                     dialog.parseFence(info)
+                    oldId = info.id
                 }
 
                 QuarkdownCodeBlockSyntax.Kind.CODE_FUNCTION -> {
                     val info = QuarkdownCodeBlockSyntax.parseCodeFunctionLine(line) ?: return
                     dialog.parseCodeFunction(info)
+                    oldId = info.id
                 }
             }
 
             if (dialog.showAndGet()) {
+                val newId = dialog.getIdForTest()
                 WriteCommandAction.runWriteCommandAction(project) {
                     val replacement = dialog.buildLine()
                     document.replaceString(start, end, replacement)
+                }
+                if (oldId != newId) {
+                    QuarkdownIdRenameUtils.renameRefUsagesAndNotify(project, file, oldId, newId)
                 }
             }
         }
