@@ -36,7 +36,6 @@ class HeadingDialog(
     private var levelCombo: ComboBox<String>? = null
     private var contentField: JBTextField? = null
     private var idField: JBTextField? = null
-    private var extractButton: JButton? = null
 
     init {
         title = QuarkdownBundle.message("quarkdown.dialog.heading.title")
@@ -104,7 +103,6 @@ class HeadingDialog(
         val extract = JButton(QuarkdownBundle.message("quarkdown.dialog.heading.extract"))
         extract.toolTipText = QuarkdownBundle.message("quarkdown.dialog.heading.extract.tooltip")
         extract.addActionListener { fillExtractedId() }
-        extractButton = extract
 
         val idRow = JPanel(GridLayoutManager(1, 2, JBUI.emptyInsets(), 4, -1))
         idRow.add(
@@ -165,29 +163,6 @@ class HeadingDialog(
     // ------------------------------------------------------------------
     // Test helpers
     // ------------------------------------------------------------------
-
-    fun setLevelForTest(level: Int) {
-        levelCombo?.selectedItem = level.toString()
-    }
-
-    fun setContentForTest(content: String) {
-        contentField?.text = content
-    }
-
-    fun setIdForTest(id: String) {
-        idField?.text = id
-    }
-
-    /** Test helper: simulates a click on the "快速提取" button. */
-    fun clickExtractForTest() {
-        extractButton?.doClick()
-    }
-
-    internal fun getLevelForTest(): Int =
-        levelCombo?.selectedItem?.toString()?.toIntOrNull() ?: 1
-
-    internal fun getContentForTest(): String =
-        contentField?.text?.trim().orEmpty()
 
     internal fun getIdForTest(): String =
         idField?.text?.trim().orEmpty()

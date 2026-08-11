@@ -52,11 +52,6 @@ class QuarkdownParameterNameInlayProvider : InlayHintsProvider<NoSettings> {
             override fun createComponent(listener: ChangeListener): JComponent = JPanel()
         }
 
-    internal class CollectorForTest(
-        private val editor: Editor,
-        private val functions: List<FunctionMetadata>
-    ) : Collector(editor, functions)
-
     internal open class Collector(
         private val editor: Editor,
         private val injectedFunctions: List<FunctionMetadata>? = null

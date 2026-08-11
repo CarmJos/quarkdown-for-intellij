@@ -42,8 +42,6 @@ class QuarkdownTableEditorProvider : InlayHintsProvider<NoSettings> {
             override fun createComponent(listener: ChangeListener): JComponent = JPanel()
         }
 
-    internal class CollectorForTest(private val editor: Editor) : Collector(editor)
-
     internal open class Collector(private val editor: Editor) : FactoryInlayHintsCollector(editor) {
 
         override fun collect(element: PsiElement, editor: Editor, sink: InlayHintsSink): Boolean {

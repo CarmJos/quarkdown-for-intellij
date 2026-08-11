@@ -176,25 +176,6 @@ class CodeBlockDialog(
     // Test helpers
     // ------------------------------------------------------------------
 
-    fun setLanguageForTest(language: String) {
-        setLanguage(language)
-    }
-
-    fun setCaptionForTest(caption: String) {
-        captionField?.text = caption
-    }
-
-    fun setIdForTest(id: String) {
-        idField?.text = id
-    }
-
-    /** Test helper: exposes the language combo to verify live-filtering behavior. */
-    internal fun languageComboForTest(): ComboBox<String>? = languageCombo
-
-    /** Test helper: returns the current language text shown in the combo editor. */
-    internal fun getLanguageForTest(): String =
-        (languageCombo?.editor?.item as? String)?.trim().orEmpty()
-
     /** Test helper: read the current ID field content. */
     internal fun getIdForTest(): String = idField?.text?.trim().orEmpty()
 

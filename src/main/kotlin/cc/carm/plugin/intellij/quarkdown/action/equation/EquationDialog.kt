@@ -101,9 +101,5 @@ class EquationDialog(
     // Test helpers
     // ------------------------------------------------------------------
 
-    fun setIdForTest(id: String) {
-        idField?.text = id
-    }
-
     internal fun getIdForTest(): String = idField?.text?.trim().orEmpty()
 }
