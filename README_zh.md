@@ -4,7 +4,7 @@
 
 [![版本](https://img.shields.io/github/v/release/CarmJos/quarkdown-for-intellij)](https://github.com/CarmJos/quarkdown-for-intellij/releases)
 [![许可证](https://img.shields.io/github/license/CarmJos/quarkdown-for-intellij)](https://www.gnu.org/licenses/gpl-3.0.html)
-[![构建状态](https://github.com/CarmJos/quarkdown-for-intellij/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/CarmJos/quarkdown-for-intellij/actions/workflows/build.yml)
+[![构建状态](https://github.com/CarmJos/quarkdown-for-intellij/actions/workflows/build.yml/badge.svg?branch=master)](https://github.com/CarmJos/quarkdown-for-intellij/actions/workflows/build.yml)
 [![CodeFactor](https://www.codefactor.io/repository/github/carmjos/quarkdown-for-intellij/badge)](https://www.codefactor.io/repository/github/carmjos/quarkdown-for-intellij)
 ![代码大小](https://img.shields.io/github/languages/code-size/CarmJos/quarkdown-for-intellij)
 
