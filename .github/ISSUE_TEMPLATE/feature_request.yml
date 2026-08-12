@@ -6,84 +6,31 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for suggesting a feature!
-        Please fill out the sections below so we can evaluate your request.
+        Thanks for suggesting a feature! Tell us what you'd like and why —
+        a few sentences is enough, but the more detail the better.
 
   - type: checkboxes
     id: checklist
     attributes:
-      label: Before submitting
+      label: Checklist
       options:
-        - label: I have searched the existing issues and this feature has not been requested yet.
+        - label: I have searched the existing issues and this has not been requested yet.
           required: true
-        - label: I have checked the [Quarkdown documentation](https://quarkdown.com/docs) and [wiki](https://quarkdown.com/wiki) to make sure the functionality is not already available.
-          required: false
-        - label: This feature relates to the IDE plugin, not to the Quarkdown core. (Core feature requests belong in the [Quarkdown repository](https://github.com/iamgio/quarkdown/issues).)
-          required: false
 
   - type: textarea
-    id: cause
+    id: description
     attributes:
-      label: Describe the need of your request
-      description: A clear and concise description of what the need or problem is.
+      label: What would you like to see?
+      description: Describe the feature, the problem it solves, and roughly how you imagine it working.
       placeholder: |
-        Example: When editing long documents with many tables, it is hard to ...
+        - The problem: ...
+        - The proposed feature: ...
+        - How it might work: ...
     validations:
       required: true
-
-  - type: textarea
-    id: solution
-    attributes:
-      label: Proposed solution
-      description: A clear and concise description of what you want to happen.
-      placeholder: |
-        Example: Add a "table of contents" panel that updates as I scroll ...
-    validations:
-      required: true
-
-  - type: textarea
-    id: alternatives
-    attributes:
-      label: Alternatives you've considered
-      description: What did you try so far to accomplish the goal?
-      placeholder: |
-        Example: I tried using the Structure View, but it does not show ...
-    validations:
-      required: true
-
-  - type: dropdown
-    id: feature-area
-    attributes:
-      label: Related area
-      description: Which part of the plugin does this feature relate to?
-      multiple: true
-      options:
-        - Syntax highlighting / Color scheme
-        - Code completion
-        - Error detection / Diagnostics
-        - Quick documentation / Hover
-        - Navigation
-        - Structure view / Breadcrumbs
-        - Code folding
-        - Formatting
-        - Table editing
-        - Preview (internal / external browser)
-        - Build / PDF generation
-        - Run configuration
-        - Settings
-        - LSP integration
-        - Shortcuts / Actions
-        - Internationalization
-        - Other
 
   - type: textarea
     id: context
     attributes:
-      label: Additional context
-      description: |
-        Add any other context or screenshots about the feature request here.
-        If applicable, also mention:
-        - Your IntelliJ IDEA version (e.g. 2025.2)
-        - Your plugin version (e.g. 0.1.0)
-        - Your Quarkdown version (e.g. 0.1.0)
-        - Your operating system (e.g. Windows 11, macOS 15)
+      label: Additional context (optional)
+      description: Screenshots, examples, alternatives you've tried, or environment info — anything else that helps.

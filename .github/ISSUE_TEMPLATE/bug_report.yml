@@ -6,135 +6,36 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for taking the time to report a bug!
-        Please fill out the sections below so we can reproduce and fix the issue.
+        Thanks for reporting a bug! Just describe the problem below — tell us whatever you know,
+        no need to fill in every detail.
 
   - type: checkboxes
     id: checklist
     attributes:
-      label: Before submitting
+      label: Checklist
       options:
-        - label: I am using the latest version of the plugin.
+        - label: I have searched the existing issues and this has not been reported yet.
           required: true
-        - label: I am using the latest version of Quarkdown.
-          required: false
-        - label: I have searched the existing issues and this bug has not been reported yet.
-          required: true
-        - label: I have read the [README](https://github.com/CarmJos/quarkdown-for-intellij#readme) and [documentation](https://quarkdown.com/docs).
-          required: false
 
   - type: textarea
     id: description
     attributes:
-      label: Description
-      description: A clear and concise description of the bug.
-      placeholder: Describe what happened and what you expected to happen instead.
-    validations:
-      required: true
-
-  - type: textarea
-    id: steps
-    attributes:
-      label: Steps to reproduce
-      description: Step-by-step instructions on how to reproduce the behavior.
+      label: What happened?
+      description: Describe the bug and what you expected instead. Include error messages, screenshots, or the `.qd` source that triggers the bug if possible.
       placeholder: |
-        1. Open IntelliJ IDEA and create a new `.qd` file
-        2. Type ...
-        3. See error
+        - What I did: ...
+        - What went wrong: ...
+        - What I expected: ...
     validations:
       required: true
 
   - type: textarea
-    id: input
+    id: environment
     attributes:
-      label: Input
-      description: The Quarkdown `.qd` source that triggers the bug (if relevant).
-      render: markdown
-
-  - type: textarea
-    id: output
-    attributes:
-      label: Actual output
-      description: The output you got (rendered result, error message, or stack trace).
-
-  - type: textarea
-    id: expected
-    attributes:
-      label: Expected output
-      description: What you expected to see instead.
-
-  - type: dropdown
-    id: feature-area
-    attributes:
-      label: Affected area
-      description: Which part of the plugin is affected?
-      multiple: true
-      options:
-        - Syntax highlighting / Color scheme
-        - Code completion
-        - Error detection / Diagnostics
-        - Quick documentation / Hover
-        - Navigation / Go to definition / Find references
-        - Structure view / Breadcrumbs
-        - Code folding
-        - Formatting
-        - Table editing
-        - Preview (internal / external browser)
-        - Build / PDF generation
-        - Run configuration
-        - Settings
-        - LSP connection / Quarkdown detection
-        - Shortcuts / Actions
-        - Other
-
-  - type: input
-    id: ide-version
-    attributes:
-      label: IntelliJ IDEA version
-      description: Your IntelliJ IDEA version and build number (Help → About).
-      placeholder: e.g. 2025.2 (IU-252.1.0)
-    validations:
-      required: true
-
-  - type: input
-    id: plugin-version
-    attributes:
-      label: Plugin version
-      description: The version of the Quarkdown plugin you are using (Settings → Plugins).
-      placeholder: e.g. 0.1.0
-    validations:
-      required: true
-
-  - type: input
-    id: quarkdown-version
-    attributes:
-      label: Quarkdown version
-      description: The version of Quarkdown CLI installed (run `quarkdown --version`).
-      placeholder: e.g. 0.1.0
-    validations:
-      required: false
-
-  - type: dropdown
-    id: quarkdown-source
-    attributes:
-      label: How is Quarkdown detected?
-      description: How did the plugin find your Quarkdown installation?
-      options:
-        - Auto-detected (PATH / QUARKDOWN_HOME)
-        - Manually configured in plugin settings
-        - Not detected at all
-        - Not sure
-
-  - type: input
-    id: os
-    attributes:
-      label: Operating system
-      placeholder: e.g. macOS 15, Windows 11, Ubuntu 24.04
-    validations:
-      required: false
-
-  - type: textarea
-    id: additional-context
-    attributes:
-      label: Additional context
-      description: Any other context, screenshots, or information that might help.
+      label: Environment (optional)
+      description: Fill in whatever you know — this helps us reproduce the issue faster.
+      placeholder: |
+        - IntelliJ IDEA version: e.g. 2025.2
+        - Plugin version: e.g. 0.1.0
+        - Quarkdown version: e.g. 0.1.0
+        - Operating system: e.g. Windows 11 / macOS 15 / Ubuntu 24.04
