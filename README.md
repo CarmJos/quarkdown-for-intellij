@@ -25,11 +25,51 @@ enabling developers to write and edit Quarkdown documents with full IDE assistan
 
 ### Writing & Editing
 
+- **Write in real time** — watch your Quarkdown document take shape with live editing, completion and formatting.
+
+  <details open>
+  <summary>View the demo</summary>
+
+  <img src=".doc/screenshots/writing.gif" alt="Writing a Quarkdown document" width="80%"/>
+
+  </details>
+
 - **Full Syntax Highlighting** — Every Quarkdown directive and Markdown element is color-highlighted in the editor, using a dedicated color scheme you can fully customize to suit your taste.
+
+  <details>
+  <summary>View screenshot</summary>
+
+  <img src=".doc/screenshots/editor.png" alt="Editor with full syntax highlighting" width="80%"/>
+
+  </details>
+
 - **Smart Code Completion** — As you type, get instant suggestions for functions, parameters, and file paths, together with documentation tooltips and parameter hints so you can write faster and more accurately.
+
+  <details>
+  <summary>View screenshot</summary>
+
+  <img src=".doc/screenshots/code-completion.png" alt="Smart code completion with documentation" width="80%"/>
+
+  </details>
+
 - **Real-time Error Detection** — Unknown functions, invalid parameters, missing arguments, and undefined references are flagged in the editor the moment they appear, so problems are caught before they reach the final document.
 - **Effortless Navigation** — Jump from a reference to its definition, find every usage of a label, rename it everywhere at once, and navigate into included or referenced files with a single click.
+
+  <details>
+  <summary>View screenshot</summary>
+
+  <img src=".doc/screenshots/reference-usages.png" alt="Find usages of a reference" width="80%"/>
+
+  </details>
+
 - **Document Overview** — A structure view and breadcrumbs show the outline of chapters, tables, and images, while code folding lets you collapse long sections for focused editing.
+
+  <details>
+  <summary>View screenshot</summary>
+
+  <img src=".doc/screenshots/smart-fold.png" alt="Smart code folding for long sections" width="80%"/>
+
+  </details>
 
 ### Smart Editing
 
@@ -45,61 +85,30 @@ enabling developers to write and edit Quarkdown documents with full IDE assistan
 - **Quick Preview Panel** — A fast preview panel right inside the IDE that refreshes automatically whenever you save, letting you see the rendered result while you write.
 - **External Browser Preview** — Prefer a real browser? Open the live preview in your default browser with a single click.
 - **One-click Build** — Turn your document into final output such as PDF straight from the IDE's Run window, using your own compile options.
+
+  <details>
+  <summary>View screenshot</summary>
+
+  <img src=".doc/screenshots/build.png" alt="Build output in the IDE" width="80%"/>
+
+  </details>
+
 - **Auto-compile on Save** — Documents are recompiled automatically when you save, so the preview and build output are always up to date.
 - **Dedicated Run Configuration** — A dedicated run configuration for `.qd` files makes compiling and previewing your document as simple as pressing Run.
-
 
 ### Integration & Management
 
 - **Instant File Creation** — Create new Quarkdown documents right from the File → New menu with a ready-made template.
 - **Centralized Settings** — Configure the Quarkdown installation path and compile/preview options from one settings page.
+
+  <details>
+  <summary>View screenshot</summary>
+
+  <img src=".doc/screenshots/settings.png" alt="Plugin settings page" width="80%"/>
+
+  </details>
+
 - **Bilingual Interface** — The entire plugin UI is available in both English and Chinese.
-
-## Screenshots
-
-<details>
-<summary><b>📝 Writing & Editing</b></summary>
-
-**Write in real time** — watch your Quarkdown document take shape with live editing, completion and formatting.
-
-<img src=".doc/screenshots/writing.gif" alt="Writing a Quarkdown document" width="80%"/>
-
-**Full Syntax Highlighting** — the editor colors every Quarkdown directive and Markdown element with a fully customizable color scheme.
-
-<img src=".doc/screenshots/editor.png" alt="Editor with full syntax highlighting" width="80%"/>
-
-**Smart Code Completion** — suggestions for functions, parameters and file paths, with documentation tooltips and parameter hints.
-
-<img src=".doc/screenshots/code-completion.png" alt="Smart code completion with documentation" width="80%"/>
-
-</details>
-
-<details>
-<summary><b>🧭 Effortless Navigation</b></summary>
-
-**Find Usages** — locate every usage of a reference at a glance and jump between them instantly.
-
-<img src=".doc/screenshots/reference-usages.png" alt="Find usages of a reference" width="80%"/>
-
-</details>
-
-<details>
-<summary><b>🚀 Preview & Build</b></summary>
-
-**One-click Build** — compile your document into PDF and other output formats right from the IDE.
-
-<img src=".doc/screenshots/build.png" alt="Build output in the IDE" width="80%"/>
-
-</details>
-
-<details>
-<summary><b>⚙️ Centralized Settings</b></summary>
-
-**One Settings Page** — configure the Quarkdown installation path and compile/preview options all in one place.
-
-<img src=".doc/screenshots/settings.png" alt="Plugin settings page" width="80%"/>
-
-</details>
 
 ## Installation
 

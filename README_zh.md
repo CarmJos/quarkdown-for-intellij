@@ -25,11 +25,51 @@ _**"为 JetBrains IntelliJ 平台提供 Quarkdown 语言支持。"**_
 
 ### 编写与编辑
 
+- **实时编写** — 在补全与格式化等功能的辅助下，边写边预览你的 Quarkdown 文档成型。
+
+  <details open>
+  <summary>查看演示</summary>
+
+  <img src=".doc/screenshots/writing.gif" alt="编写 Quarkdown 文档" width="80%"/>
+
+  </details>
+
 - **完整语法高亮** — 编辑器会为所有 Quarkdown 指令和 Markdown 元素着色，并配备一套可完全自定义的专属配色方案，让文档风格随心而变。
+
+  <details>
+  <summary>查看截图</summary>
+
+  <img src=".doc/screenshots/editor.png" alt="完整语法高亮的编辑器" width="80%"/>
+
+  </details>
+
 - **智能代码补全** — 输入时自动提示可用的函数、参数与文件路径，并同步显示文档说明与参数提示，写起来更快、更准确。
+
+  <details>
+  <summary>查看截图</summary>
+
+  <img src=".doc/screenshots/code-completion.png" alt="带文档说明的智能代码补全" width="80%"/>
+
+  </details>
+
 - **实时错误检测** — 未知函数、非法参数、缺失参数与未定义引用都会在编辑器中即时标出，问题在生成最终文档前就能被及时发现。
 - **轻松代码导航** — 一键从引用跳转到定义、查找标签的所有使用位置、全局重命名，并可直接进入 `.include`/`.read` 引用的文件。
+
+  <details>
+  <summary>查看截图</summary>
+
+  <img src=".doc/screenshots/reference-usages.png" alt="查找引用使用位置" width="80%"/>
+
+  </details>
+
 - **文档总览** — 结构视图与面包屑清晰展示章节、表格和图片的层级，配合代码折叠，长文档也能快速定位、专注编辑。
+
+  <details>
+  <summary>查看截图</summary>
+
+  <img src=".doc/screenshots/smart-fold.png" alt="智能代码折叠" width="80%"/>
+
+  </details>
 
 ### 智能编辑
 
@@ -45,61 +85,30 @@ _**"为 JetBrains IntelliJ 平台提供 Quarkdown 语言支持。"**_
 - **快捷预览面板** — 在 IDE 内直接预览渲染效果，保存即自动刷新，边写边看。
 - **外部浏览器预览** — 想在真实浏览器中查看？一键即可在默认浏览器中打开实时预览。
 - **一键构建** — 直接从 IDE 的运行窗口将文档生成为 PDF 等最终产物，编译参数自由配置。
+
+  <details>
+  <summary>查看截图</summary>
+
+  <img src=".doc/screenshots/build.png" alt="IDE 中的构建输出" width="80%"/>
+
+  </details>
+
 - **保存自动编译** — 保存时自动重新编译，预览与构建结果始终与最新内容保持同步。
 - **专用运行配置** — 为 `.qd` 文件提供专属运行配置，编译与预览只需一次点击。
-
 
 ### 集成与管理
 
 - **一键新建文档** — 从「文件 → 新建」菜单即可基于模板快速创建 Quarkdown 文档。
 - **集中式设置** — Quarkdown 安装路径、编译与预览参数均可在一处设置页面中配置。
+
+  <details>
+  <summary>查看截图</summary>
+
+  <img src=".doc/screenshots/settings.png" alt="插件设置页面" width="80%"/>
+
+  </details>
+
 - **双语界面** — 插件界面支持中英双语，开箱即用。
-
-## 功能截图
-
-<details>
-<summary><b>📝 编写与编辑</b></summary>
-
-**实时编写** — 在补全与格式化等功能的辅助下，边写边预览你的 Quarkdown 文档成型。
-
-<img src=".doc/screenshots/writing.gif" alt="编写 Quarkdown 文档" width="80%"/>
-
-**完整语法高亮** — 编辑器为所有 Quarkdown 指令与 Markdown 元素着色，并配备一套可完全自定义的专属配色方案。
-
-<img src=".doc/screenshots/editor.png" alt="完整语法高亮的编辑器" width="80%"/>
-
-**智能代码补全** — 提示函数、参数与文件路径，并同步显示文档说明与参数提示。
-
-<img src=".doc/screenshots/code-completion.png" alt="带文档说明的智能代码补全" width="80%"/>
-
-</details>
-
-<details>
-<summary><b>🧭 轻松代码导航</b></summary>
-
-**查找引用** — 快速定位某个引用的所有使用位置，并在各处之间一键跳转。
-
-<img src=".doc/screenshots/reference-usages.png" alt="查找引用使用位置" width="80%"/>
-
-</details>
-
-<details>
-<summary><b>🚀 预览与构建</b></summary>
-
-**一键构建** — 直接在 IDE 中将文档编译为 PDF 等最终产物。
-
-<img src=".doc/screenshots/build.png" alt="IDE 中的构建输出" width="80%"/>
-
-</details>
-
-<details>
-<summary><b>⚙️ 集中式设置</b></summary>
-
-**一个设置页面** — Quarkdown 安装路径、编译与预览参数均可在一处集中配置。
-
-<img src=".doc/screenshots/settings.png" alt="插件设置页面" width="80%"/>
-
-</details>
 
 ## 安装方法
 
