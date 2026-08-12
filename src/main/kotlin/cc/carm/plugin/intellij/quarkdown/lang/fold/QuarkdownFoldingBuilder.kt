@@ -3,6 +3,7 @@ package cc.carm.plugin.intellij.quarkdown.lang.fold
 import cc.carm.plugin.intellij.quarkdown.QuarkdownBundle
 import cc.carm.plugin.intellij.quarkdown.QuarkdownLanguage
 import cc.carm.plugin.intellij.quarkdown.lang.function.QuarkdownCallParser
+import cc.carm.plugin.intellij.quarkdown.lang.reference.QuarkdownReferenceLabelResolver
 import com.intellij.lang.ASTNode
 import com.intellij.lang.folding.FoldingBuilderEx
 import com.intellij.lang.folding.FoldingDescriptor
@@ -13,8 +14,8 @@ import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
 
 /**
- * Code folding for Quarkdown files — sections, fenced code blocks, tables, and
- * `.var` variable references.
+ * Code folding for Quarkdown files — sections, fenced code blocks, tables, `.var`
+ * variable references, and `.ref` cross references.
  *
  * Foldable regions:
  *   1. **Section** — from a heading line to the next heading of same or higher level.
@@ -23,6 +24,9 @@ import com.intellij.psi.PsiFile
  *   4. **Variable reference** — a `.name` usage of a variable declared via `.var`,
  *      folded to display the variable's assigned value as the placeholder (hovering
  *      shows the original raw reference, clicking expands).
+ *   5. **Cross reference** — a `.ref {id}` usage, folded to `Reference(id)` or, when the
+ *      target element has a caption, to its type + caption (e.g. `Table Beverage
+ *      preferences`).
  *
  * Each fold shows a placeholder like `... (12 lines)` or `` ```...``` ``.
  */
@@ -44,6 +48,7 @@ class QuarkdownFoldingBuilder : FoldingBuilderEx() {
         descriptors += codeBlockFoldingDescriptors(root, text)
         descriptors += tableFoldingDescriptors(root, lines, text)
         descriptors += varReferenceFoldingDescriptors(root, text)
+        descriptors += refFoldingDescriptors(root, text)
 
         return descriptors.toTypedArray()
     }
@@ -197,6 +202,48 @@ class QuarkdownFoldingBuilder : FoldingBuilderEx() {
     override fun getPlaceholderText(node: ASTNode): String = "..."
 
     override fun isCollapsedByDefault(node: ASTNode): Boolean = false
+
+    /**
+     * Builds cross-reference folds: every `.ref {id}` usage is folded to preview its target.
+     * When the target can be resolved to a caption-bearing element the placeholder shows its
+     * type + caption (e.g. `Table Beverage preferences`); otherwise it falls back to
+     * `Reference(id)`. Hovering shows the original `.ref {id}` and clicking expands it.
+     *
+     * Each reference folds independently and is collapsed by default so the preview is
+     * directly visible.
+     */
+    private fun refFoldingDescriptors(root: PsiElement, text: String): List<FoldingDescriptor> {
+        val refPattern = Regex("""\.ref\s*\{\s*([^}]+?)\s*\}""", RegexOption.IGNORE_CASE)
+        val fenceRanges = findFenceRanges(text)
+        val descriptors = mutableListOf<FoldingDescriptor>()
+
+        for (match in refPattern.findAll(text)) {
+            val id = match.groupValues[1].trim()
+            if (id.isEmpty()) continue
+            val start = match.range.first
+            val end = match.range.last + 1
+            if (start >= end) continue
+            // Skip references inside fenced code blocks (raw code, not references).
+            if (fenceRanges.any { start >= it.first && end <= it.second }) continue
+            descriptors.add(
+                FoldingDescriptor(
+                    root.node,
+                    TextRange(start, end),
+                    null, // independent fold per reference
+                    buildRefPlaceholder(text, id),
+                    true, // collapsed by default so the preview is directly visible
+                    emptySet()
+                )
+            )
+        }
+        return descriptors
+    }
+
+    /** Builds the `.ref {id}` fold placeholder: type + caption, or `Reference(id)`. */
+    private fun buildRefPlaceholder(text: String, id: String): String {
+        val target = QuarkdownReferenceLabelResolver.resolve(text, id) ?: return "Reference($id)"
+        return if (target.caption.isEmpty()) target.kind.label else "${target.kind.label} ${target.caption}"
+    }
 
     // ------------------------------------------------------------------
     // Helpers
