@@ -53,6 +53,14 @@ enabling developers to write and edit Quarkdown documents with full IDE assistan
   </details>
 
 - **Real-time Error Detection** — Unknown functions, invalid parameters, missing arguments, and undefined references are flagged in the editor the moment they appear, so problems are caught before they reach the final document.
+
+  <details>
+  <summary>View screenshot</summary>
+
+  <img src=".doc/screenshots/error-detection.png" alt="Real-time error detection in the editor" width="80%"/>
+
+  </details>
+
 - **Effortless Navigation** — Jump from a reference to its definition, find every usage of a label, rename it everywhere at once, and navigate into included or referenced files with a single click.
 
   <details>
@@ -75,6 +83,14 @@ enabling developers to write and edit Quarkdown documents with full IDE assistan
 
 - **Visual Table Editing** — Insert, remove, move, select, and align table rows and columns from floating handles and a toolbar, without ever touching the raw table syntax.
 - **Convenient Image Handling** — Drag and drop or paste images directly into the document; the correct syntax is generated for you, image sizes can be adjusted visually, and invalid paths are called out.
+
+  <details>
+  <summary>View screenshot</summary>
+
+  <img src=".doc/screenshots/image-dialog.png" alt="Image dialog for adjusting image properties" width="80%"/>
+
+  </details>
+
 - **Effortless Formatting** — Reformat documents and code blocks with proper rules, comment lines quickly with a shortcut, and enjoy auto-closing of paired symbols such as `{}`, `[]`, and quotes.
 - **Handy Formatting Shortcuts** — Commonly used operations such as bold, italic, strikethrough, code blocks, links, images, and tables are just one keypress away, making formatting quick and effortless.
 - **File Assistance** — Path completion and existence checks for includes, stylesheets, code files, images, and cross-references help you wire documents together without typos.
