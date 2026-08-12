@@ -1,0 +1,41 @@
+name: Question
+description: Ask a question about using the Quarkdown for IntelliJ plugin
+title: "[Question] "
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for asking! Just describe your question below — include what you're trying to do
+        and anything you've already tried.
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I have searched the existing issues and this has not been asked yet.
+          required: true
+
+  - type: textarea
+    id: question
+    attributes:
+      label: Your question
+      description: What do you want to know? The more context, the easier it is to help.
+      placeholder: |
+        - What I'm trying to do: ...
+        - What I've tried: ...
+        - My question: ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment (optional)
+      description: Fill in whatever you know if the question is related to your setup.
+      placeholder: |
+        - IntelliJ IDEA version: e.g. 2025.2
+        - Plugin version: e.g. 0.1.0
+        - Quarkdown version: e.g. 0.1.0
+        - Operating system: e.g. Windows 11 / macOS 15 / Ubuntu 24.04
