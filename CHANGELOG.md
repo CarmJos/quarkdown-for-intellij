@@ -2,13 +2,15 @@
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-08-12
+
 ### Fixed
 
 - Floating toolbars (text-selection formatting toolbar and table row/column operation toolbars) now appear again. The toolbars are only shown once their actions have finished populating, matching the platform's own `FloatingToolbar` behaviour, and the table toolbar actions once again resolve the editor context (previous versions could show an empty toolbar because the `ActionUpdateThread.BGT` action update runs asynchronously).
 - The floating formatting toolbar now also appears when selecting text by double-clicking a word (previously it only appeared for drag selections). The behaviour now matches the platform's `FloatingToolbar`, whose `disableForDoubleClickSelection()` default is `false`.
 - The preview no longer flashes a blue progress bar and "jumps" on every automatic refresh. The bar is now driven exclusively by the server's busy state (start/restart) and no longer appears for the page reloads that happen during watch-mode auto-refreshes.
 - The "View Full Log" dialog now opens scrolled to the bottom, showing the newest output instead of the oldest.
-- The Quarkdown installation is now auto-detected on macOS when installed via Homebrew. Dock/Finder-launched IDE instances do not inherit the shell `PATH`, and the detector previously had no Apple-Silicon (`/opt/homebrew`) locations, so the plugin could not find `quarkdown` — leaving function completions, documentation and diagnostics unavailable. The detected launcher is now also resolved back to its installation home so the standard-library function registry loads correctly.
+- The Quarkdown installation is now auto-detected on macOS when installed via Homebrew. 
 - Fixed an intermittent "Can't remove document listener" error thrown when the status-bar word/paragraph-count widget was disposed (e.g. while closing an editor). The widget no longer removes its document listener twice.
 - Fixed the status-bar word/paragraph count not appearing when a `.qd` file was already open when the IDE started (e.g. after restarting with a restored session). The 2025.2+ status bar only re-renders widget text on `updateWidget()`, so the widget now requests its initial render explicitly instead of waiting for the next editor-selection change.
 
@@ -78,7 +80,8 @@ After two rounds of pre-release iterations, this version brings a mature, battle
 - Initial release
 - Quarkdown syntax support for IntelliJ IDEA
 
-[Unreleased]: https://github.com/CarmJos/quarkdown-for-intellij/compare/1.0.0...HEAD
+[Unreleased]: https://github.com/CarmJos/quarkdown-for-intellij/compare/1.0.1...HEAD
+[1.0.1]: https://github.com/CarmJos/quarkdown-for-intellij/compare/1.0.0...1.0.1
 [1.0.0]: https://github.com/CarmJos/quarkdown-for-intellij/compare/0.1.1...1.0.0
 [0.1.1]: https://github.com/CarmJos/quarkdown-for-intellij/compare/0.1.0...0.1.1
 [0.1.0]: https://github.com/CarmJos/quarkdown-for-intellij/commits/0.1.0
