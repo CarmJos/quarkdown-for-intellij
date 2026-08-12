@@ -8,6 +8,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.SystemInfo
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.platform.lsp.api.LspServerDescriptor
+import com.intellij.platform.lsp.api.customization.LspCompletionSupport
 import com.intellij.platform.lsp.api.customization.LspSemanticTokensSupport
 import java.io.File
 
@@ -54,11 +55,16 @@ class QuarkdownLspServerDescriptor(
 
     // The platform's default LspCustomization already enables hover, diagnostics,
     // completion and semantic tokens; we only override the semantic-token color mapping
-    // (quarkdown-lsp's legend → this plugin's existing highlight attributes).
+    // (quarkdown-lsp's legend → this plugin's existing highlight attributes) and the
+    // completion support (to auto-trigger the parameter-info popup after insertion).
     // `LspServerDescriptor` is an experimental platform API (see docs/LSP-integration-plan.md).
     @Suppress("OVERRIDE_DEPRECATION")
     override val lspSemanticTokensSupport: LspSemanticTokensSupport get() =
         QuarkdownLspSemanticTokensSupport()
+
+    @Suppress("OVERRIDE_DEPRECATION")
+    override val lspCompletionSupport: LspCompletionSupport get() =
+        QuarkdownLspCompletionSupport()
 
     companion object {
         private const val MAIN_CLASS = "com.quarkdown.cli.QuarkdownCliKt"

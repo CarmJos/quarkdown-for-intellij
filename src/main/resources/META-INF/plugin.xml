@@ -63,6 +63,13 @@
                 language="Quarkdown"
                 implementationClass="cc.carm.plugin.intellij.quarkdown.lang.completion.QuarkdownCompletionContributor"/>
 
+        <!-- Offers the remaining parameter names (as `name:` items) when the caret is
+             inside a function call's argument region; complements the LSP completion,
+             which only completes the current parameter's values inside {…}. -->
+        <completion.contributor
+                language="Quarkdown"
+                implementationClass="cc.carm.plugin.intellij.quarkdown.lang.completion.QuarkdownParameterNameCompletionContributor"/>
+
         <completion.contributor
                 language="Quarkdown"
                 implementationClass="cc.carm.plugin.intellij.quarkdown.lang.completion.CodeBlockLanguageCompletionContributor"/>
@@ -74,6 +81,11 @@
 
         <typedHandler implementation="cc.carm.plugin.intellij.quarkdown.lang.QuarkdownTypedHandlerDelegate"/>
 
+        <!-- Re-pop completion after Backspace in Quarkdown files (LSP only fires on typed
+             trigger chars, so deletion would otherwise leave the popup closed). -->
+        <backspaceHandlerDelegate
+                implementation="cc.carm.plugin.intellij.quarkdown.lang.QuarkdownBackspaceHandlerDelegate"/>
+
         <!-- Enter in Quarkdown files: after a `\` continuation, indent the new line -->
         <enterHandlerDelegate implementation="cc.carm.plugin.intellij.quarkdown.lang.QuarkdownEnterHandlerDelegate"/>
 
@@ -82,6 +94,12 @@
         <codeInsight.inlayProvider
                 language="Quarkdown"
                 implementationClass="cc.carm.plugin.intellij.quarkdown.lang.inlay.QuarkdownParameterNameInlayProvider"/>
+
+        <!-- Parameter Info (Ctrl+P): shows the function signature and current parameter
+             when the caret is inside a function call. -->
+        <codeInsight.parameterInfo
+                language="Quarkdown"
+                implementationClass="cc.carm.plugin.intellij.quarkdown.lang.parameterinfo.QuarkdownParameterInfoHandler"/>
 
         <!-- Image path validity check (warn on non-existent paths) -->
         <annotator

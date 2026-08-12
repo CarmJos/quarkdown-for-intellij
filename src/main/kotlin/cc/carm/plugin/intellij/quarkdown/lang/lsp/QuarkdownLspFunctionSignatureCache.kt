@@ -28,17 +28,17 @@ import java.util.concurrent.atomic.AtomicLong
  * ```
  *
  * The signature lists every **user-facing** parameter in order — injected parameters
- * (e.g. the compiler-provided `context`) are not rendered — which is exactly what the
- * parameter-name inlay hints need to map positional arguments. This replaces the legacy
- * reflective stdlib introspection (FunctionRegistry) as the metadata source.
+ * (e.g. the compiler-provided `context`) are not rendered. This drives both the
+ * parameter-name inlay hints and the Ctrl+P parameter-info popup, replacing the legacy
+ * reflective stdlib introspection (FunctionRegistry).
  */
 @Service(Service.Level.PROJECT)
 class QuarkdownLspFunctionSignatureCache(private val project: Project) {
 
     private val logger = Logger.getInstance(QuarkdownLspFunctionSignatureCache::class.java)
 
-    /** lowercase function name → ordered user-facing parameter names. */
-    private val signatures = ConcurrentHashMap<String, List<String>>()
+    /** lowercase function name → parsed signature (text + ordered user-facing parameter names). */
+    private val signatures = ConcurrentHashMap<String, QuarkdownFunctionSignature>()
 
     /** Names currently being fetched, to avoid duplicate in-flight requests. */
     private val inFlight = ConcurrentHashMap.newKeySet<String>()
@@ -55,14 +55,82 @@ class QuarkdownLspFunctionSignatureCache(private val project: Project) {
     @Volatile
     var onSignaturesUpdated: (() -> Unit)? = null
 
+    /** Returns the cached signature for [functionName], or `null` if unknown/not cached. */
+    fun getSignature(functionName: String): QuarkdownFunctionSignature? =
+        signatures[functionName.trim().lowercase()]
+
     /** Returns the ordered user-facing parameter names for [functionName], or `null` if unknown/not cached. */
     fun getParameterNames(functionName: String): List<String>? =
-        signatures[functionName.trim().lowercase()]
+        getSignature(functionName)?.parameterNames
 
     /** Test-only: seeds a signature without contacting the LSP server. */
     internal fun seedSignature(functionName: String, parameterNames: List<String>) {
-        signatures[functionName.trim().lowercase()] = parameterNames
+        val name = functionName.trim().lowercase()
+        val text = "." + name + " " + parameterNames.joinToString(" ") { "$it:{?}" }
+        signatures[name] = QuarkdownFunctionSignature(name, text, parameterNames)
         versionCounter.incrementAndGet()
+    }
+
+    /**
+     * Returns the signature for [functionName], fetching it from the LSP server when not
+     * yet cached. [onReady] is invoked on the EDT with the signature (or `null` when the
+     * fetch fails / the function has no user-facing parameters).
+     *
+     * This is used by the parameter-info (Ctrl+P) popup so a signature that was not
+     * pre-fetched by the inlay pass is still shown.
+     */
+    fun requestSignature(
+        functionName: String,
+        file: com.intellij.psi.PsiFile,
+        onReady: (QuarkdownFunctionSignature?) -> Unit,
+    ) {
+        val name = functionName.trim().lowercase()
+        if (name.isEmpty()) return
+        signatures[name]?.let {
+            onReady(it)
+            return
+        }
+
+        val virtualFile = file.virtualFile
+        val server = if (virtualFile != null && virtualFile.isValid) {
+            QuarkdownLspServerDescriptor.currentServer(project)
+        } else {
+            null
+        } ?: return
+
+        val fileUri = try { server.getDocumentIdentifier(virtualFile!!) } catch (e: Exception) { null }
+        if (fileUri == null) return
+        val text = file.text.takeIf { it.isNotEmpty() } ?: return
+
+        ApplicationManager.getApplication().executeOnPooledThread {
+            if (!inFlight.add(name)) {
+                // Already being fetched by requestSignatures; wait for the modification
+                // counter to bump, then serve from the cache.
+                val before = versionCounter.get()
+                val deadline = System.currentTimeMillis() + 3000
+                while (System.currentTimeMillis() < deadline && versionCounter.get() == before) {
+                    Thread.sleep(20)
+                }
+                val sig = signatures[name]
+                ApplicationManager.getApplication().invokeLater { onReady(sig) }
+                return@executeOnPooledThread
+            }
+            try {
+                val sig = try {
+                    fetchSignature(server, fileUri, text, name)
+                } catch (e: Exception) {
+                    logger.debug("Failed to fetch signature for '$name': ${e.message}")
+                    null
+                }
+                if (sig != null && sig.parameterNames.isNotEmpty()) {
+                    signatures[name] = sig
+                    versionCounter.incrementAndGet()
+                }
+                ApplicationManager.getApplication().invokeLater { onReady(sig) }
+            } finally {
+                inFlight.remove(name)
+            }
+        }
     }
 
     /**
@@ -91,9 +159,9 @@ class QuarkdownLspFunctionSignatureCache(private val project: Project) {
             for (name in missing) {
                 if (!inFlight.add(name)) continue
                 try {
-                    fetchSignature(server, fileUri, text, name)?.let { params ->
-                        if (params.isNotEmpty()) {
-                            signatures[name] = params
+                    fetchSignature(server, fileUri, text, name)?.let { sig ->
+                        if (sig.parameterNames.isNotEmpty()) {
+                            signatures[name] = sig
                             versionCounter.incrementAndGet()
                             updated = true
                         }
@@ -118,7 +186,7 @@ class QuarkdownLspFunctionSignatureCache(private val project: Project) {
         fileUri: TextDocumentIdentifier,
         text: String,
         name: String
-    ): List<String>? {
+    ): QuarkdownFunctionSignature? {
         // Hover at the first occurrence of the function call name in the document.
         val offset = findNameOffset(text, name) ?: return null
         val position = offsetToPosition(text, offset)
@@ -129,7 +197,7 @@ class QuarkdownLspFunctionSignatureCache(private val project: Project) {
         val contents = hover.contents
         // quarkdown-lsp always returns MarkupContent ({kind: "markdown", value: ...}).
         val markdown = contents?.right?.value ?: return null
-        return parseParameterNames(markdown)
+        return parseFunctionSignature(markdown)
     }
 
     private fun findNameOffset(text: String, name: String): Int? {
@@ -158,12 +226,28 @@ class QuarkdownLspFunctionSignatureCache(private val project: Project) {
      * Parameter names are the identifiers immediately followed by `:{` (possibly after
      * whitespace, possibly across `\` line-continuations for long signatures).
      */
-    internal fun parseParameterNames(markdown: String): List<String>? = parseFunctionSignature(markdown)
+    internal fun parseParameterNames(markdown: String): List<String>? =
+        parseFunctionSignature(markdown)?.parameterNames
 
     companion object {
         fun getInstance(project: Project): QuarkdownLspFunctionSignatureCache = project.service()
     }
 }
+
+/**
+ * A parsed Quarkdown function signature: the raw signature block rendered by the LSP
+ * hover, plus the ordered user-facing parameter names.
+ *
+ * @param name lowercase function name
+ * @param signatureText the raw signature (may span lines with `\` continuations),
+ *                      e.g. `.multiply a:{Number} by:{Number} -> Number`
+ * @param parameterNames ordered user-facing parameter names (injected params excluded)
+ */
+data class QuarkdownFunctionSignature(
+    val name: String,
+    val signatureText: String,
+    val parameterNames: List<String>
+)
 
 /**
  * Extracts the ordered user-facing parameter names from the hover signature markdown.
@@ -172,17 +256,23 @@ class QuarkdownLspFunctionSignatureCache(private val project: Project) {
  * Parameter names are the identifiers immediately followed by `:{` (possibly after
  * whitespace, possibly across `\` line-continuations for long signatures).
  */
-internal fun parseFunctionSignature(markdown: String): List<String>? {
+internal fun parseFunctionSignature(markdown: String): QuarkdownFunctionSignature? {
     // First fenced code block — the signature.
     val fence = Regex("```[^\n]*\n(.*?)```", RegexOption.DOT_MATCHES_ALL)
-    val signatureBlock = fence.find(markdown)?.groupValues?.get(1) ?: return null
+    val signatureBlock = fence.find(markdown)?.groupValues?.get(1)?.trim() ?: return null
 
     // Parameter names are `identifier : {` — the signature renders them as
     // `name:{Type}` (optionally preceded by spaces on continuation lines).
     val paramRegex = Regex("""([a-zA-Z][a-zA-Z0-9]*)\s*:\s*\{""")
-    return paramRegex.findAll(signatureBlock)
+    val paramNames = paramRegex.findAll(signatureBlock)
         .map { it.groupValues[1] }
         .distinct()
         .toList()
-        .takeIf { it.isNotEmpty() }
+    if (paramNames.isEmpty()) return null
+
+    // The function name is the first dotted identifier in the signature block.
+    val name = Regex("""\.([a-zA-Z][a-zA-Z0-9]*)\b""").find(signatureBlock)?.groupValues?.get(1)?.lowercase()
+        ?: paramNames.first()
+
+    return QuarkdownFunctionSignature(name = name, signatureText = signatureBlock, parameterNames = paramNames)
 }

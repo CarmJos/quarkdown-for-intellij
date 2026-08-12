@@ -13,7 +13,10 @@ class QuarkdownLspFunctionSignatureCacheTest {
             .multiply a:{Number} by:{Number} -> Number
             ```
         """.trimIndent()
-        assertEquals(listOf("a", "by"), parseFunctionSignature(md))
+        val sig = parseFunctionSignature(md)
+        assertEquals(listOf("a", "by"), sig?.parameterNames)
+        assertEquals(".multiply a:{Number} by:{Number} -> Number", sig?.signatureText)
+        assertEquals("multiply", sig?.name)
     }
 
     @Test
@@ -32,7 +35,7 @@ class QuarkdownLspFunctionSignatureCacheTest {
         """.trimIndent()
         assertEquals(
             listOf("side", "pages", "size", "orientation", "width", "height", "margin"),
-            parseFunctionSignature(md)
+            parseFunctionSignature(md)?.parameterNames
         )
     }
 
@@ -43,7 +46,7 @@ class QuarkdownLspFunctionSignatureCacheTest {
             .docauthor author:{String? = null} -> Any
             ```
         """.trimIndent()
-        assertEquals(listOf("author"), parseFunctionSignature(md))
+        assertEquals(listOf("author"), parseFunctionSignature(md)?.parameterNames)
     }
 
     @Test
@@ -58,7 +61,7 @@ class QuarkdownLspFunctionSignatureCacheTest {
         """.trimIndent()
         assertEquals(
             listOf("alignment", "cross", "gap", "body"),
-            parseFunctionSignature(md)
+            parseFunctionSignature(md)?.parameterNames
         )
     }
 
@@ -75,7 +78,7 @@ class QuarkdownLspFunctionSignatureCacheTest {
             .currentpage -> Int
             ```
         """.trimIndent()
-        assertNull(parseFunctionSignature(md))
+        assertNull(parseFunctionSignature(md)?.parameterNames)
     }
 
     @Test
@@ -87,7 +90,7 @@ class QuarkdownLspFunctionSignatureCacheTest {
         """.trimIndent()
         assertEquals(
             listOf("alignment", "cross", "body"),
-            parseFunctionSignature(md)
+            parseFunctionSignature(md)?.parameterNames
         )
     }
 }
