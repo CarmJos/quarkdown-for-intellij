@@ -3,6 +3,7 @@ package cc.carm.plugin.intellij.quarkdown.statusbar
 import cc.carm.plugin.intellij.quarkdown.QuarkdownBundle
 import cc.carm.plugin.intellij.quarkdown.QuarkdownFileType
 import cc.carm.plugin.intellij.quarkdown.statusbar.QuarkdownStatsParser.QuarkdownStats
+import com.intellij.openapi.editor.Document
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.event.DocumentEvent
 import com.intellij.openapi.editor.event.DocumentListener
@@ -54,6 +55,12 @@ class QuarkdownStatsWidget(project: Project) : EditorBasedWidget(project) {
     private var cachedStats = QuarkdownStats(0, 0)
 
     private var listenedEditor: Editor? = null
+
+    // Documents the [documentListener] is currently attached to. The listener lifecycle is
+    // managed manually (plain addDocumentListener, no parent disposable) so switching editors
+    // or disposing the widget never removes the listener twice - a double removal makes
+    // DocumentImpl log "Can't remove document listener".
+    private val attachedDocuments = mutableSetOf<Document>()
 
     private val documentListener = object : DocumentListener {
         override fun documentChanged(event: DocumentEvent) {
@@ -113,13 +120,27 @@ class QuarkdownStatsWidget(project: Project) : EditorBasedWidget(project) {
     private fun reattachDocumentListener() {
         val editor = getEditor()
         if (editor === listenedEditor) return
-        listenedEditor?.document?.removeDocumentListener(documentListener)
+        removeListenerFromAllDocuments()
         listenedEditor = editor
-        editor?.document?.addDocumentListener(documentListener, this)
+        editor?.takeIf { !it.isDisposed }?.let { e ->
+            e.document.addDocumentListener(documentListener)
+            attachedDocuments.add(e.document)
+        }
+    }
+
+    private fun removeListenerFromAllDocuments() {
+        for (document in attachedDocuments) {
+            try {
+                document.removeDocumentListener(documentListener)
+            } catch (_: Throwable) {
+                // The document was disposed in the meantime, which already dropped its listeners.
+            }
+        }
+        attachedDocuments.clear()
     }
 
     override fun dispose() {
-        listenedEditor?.document?.removeDocumentListener(documentListener)
+        removeListenerFromAllDocuments()
         listenedEditor = null
         super.dispose()
     }
