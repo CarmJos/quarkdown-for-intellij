@@ -1,6 +1,7 @@
 package cc.carm.plugin.intellij.quarkdown.action.image
 
 import cc.carm.plugin.intellij.quarkdown.QuarkdownFileType
+import com.intellij.openapi.application.EDT
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.EditorDropHandler
@@ -11,6 +12,8 @@ import com.intellij.openapi.fileEditor.TextEditor
 import com.intellij.openapi.fileEditor.impl.EditorWindow
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.awt.datatransfer.DataFlavor
 import java.awt.datatransfer.Transferable
 import java.io.File
@@ -87,9 +90,17 @@ class ImageDropHandler : FileDropHandler, EditorDropHandler {
 
         // Check if any dropped file is an image
         val imageFiles = e.files.filter { isImageFile(it) }
-        return imageFiles.isNotEmpty() && showDialogAndInsert(e.project, editor, docFile, imageFiles.first())
+        if (imageFiles.isEmpty()) return false
 
-        // Open dialog with first image file path pre-filled
+        // FileDropManager invokes this suspend handler on a background coroutine
+        // thread, but ImageDialog (a DialogWrapper) must be created and shown on
+        // the EDT. Switch to the EDT before showing the dialog, otherwise the
+        // constructor throws "Access is allowed from Event Dispatch Thread (EDT)
+        // only" and the drop falls through to the default handler (which would
+        // open the image in a new editor tab).
+        return withContext(Dispatchers.EDT) {
+            showDialogAndInsert(e.project, editor, docFile, imageFiles.first())
+        }
     }
 
     // ========================
