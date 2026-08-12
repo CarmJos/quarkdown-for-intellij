@@ -49,8 +49,9 @@ import kotlin.time.Duration.Companion.milliseconds
  *
  * This is a self-contained re-implementation of the platform's internal
  * `com.intellij.openapi.actionSystem.impl.FloatingToolbar` using **public** APIs only:
- *  - [QuarkdownActionToolbarUtils] builds the toolbar the same way the official
- *    `ToolbarUtils.createImmediatelyUpdatedToolbar` does (forced synchronous update);
+ *  - [QuarkdownActionToolbarUtils] builds and populates the toolbar the same way the official
+ *    `ToolbarUtils.createImmediatelyUpdatedToolbar` does (it waits for the asynchronous
+ *    update of `ActionUpdateThread.BGT` actions before returning);
  *  - [HintManagerImpl.showEditorHint] / [getHintPosition] position it above the selection;
  *  - editor listeners (selection / mouse / document) drive show & hide.
  *
@@ -145,7 +146,7 @@ class FormattingFloatingToolbar(
         hint = null
     }
 
-    private fun showIfHidden() {
+    private suspend fun showIfHidden() {
         preventHintFromShowing = true
         if (isShown() || !isEnabled()) return
         // Mirrors the official FloatingToolbar: PSI access is done under a read action.
@@ -153,7 +154,7 @@ class FormattingFloatingToolbar(
             canBeShownAtCurrentSelection()
         }
         if (!canBeShown) return
-        val newHint = createHint()
+        val newHint = createHint() ?: return
         showHint(newHint)
         newHint.addHintListener {
             hint = null
@@ -161,23 +162,31 @@ class FormattingFloatingToolbar(
         hint = newHint
     }
 
-    private fun createHint(): LightweightHint {
+    /**
+     * Builds and populates the toolbar, suspending until the (possibly asynchronous) update
+     * finished — mirroring the official `FloatingToolbar.createHint`, which only returns a
+     * hint once the toolbar has visible actions. Returns `null` when the toolbar ended up
+     * empty (e.g. all actions are invisible).
+     */
+    private suspend fun createHint(): LightweightHint? {
         val component = BorderLayoutPanel()
         val toolbar = createUpdatedActionToolbar(editor.contentComponent, component)
+        if (!toolbar.hasVisibleActions()) return null
         return LightweightHint(component).apply {
             setForceShowAsPopup(true)
         }
     }
 
-    private fun createUpdatedActionToolbar(
+    private suspend fun createUpdatedActionToolbar(
         targetComponent: JComponent,
         parent: BorderLayoutPanel
     ): ActionToolbar {
         val group = createActionGroup() ?: DefaultActionGroup()
         // Mirrors the official ToolbarUtils.createImmediatelyUpdatedToolbar (public APIs):
-        // the toolbar is populated by a FORCED synchronous update (updateActionsImmediately(true))
-        // while briefly attached to the window's layered pane, so it has buttons before the
-        // hint is built — identical to the platform's own FloatingToolbar behaviour.
+        // the toolbar is populated before the hint is built, identical to the platform's own
+        // FloatingToolbar behaviour. populateImmediately waits for the toolbar update to
+        // complete (see QuarkdownActionToolbarUtils), so the buttons exist before the hint is
+        // shown.
         val toolbar = QuarkdownActionToolbarUtils.createToolbar(
             ActionPlaces.EDITOR_FLOATING_TOOLBAR, group, true, targetComponent
         )

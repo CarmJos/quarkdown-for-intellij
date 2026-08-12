@@ -3,12 +3,19 @@ package cc.carm.plugin.intellij.quarkdown.ui
 import com.intellij.openapi.actionSystem.ActionGroup
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.ActionToolbar
+import com.intellij.openapi.actionSystem.DataSink
+import com.intellij.openapi.actionSystem.UiDataProvider
+import com.intellij.openapi.editor.Editor
+import kotlinx.coroutines.suspendCancellableCoroutine
+import java.awt.Container
 import java.awt.GraphicsEnvironment
 import java.awt.Point
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.Future
 import javax.swing.JComponent
-import javax.swing.JLayeredPane
 import javax.swing.JWindow
 import javax.swing.SwingUtilities
+import kotlin.coroutines.resume
 
 /**
  * Public-API replacement for the internal `ToolbarUtils.createImmediatelyUpdatedToolbar`.
@@ -19,19 +26,18 @@ import javax.swing.SwingUtilities
  * built, so the official internal helper temporarily marked the component as showing via
  * `ComponentUtil.markAsShowing` and then ran the forced update.
  *
- * Here the same effect is achieved with public APIs only:
- *  - the toolbar's container is briefly attached to the [JLayeredPane] of the window that
- *    [anchor] belongs to (making it displayable / showing while the window is visible), and
- *    the public [ActionToolbar.updateActionsAsync] is called, which updates the actions
- *    synchronously whenever the component is showing;
- *  - if that does not produce visible actions (e.g. the window is not currently visible), the
- *    container is instead attached to a temporary off-screen [JWindow] that is shown for the
- *    duration of the update, which always makes it "showing";
- *  - in a headless environment (e.g. CI test runner) no window can be created, so the update
- *    is run directly instead - the platform executes it synchronously in unit-test mode.
+ * Here the same effect is achieved with public APIs only: the toolbar's container is attached
+ * to a temporary off-screen [JWindow] that is shown for the duration of the update, which
+ * always makes it "showing". Because the actions used by floating toolbars typically declare
+ * `ActionUpdateThread.BGT`, the platform's update itself runs asynchronously (it is dispatched
+ * to a background thread and the toolbar is populated when it completes). Both
+ * [populateImmediately] variants therefore wait for the update to finish before invoking the
+ * caller — this is what guarantees the hint is shown with an already-populated toolbar
+ * (identical to the platform's own `FloatingToolbar.createHint`, which suspends until the
+ * toolbar has been updated).
  *
  * Either way the container is detached again before anything is painted, so no flicker is
- * visible and the hint is built with an already-populated toolbar.
+ * visible.
  */
 object QuarkdownActionToolbarUtils {
 
@@ -48,51 +54,121 @@ object QuarkdownActionToolbarUtils {
     }
 
     /**
-     * Populates [toolbar] immediately even though it is not displayed yet.
-     *
-     * [anchor] must be a component of the window that will eventually display the toolbar
-     * (normally the editor content component).
+     * Public-API replacement for the internal `ToolbarUtils.createTargetComponent`: a component
+     * that provides [provider]'s data to the toolbar's actions while also exposing the editor's
+     * own data context (`EDITOR`, `PSI_FILE`, …). It does so by reporting the editor's content
+     * component as its parent — the exact same trick the platform's `ToolbarUtils$MyComponent`
+     * uses, so [com.intellij.ide.DataManager.getDataContext] walks up the editor component tree
+     * when building the toolbar's data context.
      */
-    fun populateImmediately(toolbar: ActionToolbar, anchor: JComponent) {
-        val holder = toolbar.component.parent
-        val layeredPane = anchor.rootPane?.layeredPane
-        if (layeredPane != null && holder != null) {
-            layeredPane.add(holder, JLayeredPane.DEFAULT_LAYER)
-            // Give the toolbar a real area while it is attached so layout runs normally.
-            holder.setBounds(0, 0, layeredPane.width, layeredPane.height)
-            try {
-                toolbar.updateActionsAsync()
-            } finally {
-                layeredPane.remove(holder)
-                layeredPane.revalidate()
-                layeredPane.repaint()
+    fun createTargetComponent(editor: Editor, provider: UiDataProvider): JComponent =
+        object : JComponent(), UiDataProvider {
+            override fun getParent(): Container = editor.contentComponent
+            override fun isShowing(): Boolean = true
+            override fun uiDataSnapshot(sink: DataSink) {
+                // `UiDataProvider.uiDataSnapshot` is @ApiStatus.OverrideOnly, so it must not be
+                // invoked directly; use the companion utility instead (exactly like the
+                // platform's own ToolbarUtils.MyComponent does).
+                DataSink.uiDataSnapshot(sink, provider)
             }
-            if (toolbar.hasVisibleActions()) return
         }
+
+    /**
+     * Populates [toolbar] and invokes [onReady] once the toolbar has finished its (possibly
+     * asynchronous) update. [anchor] must be a component of the window that will eventually
+     * display the toolbar (normally the editor content component).
+     */
+    fun populateImmediately(toolbar: ActionToolbar, anchor: JComponent, onReady: (ActionToolbar) -> Unit) {
         if (GraphicsEnvironment.isHeadless()) {
-            // No display is available (e.g. CI test runner), so the off-screen window
-            // fallback below cannot work. The platform's update still runs synchronously
-            // in unit-test mode and populates the toolbar without a visible window.
-            toolbar.updateActionsAsync()
+            // No display is available (e.g. CI test runner), so no window can be created.
+            // The platform's update runs synchronously in unit-test mode; for robustness wait
+            // for the returned future otherwise.
+            val future = toolbar.updateActionsAsync()
+            if (toolbar.hasVisibleActions()) {
+                onReady(toolbar)
+            } else {
+                onFutureDone(future) { SwingUtilities.invokeLater { onReady(toolbar) } }
+            }
             return
         }
-        populateViaWindow(toolbar, anchor)
+        populateViaWindow(toolbar, anchor, onReady)
     }
 
-    /** Guaranteed "showing" fallback: attach to an off-screen visible window and update. */
-    private fun populateViaWindow(toolbar: ActionToolbar, anchor: JComponent) {
+    /**
+     * Suspending variant of [populateImmediately]: returns once the toolbar has finished its
+     * update. Safe to call on the EDT; cancellation (e.g. from a `collectLatest` collector)
+     * disposes the temporary window and aborts the wait.
+     */
+    suspend fun populateImmediately(toolbar: ActionToolbar, anchor: JComponent) {
+        if (GraphicsEnvironment.isHeadless()) {
+            val future = toolbar.updateActionsAsync()
+            if (!toolbar.hasVisibleActions()) awaitFuture(future)
+            return
+        }
+        val (window, holder) = attachToShowingWindow(toolbar, anchor)
+        try {
+            val future = toolbar.updateActionsAsync()
+            if (!toolbar.hasVisibleActions()) awaitFuture(future)
+        } finally {
+            detach(window, holder)
+        }
+    }
+
+    /** Attaches the toolbar's container to a visible off-screen window so it is "showing". */
+    private fun attachToShowingWindow(toolbar: ActionToolbar, anchor: JComponent): Pair<JWindow, Container> {
         val holder = toolbar.component.parent ?: toolbar.component
         val owner = SwingUtilities.getWindowAncestor(anchor)
         val window = JWindow(owner)
-        try {
-            window.contentPane.add(holder)
-            window.pack()
-            window.location = Point(-10000, -10000)
-            window.isVisible = true
-            toolbar.updateActionsAsync()
-        } finally {
-            window.isVisible = false
-            window.dispose()
+        window.contentPane.add(holder)
+        window.pack()
+        window.location = Point(-10000, -10000)
+        window.isVisible = true
+        return window to holder
+    }
+
+    private fun detach(window: JWindow, holder: Container) {
+        window.contentPane.remove(holder)
+        window.isVisible = false
+        window.dispose()
+    }
+
+    private fun populateViaWindow(toolbar: ActionToolbar, anchor: JComponent, onReady: (ActionToolbar) -> Unit) {
+        val (window, holder) = attachToShowingWindow(toolbar, anchor)
+        val future = toolbar.updateActionsAsync()
+        if (toolbar.hasVisibleActions()) {
+            detach(window, holder)
+            onReady(toolbar)
+            return
+        }
+        onFutureDone(future) {
+            SwingUtilities.invokeLater {
+                detach(window, holder)
+                onReady(toolbar)
+            }
+        }
+    }
+
+    /**
+     * Invokes [onDone] once [future] completes. The platform's `ActionToolbar.updateActionsAsync`
+     * always returns a `CompletableFuture`; the fallback invokes the callback eagerly.
+     */
+    private fun onFutureDone(future: Future<*>, onDone: () -> Unit) {
+        val completable = future as? CompletableFuture<*>
+        if (completable != null) {
+            completable.whenComplete { _, _ -> onDone() }
+        } else {
+            onDone()
+        }
+    }
+
+    private suspend fun awaitFuture(future: Future<*>) {
+        if (future.isDone) return
+        val completable = future as? CompletableFuture<*> ?: return
+        suspendCancellableCoroutine<Unit> { continuation ->
+            completable.whenComplete { _, _ ->
+                if (continuation.isActive) continuation.resume(Unit)
+            }
+            continuation.invokeOnCancellation { }
         }
     }
 }

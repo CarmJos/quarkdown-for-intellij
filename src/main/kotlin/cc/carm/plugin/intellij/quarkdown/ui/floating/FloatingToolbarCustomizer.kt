@@ -26,6 +26,9 @@ import java.util.concurrent.atomic.AtomicBoolean
  * installs the toolbar when a main text editor for a `.qd` file is created. The toolbar is
  * disposed when the editor is released.
  *
+ * On [install] the toolbar is also installed for any editor that is already open (e.g. files
+ * restored from a previous session before the startup activity ran).
+ *
  * Behaviour is identical to the previous implementation (mirroring the Markdown plugin's
  * `AddFloatingToolbarTextEditorCustomizer`): the floating toolbar appears above a text
  * selection in Quarkdown files only.
@@ -46,14 +49,7 @@ class FloatingToolbarCustomizer private constructor() {
             if (!installed.compareAndSet(false, true)) return
             val listener = object : EditorFactoryListener {
                 override fun editorCreated(event: EditorFactoryEvent) {
-                    val editor = event.editor
-                    if (editor.editorKind != EditorKind.MAIN_EDITOR) return
-                    val file = FileDocumentManager.getInstance().getFile(editor.document) ?: return
-                    if (file.fileType !is QuarkdownFileType) return
-
-                    val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-                    val toolbar = FormattingFloatingToolbar(editor = editor, coroutineScope = scope)
-                    toolbars[editor] = toolbar
+                    installForEditor(event.editor)
                 }
 
                 override fun editorReleased(event: EditorFactoryEvent) {
@@ -62,6 +58,27 @@ class FloatingToolbarCustomizer private constructor() {
             }
             EditorFactory.getInstance()
                 .addEditorFactoryListener(listener, ApplicationManager.getApplication())
+
+            // Editors created before the listener was registered (e.g. files restored from a
+            // previous session) must get the toolbar as well. Run on the EDT because the
+            // toolbar constructor touches Swing components.
+            com.intellij.openapi.application.invokeLater {
+                if (ApplicationManager.getApplication().isDisposed) return@invokeLater
+                for (editor in EditorFactory.getInstance().allEditors) {
+                    installForEditor(editor)
+                }
+            }
+        }
+
+        private fun installForEditor(editor: Editor) {
+            if (editor.editorKind != EditorKind.MAIN_EDITOR) return
+            if (toolbars.containsKey(editor)) return
+            val file = FileDocumentManager.getInstance().getFile(editor.document) ?: return
+            if (file.fileType !is QuarkdownFileType) return
+
+            val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+            val toolbar = FormattingFloatingToolbar(editor = editor, coroutineScope = scope)
+            toolbars[editor] = toolbar
         }
     }
 }

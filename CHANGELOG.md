@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- Floating toolbars (text-selection formatting toolbar and table row/column operation toolbars) now appear again. The toolbars are only shown once their actions have finished populating, matching the platform's own `FloatingToolbar` behaviour, and the table toolbar actions once again resolve the editor context (previous versions could show an empty toolbar because the `ActionUpdateThread.BGT` action update runs asynchronously).
+- The Quarkdown installation is now auto-detected on macOS when installed via Homebrew. Dock/Finder-launched IDE instances do not inherit the shell `PATH`, and the detector previously had no Apple-Silicon (`/opt/homebrew`) locations, so the plugin could not find `quarkdown` — leaving function completions, documentation and diagnostics unavailable. The detected launcher is now also resolved back to its installation home so the standard-library function registry loads correctly.
+- Fixed an intermittent "Can't remove document listener" error thrown when the status-bar word/paragraph-count widget was disposed (e.g. while closing an editor). The widget no longer removes its document listener twice.
+
 ## [1.0.0] - 2026-08-11
 
 🚀 **Quarkdown for IntelliJ 1.0.0** is the first stable release of our official Quarkdown language support for the JetBrains IntelliJ Platform!

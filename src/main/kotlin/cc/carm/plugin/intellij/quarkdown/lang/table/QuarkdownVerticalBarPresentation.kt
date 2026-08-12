@@ -15,8 +15,6 @@ import com.intellij.codeInsight.hints.presentation.InlayPresentation
 import com.intellij.codeInsight.hints.presentation.PresentationFactory
 import com.intellij.openapi.actionSystem.ActionGroup
 import com.intellij.openapi.actionSystem.ActionManager
-import com.intellij.openapi.actionSystem.DataSink
-import com.intellij.openapi.actionSystem.UiDataProvider
 import com.intellij.openapi.command.executeCommand
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.markup.TextAttributes
@@ -130,24 +128,25 @@ internal class QuarkdownVerticalBarPresentation(
 
     private fun showToolbar() {
         // Public-API replacement for the internal ToolbarUtils.createTargetComponent.
-        val targetComponent = object : JComponent(), UiDataProvider {
-            override fun uiDataSnapshot(sink: DataSink) {
-                TableActionKeys.putRowSnapshot(sink, block, rowIndex)
-            }
+        val targetComponent = QuarkdownActionToolbarUtils.createTargetComponent(editor) { sink ->
+            TableActionKeys.putRowSnapshot(sink, block, rowIndex)
         }
         // Public-API replacement for ToolbarUtils.createImmediatelyUpdatedToolbar.
         val toolbar = QuarkdownActionToolbarUtils.createToolbar(
             TableActionPlaces.TABLE_INLAY_TOOLBAR, rowActionGroup, true, targetComponent
         )
         // The toolbar must be attached to a container AND populated before its actions are
-        // usable; populateImmediately runs the platform's forced synchronous update while
-        // the panel is briefly attached to the window's layered pane (see
-        // QuarkdownActionToolbarUtils). The panel below becomes the hint content.
+        // usable; populateImmediately waits for the (possibly asynchronous) toolbar update to
+        // complete before invoking the callback (see QuarkdownActionToolbarUtils). The panel
+        // below becomes the hint content and is only shown once the toolbar has buttons.
         val content = com.intellij.util.ui.components.BorderLayoutPanel().apply {
             addToCenter(toolbar.component)
         }
-        QuarkdownActionToolbarUtils.populateImmediately(toolbar, editor.contentComponent)
-        createAndShowHint(content)
+        QuarkdownActionToolbarUtils.populateImmediately(toolbar, editor.contentComponent) {
+            if (editor.isDisposed) return@populateImmediately
+            if (!it.hasVisibleActions()) return@populateImmediately
+            createAndShowHint(content)
+        }
     }
 
     private fun createAndShowHint(content: JComponent) {
