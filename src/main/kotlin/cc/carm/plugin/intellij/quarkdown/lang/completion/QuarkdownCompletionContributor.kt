@@ -6,6 +6,7 @@ import cc.carm.plugin.intellij.quarkdown.lang.function.FunctionMetadata
 import cc.carm.plugin.intellij.quarkdown.lang.function.FunctionRegistry
 import cc.carm.plugin.intellij.quarkdown.lang.function.ParameterMetadata
 import cc.carm.plugin.intellij.quarkdown.lang.function.QuarkdownCallParser.Arg
+import cc.carm.plugin.intellij.quarkdown.lang.lsp.QuarkdownLspSupport
 import cc.carm.plugin.intellij.quarkdown.lang.reference.QuarkdownPathUtil
 import com.intellij.codeInsight.AutoPopupController
 import com.intellij.codeInsight.completion.*
@@ -27,6 +28,11 @@ import com.intellij.util.ProcessingContext
  *  - function-name completion after `.`
  *  - next-argument hints after a complete function name or written arguments
  *  - enum value completion inside `{…}` and right after `name:`
+ *
+ * When the official Quarkdown Language Server is running
+ * ([QuarkdownLspSupport.isServerRunning]), the function-related completions are
+ * delegated to LSP. The file-path completion for `.include`/`.read`/`.css`/`.code` is
+ * kept (LSP does not provide it).
  */
 class QuarkdownCompletionContributor : CompletionContributor() {
 
@@ -62,6 +68,8 @@ class QuarkdownCompletionContributor : CompletionContributor() {
                 ctx.afterNamedColon -> maybeSuggestFilePathAfterColon(parameters, ctx, result)
             }
 
+            // Function completion is delegated to LSP when its server is running.
+            if (QuarkdownLspSupport.isServerRunning(file.project)) return
             if (functions.isEmpty()) return
 
             when {

@@ -5,6 +5,7 @@ import cc.carm.plugin.intellij.quarkdown.lang.completion.FunctionCallTokenizer
 import cc.carm.plugin.intellij.quarkdown.lang.function.FunctionMetadata
 import cc.carm.plugin.intellij.quarkdown.lang.function.FunctionRegistry
 import cc.carm.plugin.intellij.quarkdown.lang.function.QuarkdownDocRenderer
+import cc.carm.plugin.intellij.quarkdown.lang.lsp.QuarkdownLspSupport
 import com.intellij.lang.documentation.AbstractDocumentationProvider
 import com.intellij.openapi.editor.Editor
 import com.intellij.psi.PsiElement
@@ -15,6 +16,10 @@ import com.intellij.psi.PsiManager
  * Provides Quick Documentation (Ctrl+Q / hover) for Quarkdown function calls and
  * completion items. Documentation content comes from the stdlib docs parsed at index
  * build time and carried inside [FunctionMetadata].
+ *
+ * When the official Quarkdown Language Server is running
+ * ([QuarkdownLspSupport.isServerRunning]), hover documentation is delegated to the LSP
+ * provider; this class acts as the offline fallback only.
  */
 class QuarkdownDocumentationProvider : AbstractDocumentationProvider() {
 
@@ -24,6 +29,7 @@ class QuarkdownDocumentationProvider : AbstractDocumentationProvider() {
         lookupElement: Any,
         contextElement: PsiElement?
     ): PsiElement? {
+        if (QuarkdownLspSupport.isServerRunning(psiManager.project)) return null
         val metadata = lookupElement as? FunctionMetadata ?: return null
         val contextFile = contextElement?.containingFile ?: return null
         return QuarkdownDocElement(psiManager.project, metadata, contextFile)
@@ -37,6 +43,7 @@ class QuarkdownDocumentationProvider : AbstractDocumentationProvider() {
         offset: Int
     ): PsiElement? {
         if (file.fileType != QuarkdownFileType.INSTANCE) return null
+        if (QuarkdownLspSupport.isServerRunning(file.project)) return null
 
         val context = FunctionCallTokenizer.parseContext(file.text, offset)
         if (!context.hasCall) return null

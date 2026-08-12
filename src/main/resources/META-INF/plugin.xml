@@ -32,7 +32,8 @@
     <depends>org.intellij.intelliLang</depends>
     <depends>com.intellij.modules.platform</depends>
     <depends>org.intellij.plugins.markdown</depends>
-
+    <!-- IntelliJ platform LSP integration (LspServerSupportProvider / LspServerDescriptor) -->
+    <depends>com.intellij.modules.lsp</depends>
     <extensions defaultExtensionNs="com.intellij">
         <fileType name="Quarkdown"
                   implementationClass="cc.carm.plugin.intellij.quarkdown.QuarkdownFileType"
@@ -51,6 +52,12 @@
                 key="quarkdown.settings.name"/>
 
         <postStartupActivity implementation="cc.carm.plugin.intellij.quarkdown.QuarkdownStartupActivity"/>
+
+        <!-- LSP integration: starts `quarkdown language-server` for opened .qd files.
+             Enables hover docs, diagnostics, function completion and semantic highlighting
+             from the official Quarkdown LSP. -->
+        <platform.lsp.serverSupportProvider
+                implementation="cc.carm.plugin.intellij.quarkdown.lang.lsp.QuarkdownLspServerSupportProvider"/>
 
         <completion.contributor
                 language="Quarkdown"

@@ -19,6 +19,11 @@ class QuarkdownSettings : SimplePersistentStateComponent<QuarkdownSettings.State
         var previewCliArgs by string()
         var watchChanges by property(true)
         var autoSavePreviewFiles by property(true)
+
+        /** When `true`, semantic features (hover, diagnostics, completion, semantic
+         *  highlighting) are delegated to the official `quarkdown language-server`
+         *  instead of the reflective stdlib introspection. */
+        var useLspSemantics by property(true)
     }
 
     companion object {

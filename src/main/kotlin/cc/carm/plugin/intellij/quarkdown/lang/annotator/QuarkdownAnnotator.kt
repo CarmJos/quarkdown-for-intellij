@@ -4,6 +4,7 @@ import cc.carm.plugin.intellij.quarkdown.QuarkdownBundle
 import cc.carm.plugin.intellij.quarkdown.lang.function.FunctionRegistry
 import cc.carm.plugin.intellij.quarkdown.lang.function.QuarkdownCallParser
 import cc.carm.plugin.intellij.quarkdown.lang.function.QuarkdownCallValidator
+import cc.carm.plugin.intellij.quarkdown.lang.lsp.QuarkdownLspSupport
 import com.intellij.lang.annotation.AnnotationHolder
 import com.intellij.lang.annotation.Annotator
 import com.intellij.lang.annotation.HighlightSeverity
@@ -24,11 +25,15 @@ import com.intellij.psi.PsiFile
  *  - invalid enum values (`bottomcenter` is valid, `bottom_center` is not)
  *  - positional argument following a named one
  *  - missing required arguments
+ *
+ * When the official Quarkdown Language Server is running ([QuarkdownLspSupport.isServerRunning]),
+ * this annotator defers to the LSP diagnostics to avoid duplicated problem markers.
  */
 class QuarkdownAnnotator : Annotator {
 
     override fun annotate(element: PsiElement, holder: AnnotationHolder) {
         if (element !is PsiFile) return
+        if (QuarkdownLspSupport.isServerRunning(element.project)) return
 
         val text = element.text
         val registry = FunctionRegistry.getInstance(element.project)

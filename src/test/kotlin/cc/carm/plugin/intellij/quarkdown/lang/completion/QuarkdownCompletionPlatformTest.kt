@@ -10,6 +10,12 @@ class QuarkdownCompletionPlatformTest : BasePlatformTestCase() {
 
     override fun setUp() {
         super.setUp()
+        // These tests drive the legacy reflective completion contributor directly, so
+        // the official LSP semantic layer must be disabled to make the outcome
+        // deterministic (the LSP path is exercised by the dedicated integration tests).
+        cc.carm.plugin.intellij.quarkdown.settings.QuarkdownSettings.getInstance(project)
+            .state.useLspSemantics = false
+
         // Use the Quarkdown home provided by the Gradle test task (system property set
         // from the auto-downloaded SDK or a local installation), then fall back to the
         // environment variable or a well-known local install for IDE test runs.

@@ -2,6 +2,7 @@ package cc.carm.plugin.intellij.quarkdown.lang.annotator
 
 import cc.carm.plugin.intellij.quarkdown.lang.function.FunctionRegistry
 import cc.carm.plugin.intellij.quarkdown.lang.function.QuarkdownCallParser
+import cc.carm.plugin.intellij.quarkdown.lang.lsp.QuarkdownLspSupport
 import com.intellij.lang.annotation.AnnotationHolder
 import com.intellij.lang.annotation.Annotator
 import com.intellij.lang.annotation.HighlightSeverity
@@ -25,11 +26,16 @@ import com.intellij.psi.PsiFile
  *
  * Unknown functions / invalid values are left to [QuarkdownAnnotator], which reports them
  * as errors. Both annotators are registered for the Quarkdown language in `plugin.xml`.
+ *
+ * When the official Quarkdown Language Server is running
+ * ([QuarkdownLspSupport.isServerRunning]), the semantic tokens supplied by LSP replace
+ * this annotator.
  */
 class QuarkdownSemanticAnnotator : Annotator {
 
     override fun annotate(element: PsiElement, holder: AnnotationHolder) {
         if (element !is PsiFile) return
+        if (QuarkdownLspSupport.isServerRunning(element.project)) return
 
         val text = element.text
         val functions = FunctionRegistry.getInstance(element.project).getFunctions()

@@ -109,6 +109,14 @@ class QuarkdownSettingsConfigurable(private val project: Project) :
                 }
             }
 
+            group(QuarkdownBundle.message("quarkdown.settings.lsp")) {
+                row {
+                    checkBox(QuarkdownBundle.message("quarkdown.settings.lsp.use"))
+                        .bindSelected(settings.state::useLspSemantics)
+                        .comment(QuarkdownBundle.message("quarkdown.settings.lsp.use.comment"))
+                }
+            }
+
             group(QuarkdownBundle.message("quarkdown.settings.compile")) {
                 row(QuarkdownBundle.message("quarkdown.settings.compile.cli.args")) {
                     textField()
