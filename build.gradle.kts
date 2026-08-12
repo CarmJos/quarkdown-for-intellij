@@ -189,12 +189,17 @@ fun resolveQuarkdownHome(): File? =
 
 fun findQuarkdownFromPath(): File? {
     val path = System.getenv("PATH") ?: return null
+    // Only consider launcher names that exist on the current OS (Windows ships
+    // .cmd/.bat, macOS/Linux a bare shell script) so a `.bat` is never picked on Unix.
+    val launcherNames = if (System.getProperty("os.name").startsWith("Windows", ignoreCase = true)) {
+        listOf("quarkdown.cmd", "quarkdown.bat", "quarkdown")
+    } else {
+        listOf("quarkdown")
+    }
     val pathDirs = path.split(File.pathSeparator)
     for (dir in pathDirs) {
         if (dir.isBlank()) continue
-        val hasLauncher = File(dir, "quarkdown").exists() ||
-            File(dir, "quarkdown.bat").exists() ||
-            File(dir, "quarkdown.cmd").exists()
+        val hasLauncher = launcherNames.any { File(dir, it).exists() }
         if (!hasLauncher) continue
         // The launcher is usually in `<home>/bin` or in a shim directory (e.g. scoop's
         // `shims/`). Walk up the directory chain and return the first ancestor that is a
@@ -210,17 +215,33 @@ fun findQuarkdownFromPath(): File? {
 }
 
 fun findDefaultInstallations(): File? {
-    val defaultPaths = listOf(
-        // Windows scoop
-        "${System.getProperty("user.home")}/scoop/apps/quarkdown/current",
-        // Windows default
-        "C:/Program Files/Quarkdown",
-        // macOS brew
-        "/usr/local/Cellar/quarkdown/current",
-        // Linux
-        "/opt/quarkdown",
-        "/usr/local/share/quarkdown"
-    )
+    val userHome = System.getProperty("user.home")
+    val os = System.getProperty("os.name").lowercase()
+    val defaultPaths = when {
+        os.contains("win") -> listOf(
+            // Windows scoop
+            "${userHome}/scoop/apps/quarkdown/current",
+            // Windows default
+            "C:/Program Files/Quarkdown",
+        )
+
+        os.contains("mac") -> listOf(
+            // macOS Homebrew: Apple Silicon (/opt/homebrew) and Intel (/usr/local).
+            // The keg layout is <keg>/bin (wrapper) + <keg>/libexec/{bin,lib}.
+            "/opt/homebrew/Cellar/quarkdown/current/libexec",
+            "/usr/local/Cellar/quarkdown/current/libexec",
+            "/opt/quarkdown",
+            "/usr/local/share/quarkdown",
+        )
+
+        else -> listOf(
+            // Linux Homebrew and generic unpack locations.
+            "/home/linuxbrew/.linuxbrew/Cellar/quarkdown/current/libexec",
+            "/opt/quarkdown",
+            "/usr/local/share/quarkdown",
+            "/usr/local/lib/quarkdown",
+        )
+    }
 
     for (path in defaultPaths) {
         validQuarkdownHome(path)?.let { return it }

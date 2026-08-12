@@ -13,6 +13,7 @@
 - The Quarkdown installation is now auto-detected on macOS when installed via Homebrew. 
 - Fixed an intermittent "Can't remove document listener" error thrown when the status-bar word/paragraph-count widget was disposed (e.g. while closing an editor). The widget no longer removes its document listener twice.
 - Fixed the status-bar word/paragraph count not appearing when a `.qd` file was already open when the IDE started (e.g. after restarting with a restored session). The 2025.2+ status bar only re-renders widget text on `updateWidget()`, so the widget now requests its initial render explicitly instead of waiting for the next editor-selection change.
+- Fixed auto-detection picking the Windows-only `quarkdown.bat` / `quarkdown.cmd` launchers on macOS and Linux. Launcher name selection is now platform-aware (`quarkdown.cmd`/`quarkdown.bat` on Windows, bare `quarkdown` shell script on Unix), and the default installation locations and well-known launcher paths are detected per OS — Windows (`%LOCALAPPDATA%`, Scoop, Program Files), macOS (Homebrew `/opt/homebrew` + `/usr/local`, including versioned kegs like `2.5.0`), and Linux (Homebrew-Linux, `/opt`, `/usr/local/share`, `/usr/local/lib`).
 
 ### Changed
 

@@ -1,6 +1,7 @@
 package cc.carm.plugin.intellij.quarkdown.settings
 
 import cc.carm.plugin.intellij.quarkdown.lang.preview.QuarkdownCli
+import com.intellij.openapi.util.SystemInfo
 import java.io.File
 
 object QuarkdownPathDetector {
@@ -26,20 +27,47 @@ object QuarkdownPathDetector {
                 (binDir.isDirectory && QuarkdownCli.LAUNCHER_NAMES.any { File(binDir, it).exists() })
     }
 
+    /**
+     * Well-known installation directories for the current OS.
+     *
+     *  - **Windows**: per-user `%LOCALAPPDATA%\Quarkdown`, Scoop, Program Files.
+     *  - **macOS**: Homebrew (Apple Silicon `/opt/homebrew` and Intel `/usr/local`). The
+     *    keg layout is `<keg>/bin` (wrapper) + `<keg>/libexec/{bin,lib}`; `current` is the
+     *    version symlink, but a versioned keg (e.g. `2.5.0`) is also accepted as a fallback.
+     *  - **Linux**: `/opt` and `/usr/local/share` (generic unpack), plus Homebrew-Linux
+     *    (`/home/linuxbrew/.linuxbrew`). `/usr/local/Cellar` is covered as the Intel/brew
+     *    prefix used on macOS and Linux Homebrew.
+     */
     private fun detectFromDefaultInstallations(): String? {
         val userHome = System.getProperty("user.home")
-        val defaultPaths = listOf(
-            "$userHome/AppData/Local/Quarkdown/",
-            "$userHome/scoop/apps/quarkdown/current",
-            "C:/Program Files/Quarkdown",
-            // Homebrew (macOS): Apple Silicon (/opt/homebrew) and Intel (/usr/local).
-            // `libexec` holds the extracted bin/ + lib/ tree, i.e. the Quarkdown home.
-            "/opt/homebrew/Cellar/quarkdown/current/libexec",
-            "/usr/local/Cellar/quarkdown/current/libexec",
-            "/opt/quarkdown",
-            "/usr/local/share/quarkdown"
-        )
-        for (path in defaultPaths) {
+        val candidates = when {
+            SystemInfo.isWindows -> listOf(
+                // Per-user install directory (official installer).
+                "${System.getenv("LOCALAPPDATA") ?: "$userHome/AppData/Local"}/Quarkdown",
+                "$userHome/scoop/apps/quarkdown/current",
+                "C:/Program Files/Quarkdown",
+            )
+
+            SystemInfo.isMac -> listOf(
+                "/opt/homebrew/Cellar/quarkdown/current/libexec",
+                "/usr/local/Cellar/quarkdown/current/libexec",
+                // Versioned kegs when the `current` symlink is absent.
+                "/opt/homebrew/Cellar/quarkdown/2.5.0/libexec",
+                "/usr/local/Cellar/quarkdown/2.5.0/libexec",
+                "/opt/quarkdown",
+                "/usr/local/share/quarkdown",
+            )
+
+            else -> listOf(
+                // Linux Homebrew and generic unpack locations.
+                "/home/linuxbrew/.linuxbrew/Cellar/quarkdown/current/libexec",
+                "/home/linuxbrew/.linuxbrew/Cellar/quarkdown/2.5.0/libexec",
+                "/opt/quarkdown",
+                "/usr/local/share/quarkdown",
+                "/usr/local/lib/quarkdown",
+            )
+        }
+        for (path in candidates) {
             val dir = File(path)
             if (dir.exists()) return dir.absolutePath
         }
@@ -56,10 +84,20 @@ object QuarkdownPathDetector {
      * function registry can also load the standard library.
      */
     private fun detectFromKnownLaunchers(): String? {
-        val launchers = listOf(
-            "/opt/homebrew/bin/quarkdown",
-            "/usr/local/bin/quarkdown"
-        )
+        val launchers = when {
+            SystemInfo.isMac -> listOf(
+                "/opt/homebrew/bin/quarkdown",
+                "/usr/local/bin/quarkdown",
+            )
+
+            SystemInfo.isLinux -> listOf(
+                "/usr/local/bin/quarkdown",
+                "/usr/bin/quarkdown",
+                "/home/linuxbrew/.linuxbrew/bin/quarkdown",
+            )
+
+            else -> emptyList()
+        }
         for (launcher in launchers) {
             val file = File(launcher)
             if (!file.isFile) continue

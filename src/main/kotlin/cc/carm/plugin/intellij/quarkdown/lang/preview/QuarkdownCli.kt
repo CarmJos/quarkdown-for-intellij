@@ -236,6 +236,20 @@ object QuarkdownCli {
         return tokens
     }
 
-    /** Platform-specific launcher names of the `quarkdown` command (order = preference). */
-    internal val LAUNCHER_NAMES = listOf("quarkdown.cmd", "quarkdown.bat", "quarkdown")
+    /**
+     * Platform-specific launcher names of the `quarkdown` command (order = preference).
+     *
+     * The distribution ships the Windows launchers (`quarkdown.cmd` / `quarkdown.bat`)
+     * in `bin/` on **every** platform, alongside the Unix shell script `quarkdown`.
+     * Running a `.bat` on macOS/Linux fails ("@echo: command not found"), so only the
+     * names that are valid on the current OS are considered:
+     *  - Windows: the `.cmd` / `.bat` batch scripts;
+     *  - macOS / Linux: the bare `quarkdown` shell script.
+     */
+    internal val LAUNCHER_NAMES: List<String>
+        get() = if (SystemInfo.isWindows) {
+            listOf("quarkdown.cmd", "quarkdown.bat", "quarkdown")
+        } else {
+            listOf("quarkdown")
+        }
 }
