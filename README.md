@@ -60,6 +60,10 @@ enabling developers to write and edit Quarkdown documents with full IDE assistan
 <details>
 <summary><b>📝 Writing & Editing</b></summary>
 
+**Write in real time** — watch your Quarkdown document take shape with live editing, completion and formatting.
+
+<img src=".doc/screenshots/writing.gif" alt="Writing a Quarkdown document" width="80%"/>
+
 **Full Syntax Highlighting** — the editor colors every Quarkdown directive and Markdown element with a fully customizable color scheme.
 
 <img src=".doc/screenshots/editor.png" alt="Editor with full syntax highlighting" width="80%"/>

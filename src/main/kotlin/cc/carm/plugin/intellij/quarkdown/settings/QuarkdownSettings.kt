@@ -18,6 +18,7 @@ class QuarkdownSettings : SimplePersistentStateComponent<QuarkdownSettings.State
         var previewPort by property(8989)
         var previewCliArgs by string()
         var watchChanges by property(true)
+        var autoSavePreviewFiles by property(true)
     }
 
     companion object {

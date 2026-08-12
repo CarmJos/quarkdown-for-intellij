@@ -162,6 +162,11 @@ class QuarkdownSettingsConfigurable(private val project: Project) :
                     checkBox(QuarkdownBundle.message("quarkdown.settings.preview.watch.changes"))
                         .bindSelected(settings.state::watchChanges)
                 }
+                row {
+                    checkBox(QuarkdownBundle.message("quarkdown.settings.preview.autosave"))
+                        .bindSelected(settings.state::autoSavePreviewFiles)
+                        .comment(QuarkdownBundle.message("quarkdown.settings.preview.autosave.comment"))
+                }
             }
 
             group(QuarkdownBundle.message("quarkdown.settings.documentation")) {

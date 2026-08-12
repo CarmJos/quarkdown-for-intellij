@@ -14,6 +14,7 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.PathManager
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.Logger
+import com.intellij.openapi.editor.Document
 import com.intellij.openapi.editor.EditorFactory
 import com.intellij.openapi.editor.event.DocumentListener
 import com.intellij.openapi.fileEditor.FileDocumentManager
@@ -26,6 +27,11 @@ import java.io.File
 import java.nio.charset.Charset
 import java.util.*
 import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.Executors
+import java.util.concurrent.ScheduledExecutorService
+import java.util.concurrent.ScheduledFuture
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicReference
 
 /**
  * Project-level coordinator for the live Quarkdown preview.
@@ -95,6 +101,13 @@ class QuarkdownPreviewService(private val project: Project) : Disposable {
     val watchEnabled: Boolean
         get() = QuarkdownSettings.getInstance(project).state.watchChanges
 
+    /**
+     * Whether the plugin auto-saves the previewed document while the preview is running
+     * (persisted to the "Auto-save while previewing" setting).
+     */
+    val autoSaveEnabled: Boolean
+        get() = QuarkdownSettings.getInstance(project).state.autoSavePreviewFiles
+
     /** Port of the preview web server. */
     val port: Int
         get() = QuarkdownSettings.getInstance(project).state.previewPort
@@ -119,12 +132,32 @@ class QuarkdownPreviewService(private val project: Project) : Disposable {
 
     private var pendingOpenBrowser = false
 
+    /**
+     * Debounced auto-save for the previewed `.qd` document.
+     *
+     * IntelliJ only saves documents to disk when the application loses focus (or on idle),
+     * which is why the user had to press Ctrl+S manually to update the preview. Unlike VS
+     * Code there is no built-in "save every N ms" option, so the plugin implements it here:
+     * while a preview is running in watch mode, the previewed document is written to disk
+     * shortly after typing stops. The Quarkdown CLI's own `--watch` file watcher then picks
+     * up the change and recompiles, hot-reloading the preview.
+     */
+    private val autoSaveExecutor: ScheduledExecutorService =
+        Executors.newSingleThreadScheduledExecutor { r ->
+            Thread(r, "quarkdown-preview-autosave").apply { isDaemon = true }
+        }
+
+    /** The pending auto-save task (cancel + reschedule on every keystroke). */
+    private val pendingAutoSave = AtomicReference<ScheduledFuture<*>>()
+
     private val documentListener = object : DocumentListener {
         override fun documentChanged(event: com.intellij.openapi.editor.event.DocumentEvent) {
             val file = FileDocumentManager.getInstance().getFile(event.document) ?: return
-            if (file == previewFile && state == State.RUNNING) {
+            if (file != previewFile) return
+            if (state == State.RUNNING || state == State.STARTING) {
                 // `-w` inside the CLI handles the recompilation; just surface a status hint.
                 onServerOutput(QuarkdownBundle.message("quarkdown.preview.status.file.changed", file.name))
+                scheduleAutoSave(event.document)
             }
         }
     }
@@ -312,6 +345,35 @@ class QuarkdownPreviewService(private val project: Project) : Disposable {
     // ----------------------------------------------------------------------
     // Internal helpers
     // ----------------------------------------------------------------------
+
+    /**
+     * (Re)schedules the debounced auto-save of the previewed document. Typing keeps
+     * cancelling the previous task, so the file is only written once the user pauses for
+     * [AUTO_SAVE_DELAY_MS] milliseconds - matching the `afterDelay` semantics of VS Code's
+     * autosave (a pause of ~100 ms, not a save every 100 ms).
+     */
+    private fun scheduleAutoSave(document: Document) {
+        if (!autoSaveEnabled) return
+        if (!watchEnabled) return
+        pendingAutoSave.getAndSet(
+            autoSaveExecutor.schedule({
+                ApplicationManager.getApplication().invokeLater {
+                    savePreviewDocument(document)
+                }
+            }, AUTO_SAVE_DELAY_MS, TimeUnit.MILLISECONDS)
+        )?.cancel(false)
+    }
+
+    /** Writes the previewed document to disk so the CLI's `--watch` recompiles it. */
+    private fun savePreviewDocument(document: Document) {
+        val file = FileDocumentManager.getInstance().getFile(document) ?: return
+        if (file != previewFile) return
+        if (state != State.RUNNING && state != State.STARTING) return
+        if (FileDocumentManager.getInstance().isDocumentUnsaved(document)) {
+            logger.debug("Auto-saving previewed document ${file.name}")
+            FileDocumentManager.getInstance().saveDocument(document)
+        }
+    }
 
     private fun updateActiveEditorFile(file: VirtualFile) {
         val changed = activeEditorFile?.path != file.path
@@ -594,11 +656,16 @@ class QuarkdownPreviewService(private val project: Project) : Disposable {
         name.replace(Regex("[^\\p{Alnum}._-]"), "-").ifBlank { "document" }
 
     override fun dispose() {
+        pendingAutoSave.getAndSet(null)?.cancel(false)
+        autoSaveExecutor.shutdown()
         stopPreview()
         listeners.clear()
     }
 
     companion object {
+
+        /** Debounce delay before the previewed document is auto-saved after typing stops. */
+        private const val AUTO_SAVE_DELAY_MS = 100L
 
         fun getInstance(project: Project): QuarkdownPreviewService =
             project.getService(QuarkdownPreviewService::class.java)

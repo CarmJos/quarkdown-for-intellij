@@ -60,6 +60,10 @@ _**"为 JetBrains IntelliJ 平台提供 Quarkdown 语言支持。"**_
 <details>
 <summary><b>📝 编写与编辑</b></summary>
 
+**实时编写** — 在补全与格式化等功能的辅助下，边写边预览你的 Quarkdown 文档成型。
+
+<img src=".doc/screenshots/writing.gif" alt="编写 Quarkdown 文档" width="80%"/>
+
 **完整语法高亮** — 编辑器为所有 Quarkdown 指令与 Markdown 元素着色，并配备一套可完全自定义的专属配色方案。
 
 <img src=".doc/screenshots/editor.png" alt="完整语法高亮的编辑器" width="80%"/>

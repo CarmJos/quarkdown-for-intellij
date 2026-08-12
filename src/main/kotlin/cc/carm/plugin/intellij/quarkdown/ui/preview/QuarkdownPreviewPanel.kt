@@ -41,6 +41,7 @@ import javax.swing.JProgressBar
 import javax.swing.JScrollPane
 import javax.swing.JTextArea
 import javax.swing.SwingConstants
+import javax.swing.SwingUtilities
 import javax.swing.Timer
 import kotlin.math.roundToInt
 
@@ -80,7 +81,6 @@ class QuarkdownPreviewPanel(private val project: Project) : Disposable {
     private var toolbar: ActionToolbar? = null
 
     @Volatile
-    private var browserLoading = false
     private var updatingFileField = false
 
     // Debounce applying the typed path so intermediate keystrokes don't restart the server.
@@ -129,8 +129,10 @@ class QuarkdownPreviewPanel(private val project: Project) : Disposable {
                     canGoBack: Boolean,
                     canGoForward: Boolean,
                 ) {
-                    browserLoading = isLoading
-                    ApplicationManager.getApplication().invokeLater { updateProgressBar() }
+                    // No-op. Watch-mode auto-refreshes reload the page in JCEF without
+                    // restarting the server; the progress bar is driven exclusively by
+                    // `service.busy` (see updateProgressBar) so these reloads never make
+                    // the preview "jump".
                 }
 
                 override fun onLoadStart(
@@ -374,14 +376,21 @@ class QuarkdownPreviewPanel(private val project: Project) : Disposable {
         val textArea = JTextArea(log).apply {
             isEditable = false
             font = Font(Font.MONOSPACED, Font.PLAIN, 12)
-            caretPosition = 0
+            // Place the caret at the end so the viewport scrolls to the newest output.
+            caretPosition = log.length
         }
         val scroll = JScrollPane(textArea).apply { preferredSize = JBUI.size(720, 420) }
         val builder = DialogBuilder(project)
         builder.setTitle(QuarkdownBundle.message("quarkdown.preview.view.log.title"))
         builder.setCenterPanel(scroll)
         builder.addOkAction()
+        // The text area must be laid out before the viewport can be positioned, so scroll
+        // to the bottom after the dialog has been shown.
         builder.show()
+        SwingUtilities.invokeLater {
+            textArea.setCaretPosition(textArea.text.length)
+            scroll.verticalScrollBar.value = scroll.verticalScrollBar.maximum
+        }
     }
 
     // ------------------------------------------------------------------
@@ -434,7 +443,10 @@ class QuarkdownPreviewPanel(private val project: Project) : Disposable {
     }
 
     private fun updateProgressBar() {
-        progressBar.isVisible = service.busy || browserLoading
+        // Only the server-level busy state drives the bar. Watch-mode auto-refreshes
+        // reload the page in JCEF without restarting the server; showing the bar for
+        // every such reload made the top of the preview flash blue and the layout jump.
+        progressBar.isVisible = service.busy
     }
 
     // ------------------------------------------------------------------
