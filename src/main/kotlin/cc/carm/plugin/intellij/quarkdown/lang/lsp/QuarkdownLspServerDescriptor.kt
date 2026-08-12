@@ -8,8 +8,6 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.SystemInfo
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.platform.lsp.api.LspServerDescriptor
-import com.intellij.platform.lsp.api.customization.LspCompletionSupport
-import com.intellij.platform.lsp.api.customization.LspDiagnosticsSupport
 import com.intellij.platform.lsp.api.customization.LspSemanticTokensSupport
 import java.io.File
 
@@ -54,12 +52,11 @@ class QuarkdownLspServerDescriptor(
         return commandLine
     }
 
-    override val lspHoverSupport: Boolean get() = true
-
-    override val lspCompletionSupport: LspCompletionSupport get() = LspCompletionSupport()
-
-    override val lspDiagnosticsSupport: LspDiagnosticsSupport get() = LspDiagnosticsSupport()
-
+    // The platform's default LspCustomization already enables hover, diagnostics,
+    // completion and semantic tokens; we only override the semantic-token color mapping
+    // (quarkdown-lsp's legend → this plugin's existing highlight attributes).
+    // `LspServerDescriptor` is an experimental platform API (see docs/LSP-integration-plan.md).
+    @Suppress("OVERRIDE_DEPRECATION")
     override val lspSemanticTokensSupport: LspSemanticTokensSupport get() =
         QuarkdownLspSemanticTokensSupport()
 
@@ -74,6 +71,16 @@ class QuarkdownLspServerDescriptor(
             }
             return QuarkdownPathDetector.detect()
         }
+
+        /** Returns the running LSP server for this plugin, or `null` when none is active. */
+        fun currentServer(project: Project): com.intellij.platform.lsp.api.LspServer? =
+            try {
+                com.intellij.platform.lsp.api.LspServerManager.getInstance(project)
+                    .getServersForProvider(QuarkdownLspServerSupportProvider::class.java)
+                    .firstOrNull()
+            } catch (e: Exception) {
+                null
+            }
 
         /**
          * Resolves the JVM used to launch the LSP server.

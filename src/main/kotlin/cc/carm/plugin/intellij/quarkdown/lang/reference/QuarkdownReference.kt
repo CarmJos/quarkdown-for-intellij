@@ -15,7 +15,7 @@ import com.intellij.psi.*
  *   "ref"        → `{#id}` label declaration or heading anchor
  *   "label"      → the declaration itself (resolve); `multiResolve` returns every `.ref { id }`
  *   "var"        → .var { name } declaration
- *   "read/include/css/code" → file path resolved relative to source file
+ *   "read/include" → file path resolved relative to source file
  *   "image"      → image filename segment (resolves to PsiFile)
  *   "image-dir"  → image directory segment (resolves to PsiDirectory)
  */
@@ -37,7 +37,7 @@ class QuarkdownReference(
             // the usages popup at the declaration.
             "label", "var-decl" -> resolveDeclarationLeaf()
             "var" -> resolveVar(project, virtualFile)
-            "read", "include", "css", "code", "image" -> resolveFile(project, virtualFile)
+            "read", "include", "image" -> resolveFile(project, virtualFile)
             "image-dir" -> resolveDirectory(project, virtualFile)
             else -> null
         }

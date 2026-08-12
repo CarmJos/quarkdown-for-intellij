@@ -1,40 +1,15 @@
 package cc.carm.plugin.intellij.quarkdown.lang.completion
 
-import cc.carm.plugin.intellij.quarkdown.lang.function.FunctionRegistry
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 
 /**
- * Verifies function-name completion produces grammatically correct results.
+ * Verifies the structural file-path completion contributor produces correct results.
+ *
+ * Function-name / parameter / enum completion is provided by the official Quarkdown
+ * Language Server (see `QuarkdownLspServerIntegrationTest`); this test only covers the
+ * registry-independent path completion for `.include`/`.read`/`.css`/`.code`.
  */
 class QuarkdownCompletionPlatformTest : BasePlatformTestCase() {
-
-    override fun setUp() {
-        super.setUp()
-        // These tests drive the legacy reflective completion contributor directly, so
-        // the official LSP semantic layer must be disabled to make the outcome
-        // deterministic (the LSP path is exercised by the dedicated integration tests).
-        cc.carm.plugin.intellij.quarkdown.settings.QuarkdownSettings.getInstance(project)
-            .state.useLspSemantics = false
-
-        // Use the Quarkdown home provided by the Gradle test task (system property set
-        // from the auto-downloaded SDK or a local installation), then fall back to the
-        // environment variable or a well-known local install for IDE test runs.
-        val path = System.getProperty("quarkdown.test.home")
-            ?: System.getenv("QUARKDOWN_HOME")
-            ?: "C:\\Users\\Karmu\\scoop\\apps\\quarkdown\\current"
-        FunctionRegistry.getInstance(project).refresh(path, force = true)
-    }
-
-    fun `test registry contains center`() {
-        val names = FunctionRegistry.getInstance(project).getFunctions().map { it.name }
-        assertTrue("center should be in the registry (${names.size} functions)", names.contains("center"))
-    }
-
-    fun `test registry size`() {
-        val functions = FunctionRegistry.getInstance(project).getFunctions()
-        System.out.println("registry loaded ${functions.size} functions")
-        assertTrue("registry should load functions", functions.size > 100)
-    }
 
     fun `test completion contributors registered for quarkdown`() {
         val contributors = com.intellij.codeInsight.completion.CompletionContributor
@@ -73,77 +48,6 @@ class QuarkdownCompletionPlatformTest : BasePlatformTestCase() {
         )
         service.getVariantsFromContributor(params, contributor, resultSet)
         return collected
-    }
-
-    fun `test dot completion lists center and many functions`() {
-        val collected = directCompletions(".<caret>")
-        System.out.println("completions for '.': ${collected.take(30)} (total ${collected.size})")
-        assertTrue("should include center", collected.contains("center"))
-        assertTrue("should list many functions", collected.size > 100)
-    }
-
-    fun `test cent prefix offers center`() {
-        val collected = directCompletions(".cent<caret>")
-        System.out.println("completions for '.cent': ${collected.take(30)}")
-        assertTrue("should include center", collected.contains("center"))
-    }
-
-    fun `test no parameter completion appears after a bare dot`() {
-        val collected = directCompletions(".<caret>")
-        // `.background:{}` came from PARAMETER completion. After a dot, only plain
-        // function names may be offered — never `name:{}` fragments.
-        assertTrue(
-            "no parameter completion should appear after a dot, got: ${
-                collected.filter {
-                    it.contains(":") || it.contains(
-                        "{"
-                    )
-                }
-            }",
-            collected.none { it.contains(":") || it.contains("{") }
-        )
-    }
-
-    fun `test bac prefix offers only plain function names`() {
-        val collected = directCompletions(".bac<caret>")
-        System.out.println("completions for '.bac': $collected")
-        assertTrue(
-            "results should be plain function names, got: $collected",
-            collected.all { !it.contains(":") && !it.contains("{") && !it.contains("}") }
-        )
-    }
-
-    fun `test dot after pageformat on a new line offers function names`() {
-        // Mirrors the reported bug: a `.` typed on a fresh line below `.pageformat`
-        // must NOT offer pageformat's parameters — it must offer function names.
-        val collected = directCompletions(".pageformat size:{a4} margin:{1}\n.<caret>")
-        System.out.println("completions after .pageformat\\n.: ${collected.take(20)}")
-        assertTrue("should include center", collected.contains("center"))
-        assertTrue("should list many functions", collected.size > 100)
-        // No parameter completions (which appear as `name:{}` fragments) may leak here.
-        assertTrue(
-            "no parameter completion may leak after a new-line dot, got: ${
-                collected.filter {
-                    it.contains(":") || it.contains(
-                        "{"
-                    )
-                }
-            }",
-            collected.none { it.contains(":") || it.contains("{") }
-        )
-    }
-
-    fun `test dot inside a continuation line stays in the parent call`() {
-        // After `.tableofcontents \` the continuation belongs to the call, so typing
-        // inside a continuation should offer that call's parameters.
-        val collected = directCompletions(".tableofcontents \\\n    title:{**Contents**} maxdepth:{3} \\\n    <caret>")
-        System.out.println("completions in continuation: ${collected.take(20)}")
-        // The continuation is inside the call → next-argument completion.
-        assertTrue("expected parameter completions in continuation, got: $collected", collected.isNotEmpty())
-        assertTrue(
-            "expected title/maxdepth/indexheading/breakpage params",
-            collected.any { it == "indexheading" || it == "breakpage" || it == "numberheading" }
-        )
     }
 
     fun `test completion confidence allows autopopup for quarkdown`() {
@@ -202,20 +106,6 @@ class QuarkdownCompletionPlatformTest : BasePlatformTestCase() {
         assertTrue("should suggest file.qd", completions.contains("file.qd"))
     }
 
-    fun `test css and code path completion`() {
-        myFixture.addFileToProject("main.css", "")
-        myFixture.addFileToProject("main.js", "")
-
-        assertTrue(
-            ".css should suggest main.css",
-            directCompletions(".css {main<caret>}").contains("main.css")
-        )
-        assertTrue(
-            ".code should suggest main.js",
-            directCompletions(".code {main<caret>}").contains("main.js")
-        )
-    }
-
     fun `test include path completion falls back to nearest existing directory`() {
         myFixture.addFileToProject("docs/images/logo.png", "logo")
 
@@ -227,10 +117,16 @@ class QuarkdownCompletionPlatformTest : BasePlatformTestCase() {
     fun `test no file completion for non-path functions`() {
         myFixture.addFileToProject("docs/intro.qd", "intro")
 
-        val completions = directCompletions(".pagemargin {doc<caret>}")
+        // `.pagemargin` and `.css` take content, not a path.
+        val pagemargin = directCompletions(".pagemargin {doc<caret>}")
         assertTrue(
-            "no path completion should appear for .pagemargin, got: $completions",
-            completions.none { it == "docs/" }
+            "no path completion should appear for .pagemargin, got: $pagemargin",
+            pagemargin.none { it == "docs/" }
+        )
+        val css = directCompletions(".css {doc<caret>}")
+        assertTrue(
+            "no path completion should appear for .css (raw CSS content), got: $css",
+            css.none { it == "docs/" }
         )
     }
 }

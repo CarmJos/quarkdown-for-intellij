@@ -1,11 +1,9 @@
 package cc.carm.plugin.intellij.quarkdown.settings
 
 import cc.carm.plugin.intellij.quarkdown.QuarkdownBundle
-import cc.carm.plugin.intellij.quarkdown.lang.function.FunctionRegistry
 import cc.carm.plugin.intellij.quarkdown.lang.preview.QuarkdownCli
 import com.intellij.icons.AllIcons
 import com.intellij.ide.BrowserUtil
-import com.intellij.openapi.components.service
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
 import com.intellij.openapi.options.BoundSearchableConfigurable
 import com.intellij.openapi.project.Project
@@ -31,8 +29,6 @@ class QuarkdownSettingsConfigurable(private val project: Project) :
 
     private var checkButton: JButton? = null
     private var checkResultLabel: JLabel? = null
-    private var cacheInfoLabel: JLabel? = null
-    private var refreshCacheButton: JButton? = null
     private var homeField: TextFieldWithBrowseButton? = null
 
     override fun createPanel(): DialogPanel {
@@ -75,45 +71,9 @@ class QuarkdownSettingsConfigurable(private val project: Project) :
                     }
                 }
                 row {
-                    label(
-                        QuarkdownBundle.message(
-                            "quarkdown.settings.installation.function.cache",
-                            project.service<FunctionRegistry>().getCacheInfo()
-                        )
-                    )
-                        .applyToComponent { cacheInfoLabel = this }
-                }
-                row {
                     button(QuarkdownBundle.message("quarkdown.settings.installation.help")) {
                         BrowserUtil.browse("https://quarkdown.com/#install")
                     }
-                    button(QuarkdownBundle.message("quarkdown.settings.installation.refresh.cache")) {
-                        val path = homeField?.text.orEmpty()
-                        if (QuarkdownPathDetector.isValidQuarkdownHome(path)) {
-                            val registry = project.service<FunctionRegistry>()
-                            refreshCacheButton?.isEnabled = false
-                            cacheInfoLabel?.text =
-                                QuarkdownBundle.message("quarkdown.settings.installation.function.cache.refreshing")
-                            registry.refreshAsync(path, force = true) { _ ->
-                                refreshCacheButton?.isEnabled = true
-                                cacheInfoLabel?.text = QuarkdownBundle.message(
-                                    "quarkdown.settings.installation.function.cache",
-                                    registry.getCacheInfo()
-                                )
-                            }
-                        }
-                    }.applyToComponent {
-                        refreshCacheButton = this
-                        isEnabled = QuarkdownPathDetector.isValidQuarkdownHome(homeField?.text.orEmpty())
-                    }
-                }
-            }
-
-            group(QuarkdownBundle.message("quarkdown.settings.lsp")) {
-                row {
-                    checkBox(QuarkdownBundle.message("quarkdown.settings.lsp.use"))
-                        .bindSelected(settings.state::useLspSemantics)
-                        .comment(QuarkdownBundle.message("quarkdown.settings.lsp.use.comment"))
                 }
             }
 
@@ -305,10 +265,8 @@ class QuarkdownSettingsConfigurable(private val project: Project) :
 
     override fun disposeUIResources() {
         checkResultLabel = null
-        cacheInfoLabel = null
         homeField = null
         checkButton = null
-        refreshCacheButton = null
         super.disposeUIResources()
     }
 }

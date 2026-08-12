@@ -257,12 +257,12 @@ fun validQuarkdownHome(path: String?): File? {
 }
 
 // ── Quarkdown SDK auto-download for tests ──────────────────────────
-// The function-registry & completion tests reflect against a real Quarkdown standard
-// library (com.quarkdown.stdlib.Stdlib). Instead of relying on a local installation
-// (which CI does not have) or a hand-written fake, the official Quarkdown CLI
-// distribution is downloaded from the GitHub releases and extracted into the project's
-// `build/` directory. A locally installed Quarkdown (QUARKDOWN_HOME or a default install
-// location) is preferred when present to avoid re-downloading.
+// The LSP integration tests launch a real `quarkdown language-server` (see
+// `QuarkdownLspServerIntegrationTest`), which requires the official Quarkdown CLI
+// distribution. Instead of relying on a local installation (which CI does not have),
+// the distribution is downloaded from the GitHub releases and extracted into the
+// project's `build/` directory. A locally installed Quarkdown (QUARKDOWN_HOME or a
+// default install location) is preferred when present to avoid re-downloading.
 
 /** Directory under `build/` where the downloaded/extracted Quarkdown SDK is stored. */
 val quarkdownSdkCacheDir: File = layout.buildDirectory.dir("quarkdown-sdk").get().asFile
@@ -408,10 +408,10 @@ dependencies {
     }
 
     // The Quarkdown standard-library classes are never referenced at compile time:
-    // FunctionRegistry loads them reflectively at runtime through QuarkdownSdkClassLoader
-    // (a URLClassLoader over the detected installation's lib/*.jar). Bundling them here
+    // the plugin only talks to the official `quarkdown language-server` over LSP
+    // (stdio), so no quarkdown jars are needed on the compile classpath. Bundling them
     // would also break compilation because the SDK ships Kotlin 2.3 metadata while this
-    // project compiles with Kotlin 2.1. So no quarkdown jars are declared as dependencies.
+    // project compiles with Kotlin 2.1.
 }
 
 // Project metadata and developer information

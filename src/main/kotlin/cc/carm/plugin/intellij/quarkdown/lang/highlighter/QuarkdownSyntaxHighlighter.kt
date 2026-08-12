@@ -151,15 +151,10 @@ class QuarkdownSyntaxHighlighter : SyntaxHighlighterBase() {
             "QUARKDOWN_ESCAPE", DefaultLanguageHighlighterColors.KEYWORD
         )
 
-        // ---- Semantic highlighting (applied by QuarkdownSemanticAnnotator) ----
+        // ---- Semantic highlighting (applied from quarkdown-lsp semantic tokens) ----
         /** Applied to function names that resolve to a known stdlib function. */
         val SEMANTIC_KNOWN_FUNCTION = TextAttributesKey.createTextAttributesKey(
             "QUARKDOWN_SEMANTIC_KNOWN_FUNCTION", DefaultLanguageHighlighterColors.FUNCTION_CALL
-        )
-
-        /** Applied to `.name` references that resolve to a declared variable. */
-        val SEMANTIC_VARIABLE_REF = TextAttributesKey.createTextAttributesKey(
-            "QUARKDOWN_SEMANTIC_VARIABLE_REF", DefaultLanguageHighlighterColors.LOCAL_VARIABLE
         )
 
         /** Applied to argument values that are valid enum members. */

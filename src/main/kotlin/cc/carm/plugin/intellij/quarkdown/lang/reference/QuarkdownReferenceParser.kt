@@ -31,7 +31,7 @@ object QuarkdownReferenceParser {
     private val refBlockPattern = Regex("""\.ref\s*\{\s*([^}]+?)\s*\}""", RegexOption.IGNORE_CASE)
     private val labelPattern = Regex("""\{#([a-zA-Z0-9_-]+)}""")
     private val filePattern =
-        Regex("""\.(read|include|css|code)\s*\{\s*(?:"([^"]+)"|([^{}"]+?))\s*\}""", RegexOption.IGNORE_CASE)
+        Regex("""\.(read|include)\s*\{\s*(?:"([^"]+)"|([^{}"]+?))\s*\}""", RegexOption.IGNORE_CASE)
 
     /**
      * Pattern matching Quarkdown image syntax:

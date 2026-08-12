@@ -1,13 +1,10 @@
 package cc.carm.plugin.intellij.quarkdown
 
 import cc.carm.plugin.intellij.quarkdown.action.image.ImagePasteHandler
-import cc.carm.plugin.intellij.quarkdown.lang.function.FunctionRegistry
 import cc.carm.plugin.intellij.quarkdown.settings.QuarkdownPathDetector
 import cc.carm.plugin.intellij.quarkdown.settings.QuarkdownSettings
 import cc.carm.plugin.intellij.quarkdown.ui.floating.FloatingToolbarCustomizer
 import com.intellij.openapi.actionSystem.IdeActions
-import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.editor.actionSystem.EditorActionManager
 import com.intellij.openapi.project.Project
@@ -36,16 +33,17 @@ class QuarkdownStartupActivity : ProjectActivity {
         val settings = QuarkdownSettings.getInstance(project)
         val path = settings.state.quarkdownPath
 
+        // The official Quarkdown Language Server is launched lazily when a .qd file is
+        // opened (see QuarkdownLspServerSupportProvider); the startup activity only
+        // persists the detected installation path so the LSP descriptor can find it.
         if (path.isNullOrEmpty()) {
             val detected = QuarkdownPathDetector.detect()
             if (detected != null) {
                 logger.info("Auto-detected Quarkdown at: $detected")
                 settings.state.quarkdownPath = detected
-                project.service<FunctionRegistry>().refresh(detected)
             }
         } else {
             logger.info("Using existing Quarkdown path: $path")
-            project.service<FunctionRegistry>().refresh(path)
         }
     }
 

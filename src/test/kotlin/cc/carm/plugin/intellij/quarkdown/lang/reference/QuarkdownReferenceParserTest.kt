@@ -75,6 +75,34 @@ class QuarkdownReferenceParserTest {
     }
 
     @Test
+    fun `css content is not a file path anchor`() {
+        // `.css` accepts raw CSS content, not a file path → no path anchor.
+        val text = ".css { body { color: red } }"
+        val anchors = QuarkdownReferenceParser.computeAnchors(text)
+        assertEquals(0, anchors.count { it.referenceType == "css" })
+    }
+
+    @Test
+    fun `code content is not a file path anchor`() {
+        val text = ".code { println(\"hi\") }"
+        val anchors = QuarkdownReferenceParser.computeAnchors(text)
+        assertEquals(0, anchors.count { it.referenceType == "code" })
+    }
+
+    @Test
+    fun `nested read inside css still yields a path anchor on the inner path`() {
+        // `.css {.read {style.css}}` — the inner `.read` path is navigable,
+        // while the css content itself is not.
+        val text = ".css {.read {style.css}}"
+        val anchors = QuarkdownReferenceParser.computeAnchors(text)
+        assertEquals(0, anchors.count { it.referenceType == "css" })
+        val readAnchors = anchors.filter { it.referenceType == "read" }
+        assertEquals(1, readAnchors.size)
+        assertEquals("style.css", readAnchors[0].referenceText)
+        assertTrue(text.substring(readAnchors[0].start, readAnchors[0].end) == "style.css")
+    }
+
+    @Test
     fun `detects image path segments`() {
         val text = "!(50%)[logo](assets/logo.png)"
         val anchors = QuarkdownReferenceParser.computeAnchors(text)

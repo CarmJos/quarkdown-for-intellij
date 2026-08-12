@@ -23,7 +23,7 @@ import com.intellij.psi.PsiFile
  * **Usages** (`.ref { id }`, `.name`): return the single declaration so Ctrl+Click navigates
  * directly.
  *
- * **File paths** (`.include` / `.read` / `.css` / `.code` and image paths): return the
+ * **File paths** (`.include` / `.read` and image paths): return the
  * target file.
  */
 class QuarkdownGotoDeclarationHandler : GotoDeclarationHandler {
@@ -68,7 +68,7 @@ class QuarkdownGotoDeclarationHandler : GotoDeclarationHandler {
             "ref" -> findLabelDeclaration(project, psiFile, id)
             "var" -> findVarDeclaration(project, psiFile, id)
             // File paths: navigate to the target file.
-            "read", "include", "css", "code", "image" -> resolveFileTarget(psiFile, anchor.referenceText)
+            "read", "include", "image" -> resolveFileTarget(psiFile, anchor.referenceText)
             "image-dir" -> resolveFileTarget(psiFile, anchor.referenceText)
             else -> PsiElement.EMPTY_ARRAY
         }
