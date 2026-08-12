@@ -115,6 +115,13 @@ class QuarkdownStatsWidget(project: Project) : EditorBasedWidget(project) {
         // Attach the document listener immediately so typing updates the counts even
         // before the first editor-selection change.
         reattachDocumentListener()
+        // The 2025.2+ status bar only re-renders widget text when updateWidget() is
+        // invoked. Without an explicit refresh here, the initial value stays empty until
+        // the next selection/document change - which may never arrive when a .qd file is
+        // already the active editor at startup, hiding the counts until the status bar is
+        // toggled. Request the first render explicitly.
+        cachedModCount = -1L
+        myStatusBar?.updateWidget(ID())
     }
 
     private fun reattachDocumentListener() {
