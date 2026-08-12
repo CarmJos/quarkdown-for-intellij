@@ -52,7 +52,7 @@ enabling developers to write and edit Quarkdown documents with full IDE assistan
 ### Integration & Management
 
 - **Instant File Creation** — Create new Quarkdown documents right from the File → New menu with a ready-made template.
-- **Centralized Settings** — Configure the Quarkdown installation path, compile and preview options, and editor appearance all from one settings page.
+- **Centralized Settings** — Configure the Quarkdown installation path and compile/preview options from one settings page.
 - **Bilingual Interface** — The entire plugin UI is available in both English and Chinese.
 
 ## Screenshots
@@ -91,7 +91,7 @@ enabling developers to write and edit Quarkdown documents with full IDE assistan
 <details>
 <summary><b>⚙️ Centralized Settings</b></summary>
 
-**One Settings Page** — configure the Quarkdown installation path, compile and preview options, and editor appearance all in one place.
+**One Settings Page** — configure the Quarkdown installation path and compile/preview options all in one place.
 
 <img src=".doc/screenshots/settings.png" alt="Plugin settings page" width="80%"/>
 

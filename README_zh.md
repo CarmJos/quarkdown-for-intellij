@@ -52,7 +52,7 @@ _**"为 JetBrains IntelliJ 平台提供 Quarkdown 语言支持。"**_
 ### 集成与管理
 
 - **一键新建文档** — 从「文件 → 新建」菜单即可基于模板快速创建 Quarkdown 文档。
-- **集中式设置** — Quarkdown 安装路径、编译与预览参数、编辑器外观均可在一处设置页面中配置。
+- **集中式设置** — Quarkdown 安装路径、编译与预览参数均可在一处设置页面中配置。
 - **双语界面** — 插件界面支持中英双语，开箱即用。
 
 ## 功能截图
@@ -91,7 +91,7 @@ _**"为 JetBrains IntelliJ 平台提供 Quarkdown 语言支持。"**_
 <details>
 <summary><b>⚙️ 集中式设置</b></summary>
 
-**一个设置页面** — Quarkdown 安装路径、编译与预览参数、编辑器外观均可在一处集中配置。
+**一个设置页面** — Quarkdown 安装路径、编译与预览参数均可在一处集中配置。
 
 <img src=".doc/screenshots/settings.png" alt="插件设置页面" width="80%"/>
 

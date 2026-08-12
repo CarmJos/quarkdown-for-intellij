@@ -50,13 +50,6 @@
                 bundle="messages.QuarkdownBundle"
                 key="quarkdown.settings.name"/>
 
-        <projectConfigurable
-                parentId="Settings.Language.Quarkdown"
-                id="Settings.Language.Quarkdown.EditorAppearance"
-                instance="cc.carm.plugin.intellij.quarkdown.settings.QuarkdownEditorAppearanceConfigurable"
-                bundle="messages.QuarkdownBundle"
-                key="quarkdown.settings.editor.appearance.name"/>
-
         <postStartupActivity implementation="cc.carm.plugin.intellij.quarkdown.QuarkdownStartupActivity"/>
 
         <completion.contributor

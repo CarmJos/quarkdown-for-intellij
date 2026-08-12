@@ -5,9 +5,14 @@
 ### Fixed
 
 - Floating toolbars (text-selection formatting toolbar and table row/column operation toolbars) now appear again. The toolbars are only shown once their actions have finished populating, matching the platform's own `FloatingToolbar` behaviour, and the table toolbar actions once again resolve the editor context (previous versions could show an empty toolbar because the `ActionUpdateThread.BGT` action update runs asynchronously).
+- The floating formatting toolbar now also appears when selecting text by double-clicking a word (previously it only appeared for drag selections). The behaviour now matches the platform's `FloatingToolbar`, whose `disableForDoubleClickSelection()` default is `false`.
 - The Quarkdown installation is now auto-detected on macOS when installed via Homebrew. Dock/Finder-launched IDE instances do not inherit the shell `PATH`, and the detector previously had no Apple-Silicon (`/opt/homebrew`) locations, so the plugin could not find `quarkdown` — leaving function completions, documentation and diagnostics unavailable. The detected launcher is now also resolved back to its installation home so the standard-library function registry loads correctly.
 - Fixed an intermittent "Can't remove document listener" error thrown when the status-bar word/paragraph-count widget was disposed (e.g. while closing an editor). The widget no longer removes its document listener twice.
 - Fixed the status-bar word/paragraph count not appearing when a `.qd` file was already open when the IDE started (e.g. after restarting with a restored session). The 2025.2+ status bar only re-renders widget text on `updateWidget()`, so the widget now requests its initial render explicitly instead of waiting for the next editor-selection change.
+
+### Changed
+
+- Removed the dedicated "Editor Appearance" settings page for Quarkdown files. The settings it exposed (font family/size/line height, soft wrap, line numbers, and per-component styling for headings/code blocks/tables) were **never consumed by any rendering code** — they were dead settings that had no effect. Equivalent functionality is provided by IntelliJ's built-in Editor settings (Font, Soft Wraps, Line Numbers) and the existing Quarkdown Color Scheme page.
 
 ## [1.0.0] - 2026-08-11
 
@@ -33,7 +38,7 @@ After two rounds of pre-release iterations, this version brings a mature, battle
 - **Quick preview panel** inside the IDE that refreshes on save, plus external browser preview.
 - **One-click build** to PDF and other formats via a dedicated Run Configuration, with auto-compile on save.
 - **Instant file creation** from the File → New menu with a ready-made template.
-- **Centralized settings** page for Quarkdown installation path, compile/preview options and editor appearance.
+- **Centralized settings** page for Quarkdown installation path and compile/preview options.
 - **Bilingual interface** — the entire plugin UI is available in both English and Chinese.
 - **Auto-closing** for double quotes and triple backticks.
 - **Commenting** and code block insertion actions with language completion.

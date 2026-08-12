@@ -36,7 +36,7 @@
 - [x] Documentation button to Quarkdown wiki in settings.
 - [x] Compile parameters configuration (CLI args, output directory, etc.).
 - [x] Preview parameters configuration (CLI args, output directory, etc.).
-- [X] Editor appearance settings for `.qd` files (font family, size, line height, line wrap; per-component: headings, code blocks, tables, etc.).
+- [X] Editor appearance settings for `.qd` files — **removed**: the settings were never consumed by any rendering code (dead settings), and the equivalent functionality is already provided by IntelliJ's built-in Editor settings (Font, Soft Wraps, Line Numbers) and the Quarkdown Color Scheme page.
 - [X] Completion behavior settings (case sensitivity, auto-insert brackets, etc.).
 - [X] Code formatting settings (indent size, max line width, etc.).
 - [X] Dedicated color scheme configuration for Quarkdown syntax.

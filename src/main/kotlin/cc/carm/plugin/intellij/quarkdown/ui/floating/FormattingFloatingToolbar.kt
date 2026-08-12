@@ -5,7 +5,6 @@ import cc.carm.plugin.intellij.quarkdown.lang.function.QuarkdownCallParser
 import cc.carm.plugin.intellij.quarkdown.ui.QuarkdownActionToolbarUtils
 import com.intellij.codeInsight.hint.HintManager
 import com.intellij.codeInsight.hint.HintManagerImpl
-import com.intellij.ide.IdeEventQueue
 import com.intellij.ide.ui.customization.CustomActionsSchema
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.ActionGroup
@@ -36,11 +35,9 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.awt.AWTEvent
 import java.awt.Point
 import java.awt.event.KeyAdapter
 import java.awt.event.KeyEvent
-import java.awt.event.MouseEvent
 import javax.swing.JComponent
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -290,14 +287,11 @@ class FormattingFloatingToolbar(
 
     private inner class EditorSelectionListener : SelectionListener {
         override fun selectionChanged(event: SelectionEvent) {
+            // The platform's FloatingToolbar decides whether a double-click selection should
+            // suppress the toolbar via `disableForDoubleClickSelection()` (default false),
+            // i.e. double-clicking a word must show the toolbar just like a drag selection.
+            // We deliberately keep double-click selections enabled.
             preventHintFromShowing = false
-            if (isIgnoredEvent(IdeEventQueue.getInstance().trueCurrentEvent)) {
-                preventHintFromShowing = true
-            }
-        }
-
-        private fun isIgnoredEvent(event: AWTEvent): Boolean {
-            return (event as? MouseEvent)?.clickCount == 2
         }
     }
 
