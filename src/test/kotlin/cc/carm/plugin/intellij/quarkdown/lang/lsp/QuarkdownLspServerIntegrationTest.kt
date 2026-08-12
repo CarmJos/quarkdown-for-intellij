@@ -169,7 +169,7 @@ class QuarkdownLspServerIntegrationTest {
             val result = client.request(4, "textDocument/semanticTokens/full", mapOf(
                 "textDocument" to mapOf("uri" to URI)
             ))
-            val data = ((result["result"] as? Map<*, *>)?.get("data")) as? List<*>
+            val data = (result["result"] as? Map<*, *>)?.get("data") as? List<*>
             assertNotNull("semantic tokens expected", data)
             assertTrue("semantic tokens should contain data", data!!.isNotEmpty())
         }
