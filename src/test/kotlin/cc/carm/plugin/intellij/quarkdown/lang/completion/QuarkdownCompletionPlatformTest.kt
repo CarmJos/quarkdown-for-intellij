@@ -129,4 +129,28 @@ class QuarkdownCompletionPlatformTest : BasePlatformTestCase() {
             css.none { it == "docs/" }
         )
     }
+
+    // ------------------------------------------------------------------
+    // Variable completion for `.var` declarations
+    // ------------------------------------------------------------------
+
+    fun `test var declaration suggests declared variable`() {
+        val completions = directCompletions(".var {status} {ok}\n\nCurrent status is .sta<caret>")
+        System.out.println("var completions for '.sta': $completions")
+        assertTrue("should suggest the declared variable status", completions.contains("status"))
+    }
+
+    fun `test var completion offers all declared variables after bare dot`() {
+        val completions = directCompletions(".var {status} {ok}\n.var {version} {1.0}\n\n.ver<caret>")
+        System.out.println("var completions for '.ver': $completions")
+        assertTrue("should suggest version", completions.contains("version"))
+        assertTrue("should not suggest unrelated status", !completions.contains("status"))
+    }
+
+    fun `test var completion does not fire inside an argument`() {
+        val completions = directCompletions(".var {status} {ok}\n\n.include {sta<caret>}")
+        // Caret is inside the include value braces → file-path completion, not variables.
+        System.out.println("var completions inside include: $completions")
+        assertTrue("no variable completion inside an argument, got: $completions", completions.none { it == "status" })
+    }
 }

@@ -2,6 +2,8 @@ package cc.carm.plugin.intellij.quarkdown.lang.completion
 
 import cc.carm.plugin.intellij.quarkdown.QuarkdownBundle
 import cc.carm.plugin.intellij.quarkdown.QuarkdownFileType
+import cc.carm.plugin.intellij.quarkdown.QuarkdownIcons
+import cc.carm.plugin.intellij.quarkdown.lang.function.QuarkdownCallParser
 import cc.carm.plugin.intellij.quarkdown.lang.function.QuarkdownCallParser.Arg
 import cc.carm.plugin.intellij.quarkdown.lang.reference.QuarkdownPathUtil
 import com.intellij.codeInsight.AutoPopupController
@@ -50,8 +52,41 @@ class QuarkdownCompletionContributor : CompletionContributor() {
             if (!ctx.hasCall) return
 
             when {
+                ctx.inFunctionName -> maybeSuggestVariables(parameters, ctx, result)
                 ctx.currentArg != null -> maybeSuggestFilePath(parameters, ctx, result)
                 ctx.afterNamedColon -> maybeSuggestFilePathAfterColon(parameters, ctx, result)
+            }
+        }
+
+        // ------------------------------------------------------------------
+        // Variable completion for `.var` declarations
+        // ------------------------------------------------------------------
+
+        /**
+         * Suggests document-level variables declared via `.var {name} {value}` while the
+         * user is typing a `.name` reference (e.g. `.sta…`). Uses a dedicated variable icon
+         * so declared variables are visually distinct from the LSP's function completions.
+         */
+        private fun maybeSuggestVariables(
+            parameters: CompletionParameters,
+            ctx: FunctionCallTokenizer.FunctionCallContext,
+            result: CompletionResultSet
+        ) {
+            val file = parameters.originalFile
+            if (file.fileType != QuarkdownFileType.INSTANCE) return
+
+            val vars = QuarkdownCallParser.findVarValues(file.text)
+            if (vars.isEmpty()) return
+
+            val prefix = ctx.namePrefix.lowercase()
+            for ((name, value) in vars) {
+                if (prefix.isNotEmpty() && !name.startsWith(prefix)) continue
+                result.addElement(
+                    LookupElementBuilder.create(name)
+                        .withIcon(QuarkdownIcons.VARIABLE)
+                        .withTypeText(QuarkdownBundle.message("quarkdown.completion.type.variable"), true)
+                        .withTailText("  = $value", true)
+                )
             }
         }
 

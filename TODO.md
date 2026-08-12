@@ -64,6 +64,7 @@
 - [x] File completion and navigation for `.include` `.css` `.code`, etc. Also for cross-references `.ref {id}`.
 - [x] File path navigation for `.include {path}` and `.read {path}` with variable resolution (e.g. `{.version/file.qd}` resolves `.version` variable value).
 - [x] File path completion and navigation for images `!(100%)[](path "label")` and tables.
+- [x] Completion support and fold preview for variables declared via `.var` (distinct variable icon in completion; variable references fold to show their assigned value).
 - [x] For tables:
     - Floating bars matching the IntelliJ Markdown plugin: horizontal bars above each column separator, vertical bars at the left edge of every row.
     - Clicking a bar opens a floating toolbar: insert/remove/move/select rows or columns, and set column alignment (left/center/right).

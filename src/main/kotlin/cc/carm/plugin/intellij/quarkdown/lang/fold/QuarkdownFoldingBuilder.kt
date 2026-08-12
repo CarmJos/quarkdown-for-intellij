@@ -2,21 +2,27 @@ package cc.carm.plugin.intellij.quarkdown.lang.fold
 
 import cc.carm.plugin.intellij.quarkdown.QuarkdownBundle
 import cc.carm.plugin.intellij.quarkdown.QuarkdownLanguage
+import cc.carm.plugin.intellij.quarkdown.lang.function.QuarkdownCallParser
 import com.intellij.lang.ASTNode
 import com.intellij.lang.folding.FoldingBuilderEx
 import com.intellij.lang.folding.FoldingDescriptor
 import com.intellij.openapi.editor.Document
 import com.intellij.openapi.editor.FoldingGroup
+import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
 
 /**
- * Code folding for Quarkdown files — sections, fenced code blocks, and tables.
+ * Code folding for Quarkdown files — sections, fenced code blocks, tables, and
+ * `.var` variable references.
  *
  * Foldable regions:
  *   1. **Section** — from a heading line to the next heading of same or higher level.
  *   2. **Code block** — from ` ```lang ` to matching ` ``` `.
  *   3. **Table** — consecutive lines containing `|`.
+ *   4. **Variable reference** — a `.name` usage of a variable declared via `.var`,
+ *      folded to display the variable's assigned value as the placeholder (hovering
+ *      shows the original raw reference, clicking expands).
  *
  * Each fold shows a placeholder like `... (12 lines)` or `` ```...``` ``.
  */
@@ -37,6 +43,7 @@ class QuarkdownFoldingBuilder : FoldingBuilderEx() {
         descriptors += sectionFoldingDescriptors(root, lines, text)
         descriptors += codeBlockFoldingDescriptors(root, text)
         descriptors += tableFoldingDescriptors(root, lines, text)
+        descriptors += varReferenceFoldingDescriptors(root, text)
 
         return descriptors.toTypedArray()
     }
@@ -69,6 +76,9 @@ class QuarkdownFoldingBuilder : FoldingBuilderEx() {
             // Trim trailing blank lines so a separator remains visible after folding
             val nextLineIdx = if (foldEnd < text.length) lineIndexAt(lines, foldEnd) else lines.size
             foldEnd = trimTrailingBlankLines(lines, lineIdx + 1, nextLineIdx)
+            // When the document does not end with a newline, offset math may yield an end
+            // offset one past the text length; clamp it so countNonEmptyLines stays in bounds.
+            if (foldEnd > text.length) foldEnd = text.length
 
             if (foldStart < foldEnd) {
                 val contentLines = countNonEmptyLines(text, foldStart, foldEnd)
@@ -143,6 +153,45 @@ class QuarkdownFoldingBuilder : FoldingBuilderEx() {
                 QuarkdownBundle.message("quarkdown.fold.table.placeholder", rowCount, unit)
             )
         }
+    }
+
+    /**
+     * Builds variable-reference folds: every `.name` usage of a variable declared via
+     * `.var {name} {value}` is folded to display the variable's assigned value as the
+     * placeholder. Hovering over the fold shows the original raw reference and clicking
+     * expands it, giving a live preview of what the value resolves to.
+     *
+     * Each reference folds independently (no shared group) so one preview can be toggled
+     * without collapsing every variable reference in the document.
+     */
+    private fun varReferenceFoldingDescriptors(root: PsiElement, text: String): List<FoldingDescriptor> {
+        val vars = QuarkdownCallParser.findVarValues(text)
+        if (vars.isEmpty()) return emptyList()
+
+        val fenceRanges = findFenceRanges(text)
+        val descriptors = mutableListOf<FoldingDescriptor>()
+        val varRefPattern = Regex("""\.([a-zA-Z][a-zA-Z0-9]*)\b""")
+
+        for (match in varRefPattern.findAll(text)) {
+            val varName = match.groupValues[1].lowercase()
+            val value = vars[varName] ?: continue
+            val start = match.range.first
+            val end = match.range.last + 1
+            if (start >= end) continue
+            // Skip references inside fenced code blocks (raw code, not references).
+            if (fenceRanges.any { start >= it.first && end <= it.second }) continue
+            descriptors.add(
+                FoldingDescriptor(
+                    root.node,
+                    TextRange(start, end),
+                    null, // independent fold per reference
+                    value,
+                    true, // collapsed by default so the value is directly visible
+                    emptySet()
+                )
+            )
+        }
+        return descriptors
     }
 
     override fun getPlaceholderText(node: ASTNode): String = "..."

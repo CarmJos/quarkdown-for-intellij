@@ -333,17 +333,53 @@ object QuarkdownCallParser {
      */
     fun findVarDeclarations(text: String): Map<String, Int> {
         val result = LinkedHashMap<String, Int>()
+        for ((name, _, nameOffset) in findVarDeclarationEntries(text)) {
+            result.putIfAbsent(name, nameOffset)
+        }
+        return result
+    }
+
+    /**
+     * Collects document-level variable declarations (`.var {name} {value}`) and returns
+     * a map of lowercase variable name → assigned value.
+     *
+     * Used by the completion contributor (variable-name suggestions) and the folding
+     * builder (variable-reference preview folds). Declarations without a value argument
+     * are skipped — there is nothing meaningful to preview or suggest.
+     */
+    fun findVarValues(text: String): Map<String, String> {
+        val result = LinkedHashMap<String, String>()
+        for ((name, value, _) in findVarDeclarationEntries(text)) {
+            if (value.isNotEmpty()) result.putIfAbsent(name, value)
+        }
+        return result
+    }
+
+    /** A parsed `.var` declaration: lowercase name, trimmed value and the name's raw offset. */
+    private data class VarEntry(val name: String, val value: String, val nameOffset: Int)
+
+    /**
+     * Parses every `.var {name} {value}` declaration, yielding one [VarEntry] per
+     * declaration. Unlike [findVarDeclarations], the value argument is optional here so
+     * name-only declarations are still indexed for reference/navigation purposes.
+     */
+    private fun findVarDeclarationEntries(text: String): List<VarEntry> {
+        val entries = mutableListOf<VarEntry>()
         for (start in findAllCallStarts(text)) {
             val call = parseCall(text, start) ?: continue
             if (call.name != "var") continue
             val nameArg = call.args.firstOrNull { !it.isNamed }
                 ?: call.args.firstOrNull { it.paramName == "name" }
                 ?: continue
+            val valueArg = call.args.firstOrNull { it.paramName == "value" }
+                ?: call.args.firstOrNull { it !== nameArg && !it.isNamed }
             val rawName = nameArg.raw.trim()
             val name = rawName.removeSurrounding("\"").removeSurrounding("'").trim()
-            if (name.isNotEmpty()) result.putIfAbsent(name.lowercase(), nameArg.rawStart)
+            if (name.isNotEmpty()) {
+                entries.add(VarEntry(name.lowercase(), valueArg?.raw?.trim().orEmpty(), nameArg.rawStart))
+            }
         }
-        return result
+        return entries
     }
 
     /** Finds the index of the `}` closing the brace opened at [openIdx]. */

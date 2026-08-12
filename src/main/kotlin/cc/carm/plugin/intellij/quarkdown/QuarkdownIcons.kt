@@ -40,6 +40,10 @@ object QuarkdownIcons {
     @JvmField
     val HEADING_MARKER: Icon = IconLoader.getIcon("/icons/marker/heading.svg", QuarkdownIcons::class.java)
 
+    /** Completion icon for `.var` declared variables (visually distinct from the function icon) */
+    @JvmField
+    val VARIABLE: Icon = IconLoader.getIcon("/icons/marker/variable.svg", QuarkdownIcons::class.java)
+
     // ------------------------------------------------------------------
     // Action domain — table
     // ------------------------------------------------------------------

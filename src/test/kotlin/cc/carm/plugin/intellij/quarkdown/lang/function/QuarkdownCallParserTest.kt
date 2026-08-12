@@ -154,6 +154,21 @@ class QuarkdownCallParserTest {
     }
 
     @Test
+    fun `collects var values`() {
+        val text = ".var {status} {ok}\n.var {version} {1.0}\nCurrent status is .status ."
+        val vars = QuarkdownCallParser.findVarValues(text)
+        assertEquals(mapOf("status" to "ok", "version" to "1.0"), vars)
+    }
+
+    @Test
+    fun `skips var declarations without a value`() {
+        val text = ".var {status}\n.var {version} {1.0}"
+        val vars = QuarkdownCallParser.findVarValues(text)
+        // The name-only declaration has nothing meaningful to preview/suggest.
+        assertEquals(mapOf("version" to "1.0"), vars)
+    }
+
+    @Test
     fun `detects body argument`() {
         val text = ".pagemargin {bottomcenter}\n    .currentpage"
         val call = QuarkdownCallParser.parseCall(text, 0)!!

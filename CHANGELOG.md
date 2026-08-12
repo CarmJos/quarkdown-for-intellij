@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+### Added
+
+- **Completion support for variables declared via `.var`** — declared variables are now offered as completion suggestions when typing a `.name` reference, using a dedicated variable icon so they are visually distinct from function completions.
+- **Variable-reference preview folds (CustomFold)** — references to `.var`-declared variables (e.g. `.status`) can be folded to display the variable's assigned value as the fold placeholder. Hovering over the fold shows the original raw reference and clicking expands it. The folds are collapsed by default and each reference folds independently.
+
 ## [1.0.1] - 2026-08-12
 
 ### Fixed
