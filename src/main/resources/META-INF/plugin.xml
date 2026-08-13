@@ -413,6 +413,13 @@
         <group id="Quarkdown.EditorActions" popup="true"
                class="cc.carm.plugin.intellij.quarkdown.action.EditorActionsGroup">
             <add-to-group group-id="EditorPopupMenu" anchor="last"/>
+            <!-- Headings -->
+            <action id="Quarkdown.InsertHeading"
+                    class="cc.carm.plugin.intellij.quarkdown.action.heading.InsertHeadingAction">
+                <keyboard-shortcut first-keystroke="control shift H" keymap="$default"/>
+            </action>
+            <separator/>
+            <!-- Text formatting -->
             <action id="Quarkdown.ToggleBold"
                     class="cc.carm.plugin.intellij.quarkdown.action.text.BoldToggleAction">
                 <keyboard-shortcut first-keystroke="control B" keymap="$default"/>
@@ -437,6 +444,8 @@
                     class="cc.carm.plugin.intellij.quarkdown.action.text.LinkInsertAction">
                 <keyboard-shortcut first-keystroke="control shift L" keymap="$default"/>
             </action>
+            <separator/>
+            <!-- Media: images, tables, equations -->
             <action id="Quarkdown.InsertImage"
                     class="cc.carm.plugin.intellij.quarkdown.action.image.ImageInsertAction">
                 <keyboard-shortcut first-keystroke="control shift I" keymap="$default"/>
@@ -444,10 +453,6 @@
             <action id="Quarkdown.InsertTable"
                     class="cc.carm.plugin.intellij.quarkdown.action.table.InsertTableAction">
                 <keyboard-shortcut first-keystroke="control shift T" keymap="$default"/>
-            </action>
-            <action id="Quarkdown.InsertHeading"
-                    class="cc.carm.plugin.intellij.quarkdown.action.heading.InsertHeadingAction">
-                <keyboard-shortcut first-keystroke="control shift H" keymap="$default"/>
             </action>
             <action id="Quarkdown.InsertEquation"
                     class="cc.carm.plugin.intellij.quarkdown.action.equation.InsertEquationAction">
