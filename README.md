@@ -91,7 +91,7 @@ enabling developers to write and edit Quarkdown documents with full IDE assistan
 
   </details>
 
-- **Effortless Formatting** — Reformat documents and code blocks with proper rules, comment lines quickly with a shortcut, and enjoy auto-closing of paired symbols such as `{}`, `[]`, and quotes.
+- **Effortless Editing** — Comment lines quickly with a shortcut, and enjoy auto-closing of paired symbols such as `{}`, `[]`, and quotes.
 - **Handy Formatting Shortcuts** — Commonly used operations such as bold, italic, strikethrough, code blocks, links, images, and tables are just one keypress away, making formatting quick and effortless.
 - **File Assistance** — Path completion and existence checks for includes, stylesheets, code files, images, and cross-references help you wire documents together without typos.
 - **Live Word Count** — A word and paragraph counter in the status bar keeps track of your progress as you write (excluding function calls and code blocks).

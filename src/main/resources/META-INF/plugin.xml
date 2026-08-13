@@ -14,7 +14,7 @@
             <li><b>Document Overview</b> — Structure view, breadcrumbs, and code folding keep long documents organized and easy to navigate.</li>
             <li><b>Visual Table Editing</b> — Insert, remove, move, select, and align table rows and columns from floating handles and a toolbar, without touching the raw syntax.</li>
             <li><b>Convenient Image Handling</b> — Drag-and-drop or paste images into the document; the correct syntax is generated for you and invalid paths are called out.</li>
-            <li><b>Effortless Formatting</b> — Reformat documents and code blocks, comment lines quickly, enjoy auto-closing of paired symbols, and use handy formatting shortcuts.</li>
+            <li><b>Effortless Editing</b> — Comment lines quickly, enjoy auto-closing of paired symbols, and use handy formatting shortcuts.</li>
             <li><b>Quick Preview &amp; Build</b> — A live preview panel inside the IDE that auto-refreshes on save, external browser preview, and one-click PDF export through a dedicated run configuration.</li>
             <li><b>Bilingual Interface</b> — The entire plugin UI is available in both English and Chinese.</li>
         </ul>
