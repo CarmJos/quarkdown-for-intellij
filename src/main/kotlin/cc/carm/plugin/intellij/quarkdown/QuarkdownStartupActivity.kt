@@ -59,7 +59,9 @@ class QuarkdownStartupActivity : ProjectActivity {
         }
 
         // Activate the LSP lifecycle watcher: it retries a crashed/failed language server
-        // and restarts it whenever the Quarkdown home path changes.
+        // and restarts it whenever the Quarkdown home path changes. Lifecycle events are
+        // delivered through the descriptor's public `lspServerListener` (see
+        // QuarkdownLspServerDescriptor), which forwards them to this service.
         QuarkdownLspServerManager.getInstance(project)
     }
 

@@ -10,6 +10,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.SystemInfo
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.platform.lsp.api.LspServerDescriptor
+import com.intellij.platform.lsp.api.LspServerListener
 import com.intellij.platform.lsp.api.customization.LspCompletionSupport
 import com.intellij.platform.lsp.api.customization.LspSemanticTokensSupport
 import java.io.File
@@ -80,6 +81,26 @@ class QuarkdownLspServerDescriptor(
     @Suppress("OVERRIDE_DEPRECATION")
     override val lspCompletionSupport: LspCompletionSupport get() =
         QuarkdownLspCompletionSupport()
+
+    /**
+     * Forwards server lifecycle events to [QuarkdownLspServerManager] so it can retry
+     * a crashed/failed server and restart it against a new Quarkdown home.
+     *
+     * The platform invokes [LspServerListener.serverInitialized] once the server reaches
+     * the `Running` state, and [LspServerListener.serverStopped] with `shutdownNormally`
+     * set to `false` when the server stopped unexpectedly. This is the public LSP API
+     * replacement for the (internal) `LspServerManagerListener`, which the plugin
+     * verifier rejects.
+     */
+    override val lspServerListener: LspServerListener = object : LspServerListener {
+        override fun serverInitialized(params: org.eclipse.lsp4j.InitializeResult) {
+            QuarkdownLspServerManager.getInstance(project).onServerInitialized()
+        }
+
+        override fun serverStopped(shutdownNormally: Boolean) {
+            QuarkdownLspServerManager.getInstance(project).onServerStopped(shutdownNormally)
+        }
+    }
 
     companion object {
         private val LOG = Logger.getInstance(QuarkdownLspServerDescriptor::class.java)

@@ -13,10 +13,7 @@ import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.options.ShowSettingsUtil
 import com.intellij.openapi.project.Project
-import com.intellij.platform.lsp.api.LspServer
 import com.intellij.platform.lsp.api.LspServerManager
-import com.intellij.platform.lsp.api.LspServerManagerListener
-import com.intellij.platform.lsp.api.LspServerState
 import java.util.concurrent.ConcurrentHashMap
 
 /**
@@ -24,8 +21,9 @@ import java.util.concurrent.ConcurrentHashMap
  *
  * The IntelliJ platform LSP integration does **not** automatically restart a server
  * that crashed or failed to initialize; it only reports the unexpected shutdown to
- * [LspServerManagerListener]s and otherwise leaves the Quarkdown features dead. This
- * service:
+ * `LspServerListener`s and otherwise leaves the Quarkdown features dead. The lifecycle
+ * notifications arrive through [QuarkdownLspServerDescriptor.lspServerListener]
+ * (the public LSP API), which forwards them here. This service:
  *
  *  - listens for unexpected shutdowns and retries the server with a short backoff
  *    (bounded, so a genuinely broken installation is never retried forever);
@@ -39,17 +37,26 @@ class QuarkdownLspServerManager(private val project: Project) : Disposable {
 
     private val retryAttempts = ConcurrentHashMap<Class<*>, Int>()
 
-    init {
-        try {
-            // `true` → the listener is also notified about servers that already stopped
-            // unexpectedly before this service was created (e.g. after a plugin reload).
-            LspServerManager.getInstance(project)
-                .addLspServerManagerListener(LspListener(), this, true)
-        } catch (e: Throwable) {
-            // The LSP platform module may not be fully initialized yet; the listener will
-            // simply not be active, which only disables auto-retry (not core editing).
-            LOG.warn("Failed to subscribe to LSP server lifecycle events", e)
-        }
+    /**
+     * Called by [QuarkdownLspServerDescriptor.lspServerListener] once the Quarkdown
+     * language server has been initialized successfully (i.e. reached the `Running`
+     * state). Clears any pending retry state and, when the server was brought back by
+     * an automatic retry, informs the user.
+     */
+    fun onServerInitialized() {
+        if (project.isDisposed) return
+        handleServerRunning()
+    }
+
+    /**
+     * Called by [QuarkdownLspServerDescriptor.lspServerListener] when the Quarkdown
+     * language server stops. An unexpected shutdown ([shutdownNormally] == false, e.g.
+     * the process crashed or failed to initialize) triggers the bounded retry logic; a
+     * normal shutdown (user-initiated restart, project close) is ignored.
+     */
+    fun onServerStopped(shutdownNormally: Boolean) {
+        if (project.isDisposed) return
+        if (!shutdownNormally) handleUnexpectedStop()
     }
 
     /**
@@ -67,15 +74,6 @@ class QuarkdownLspServerManager(private val project: Project) : Disposable {
             LOG.info("Restarted the Quarkdown LSP server")
         } catch (e: Throwable) {
             LOG.warn("Failed to restart the Quarkdown LSP server", e)
-        }
-    }
-
-    private fun onServerStateChanged(server: LspServer) {
-        if (server.providerClass != QuarkdownLspServerSupportProvider::class.java) return
-        when (server.state) {
-            LspServerState.ShutdownUnexpectedly -> handleUnexpectedStop()
-            LspServerState.Running -> handleServerRunning()
-            else -> Unit
         }
     }
 
@@ -181,10 +179,6 @@ class QuarkdownLspServerManager(private val project: Project) : Disposable {
                 NotificationType.INFORMATION,
             )
             .notify(project)
-    }
-
-    private inner class LspListener : LspServerManagerListener {
-        override fun serverStateChanged(lspServer: LspServer) = onServerStateChanged(lspServer)
     }
 
     override fun dispose() {
