@@ -51,14 +51,17 @@ class QuarkdownPathDetectorTest {
     fun `a bin directory resolves back to the installation home`() {
         val home = fakeHome()
         val bin = File(home, "bin")
-        assertEquals(home.absolutePath, QuarkdownPathDetector.resolveHome(bin.absolutePath))
+        // Compare canonical paths: the resolver resolves symlinks (e.g. macOS `/var`
+        // -> `/private/var`, Windows 8.3 short names), so the returned home may be the
+        // canonical form of the same directory.
+        assertEquals(home.canonicalFile.absolutePath, QuarkdownPathDetector.resolveHome(bin.absolutePath))
     }
 
     @Test
     fun `a launcher file resolves back to the installation home`() {
         val home = fakeHome()
         val launcher = File(File(home, "bin"), "quarkdown")
-        assertEquals(home.absolutePath, QuarkdownPathDetector.resolveHome(launcher.absolutePath))
+        assertEquals(home.canonicalFile.absolutePath, QuarkdownPathDetector.resolveHome(launcher.absolutePath))
     }
 
     @Test
