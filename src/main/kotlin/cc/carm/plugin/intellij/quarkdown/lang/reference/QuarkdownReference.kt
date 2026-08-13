@@ -5,6 +5,7 @@ import cc.carm.plugin.intellij.quarkdown.lang.function.QuarkdownCallParser
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.TextRange
+import com.intellij.openapi.vfs.VfsUtilCore
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.*
 
@@ -88,6 +89,22 @@ class QuarkdownReference(
     }
 
     override fun isReferenceTo(element: PsiElement): Boolean {
+        // File-path references: the element is the resolved file or directory.
+        if (referenceType in FILE_REFERENCE_TYPES) {
+            val target = resolve() ?: return false
+            val targetVf = when (target) {
+                is PsiFile -> target.virtualFile
+                is PsiDirectory -> target.virtualFile
+                else -> null
+            } ?: return false
+            val elementVf = when (element) {
+                is PsiFile -> element.virtualFile
+                is PsiDirectory -> element.virtualFile
+                else -> element.containingFile?.virtualFile
+            }
+            return elementVf != null && elementVf == targetVf
+        }
+
         val targetFile = element.containingFile ?: return false
         if (targetFile.fileType != QuarkdownFileType.INSTANCE) return false
 
@@ -214,6 +231,27 @@ class QuarkdownReference(
     }
 
     override fun handleElementRename(newElementName: String): PsiElement {
+        // File-path references (read/include/image): rename only the target's path segment.
+        if (referenceType in FILE_REFERENCE_TYPES) {
+            val file = element.containingFile ?: return element
+            val document = file.viewProvider.document ?: return element
+            if (!element.isValid) return element
+
+            val absoluteStart = element.textRange.startOffset + rangeInElement.startOffset
+            val absoluteEnd = element.textRange.startOffset + rangeInElement.endOffset
+            if (absoluteEnd <= absoluteStart || absoluteEnd > document.textLength) return element
+
+            val currentPath = document.getText(TextRange(absoluteStart, absoluteEnd))
+            val newPath = renamePathSegment(currentPath, newElementName)
+            if (newPath == currentPath) return element
+
+            WriteCommandAction.runWriteCommandAction(element.project) {
+                document.replaceString(absoluteStart, absoluteEnd, newPath)
+                PsiDocumentManager.getInstance(element.project).commitDocument(document)
+            }
+            return element
+        }
+
         // Replace the reference text inside the current element with the new name.
         val file = element.containingFile ?: return element
         val document = file.viewProvider.document ?: return element
@@ -236,8 +274,43 @@ class QuarkdownReference(
     }
 
     override fun bindToElement(targetElement: PsiElement): PsiElement {
+        // File-path references (read/include/image): rebind to the moved/renamed target.
+        if (referenceType in FILE_REFERENCE_TYPES) {
+            val file = element.containingFile ?: return element
+            val document = file.viewProvider.document ?: return element
+            if (!element.isValid) return element
+
+            val sourceVf = file.virtualFile ?: return element
+            val targetVf = when (targetElement) {
+                is PsiFile -> targetElement.virtualFile
+                is PsiDirectory -> targetElement.virtualFile
+                else -> targetElement.containingFile?.virtualFile
+            } ?: return element
+
+            val relativePath = relativePathBetween(sourceVf, targetVf) ?: return element
+            val absoluteStart = element.textRange.startOffset + rangeInElement.startOffset
+            val absoluteEnd = element.textRange.startOffset + rangeInElement.endOffset
+            if (absoluteEnd <= absoluteStart || absoluteEnd > document.textLength) return element
+
+            WriteCommandAction.runWriteCommandAction(element.project) {
+                document.replaceString(absoluteStart, absoluteEnd, relativePath)
+                PsiDocumentManager.getInstance(element.project).commitDocument(document)
+            }
+            return element
+        }
         // Text-based references cannot be rebound to an arbitrary element.
         return element
+    }
+
+    /**
+     * Computes the `/`-separated path of [targetVf] relative to the directory of
+     * [sourceVf], or `null` when the paths don't share a root.
+     */
+    private fun relativePathBetween(sourceVf: VirtualFile, targetVf: VirtualFile): String? {
+        val sourceDir = sourceVf.parent ?: return null
+        val path = VfsUtilCore.getRelativePath(targetVf, sourceDir, '/') ?: return null
+        // When target == source dir, the relative path is empty → keep the filename.
+        return path.ifEmpty { targetVf.name }
     }
 
     override fun getVariants(): Array<Any> = emptyArray()
@@ -321,5 +394,19 @@ class QuarkdownReference(
         val vf = QuarkdownPathUtil.resolveToVirtualFile(project, sourceFile, resolvedPath) ?: return null
         val pm = PsiManager.getInstance(project)
         return if (vf.isDirectory) pm.findDirectory(vf) else pm.findFile(vf)
+    }
+
+    companion object {
+        /** Reference types whose target is a file or directory (resolvable and renamable). */
+        internal val FILE_REFERENCE_TYPES = setOf("read", "include", "image", "image-dir")
+
+        /**
+         * Renames the last path segment of [path] to [newName], preserving any directory
+         * prefix. Quarkdown paths use `/` as separator on every platform.
+         */
+        internal fun renamePathSegment(path: String, newName: String): String {
+            val slash = path.lastIndexOf('/')
+            return if (slash >= 0) path.substring(0, slash + 1) + newName else newName
+        }
     }
 }
