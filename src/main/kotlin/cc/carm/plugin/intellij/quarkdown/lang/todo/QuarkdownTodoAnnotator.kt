@@ -13,6 +13,7 @@ import com.intellij.psi.PsiElement
  * Highlights TODO / FIXME markers inside Quarkdown HTML comments (`<!-- ... -->`).
  *
  * The annotated text is displayed with the IDE's TODO highlight color.
+ * (Indexing for the TODO tool window is handled by [QuarkdownTodoIndexer].)
  */
 class QuarkdownTodoAnnotator : Annotator {
 

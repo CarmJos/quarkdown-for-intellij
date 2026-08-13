@@ -238,10 +238,13 @@
                 language="Quarkdown"
                 implementationClass="cc.carm.plugin.intellij.quarkdown.lang.fold.QuarkdownFoldingBuilder"/>
 
-        <!-- TO-DO / FIX-ME highlighting in comments (shows in IDE TO-DO panel) -->
+        <!-- TO-DO / FIX-ME highlighting in comments and TODO tool-window indexing -->
         <annotator
                 language="Quarkdown"
                 implementationClass="cc.carm.plugin.intellij.quarkdown.lang.todo.QuarkdownTodoAnnotator"/>
+        <todoIndexer
+                filetype="Quarkdown"
+                implementationClass="cc.carm.plugin.intellij.quarkdown.lang.todo.QuarkdownTodoIndexer"/>
 
         <!-- Auto-close paired symbols ({ }, [ ], ( )) with brace matching and navigation -->
         <lang.braceMatcher
