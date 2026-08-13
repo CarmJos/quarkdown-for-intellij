@@ -37,6 +37,7 @@ class EquationDialog(
     private var originalLine: String = ""
 
     private var idField: JBTextField? = null
+    private var contentField: JBTextField? = null
 
     init {
         title = QuarkdownBundle.message("quarkdown.dialog.equation.title")
@@ -56,14 +57,39 @@ class EquationDialog(
     }
 
     override fun createCenterPanel(): JComponent {
-        val panel = JPanel(GridLayoutManager(1, 2, JBUI.insets(10), -1, -1))
+        val rows = if (contentFieldEnabled) 2 else 1
+        val panel = JPanel(GridLayoutManager(rows, 2, JBUI.insets(10), -1, -1))
+
+        var row = 0
+        if (contentFieldEnabled) {
+            val contentLabel = JBLabel(QuarkdownBundle.message("quarkdown.dialog.equation.content"))
+            val cf = JBTextField()
+            contentField = cf
+            panel.add(
+                contentLabel, GridConstraints(
+                    row, 0, 1, 1,
+                    GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE,
+                    GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED,
+                    null, null, null
+                )
+            )
+            panel.add(
+                cf, GridConstraints(
+                    row, 1, 1, 1,
+                    GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL,
+                    GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED,
+                    null, null, null
+                )
+            )
+            row++
+        }
 
         val idLabel = JBLabel(QuarkdownBundle.message("quarkdown.dialog.equation.id"))
         val idf = JBTextField()
         idField = idf
         panel.add(
             idLabel, GridConstraints(
-                0, 0, 1, 1,
+                row, 0, 1, 1,
                 GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE,
                 GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED,
                 null, null, null
@@ -71,7 +97,7 @@ class EquationDialog(
         )
         panel.add(
             idf, GridConstraints(
-                0, 1, 1, 1,
+                row, 1, 1, 1,
                 GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL,
                 GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED,
                 null, null, null
@@ -96,6 +122,25 @@ class EquationDialog(
                 QuarkdownEquationSyntax.buildFenceLine(originalLine, id)
         }
     }
+
+    /**
+     * Builds a fresh equation line when inserting a new equation (no original line).
+     */
+    fun buildInsertLine(): String {
+        val id = idField?.text?.trim().orEmpty()
+        val content = contentField?.text?.trim().orEmpty()
+        return when (kind) {
+            QuarkdownEquationSyntax.Kind.INLINE ->
+                QuarkdownEquationSyntax.buildInlineInsert(content, id)
+
+            QuarkdownEquationSyntax.Kind.FENCED ->
+                QuarkdownEquationSyntax.buildFencedInsert(content, id)
+        }
+    }
+
+    /** Whether the content field should be shown (only when inserting a new equation). */
+    private val contentFieldEnabled: Boolean
+        get() = originalLine.isEmpty()
 
     // ------------------------------------------------------------------
     // Test helpers

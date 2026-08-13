@@ -118,6 +118,36 @@ class QuarkdownEquationSyntaxTest {
     }
 
     // ------------------------------------------------------------------
+    // Insert building
+    // ------------------------------------------------------------------
+
+    @Test
+    fun `builds inline insert with content and id`() {
+        assertEquals(
+            "$ E = mc^2 $ {#energy}",
+            QuarkdownEquationSyntax.buildInlineInsert("E = mc^2", "energy")
+        )
+    }
+
+    @Test
+    fun `builds inline insert without id`() {
+        assertEquals("$ x $", QuarkdownEquationSyntax.buildInlineInsert("x", ""))
+    }
+
+    @Test
+    fun `builds inline insert with empty content`() {
+        assertEquals("$ $", QuarkdownEquationSyntax.buildInlineInsert("", ""))
+    }
+
+    @Test
+    fun `builds fenced insert block`() {
+        assertEquals(
+            "$$$ {#energy}\nE = mc^2\n$$$",
+            QuarkdownEquationSyntax.buildFencedInsert("E = mc^2", "energy")
+        )
+    }
+
+    // ------------------------------------------------------------------
     // Fence open-offset detection
     // ------------------------------------------------------------------
 

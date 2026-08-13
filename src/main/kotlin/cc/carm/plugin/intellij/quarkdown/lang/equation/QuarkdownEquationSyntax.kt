@@ -112,6 +112,35 @@ object QuarkdownEquationSyntax {
     }
 
     /**
+     * Builds a fresh inline equation line for insertion: `$ content $ {#id}`.
+     * An empty [content] yields `$ $` (the caret can be placed between the delimiters).
+     */
+    fun buildInlineInsert(content: String, id: String): String {
+        val sb = StringBuilder("$")
+        if (content.isNotBlank()) sb.append(' ').append(content.trim())
+        sb.append(" $")
+        if (id.isNotBlank()) sb.append(" {#").append(id.trim()).append("}")
+        return sb.toString()
+    }
+
+    /**
+     * Builds a fresh fenced equation block for insertion:
+     * ```
+     * $$$ {#id}
+     * content
+     * $$$
+     * ```
+     */
+    fun buildFencedInsert(content: String, id: String): String {
+        val sb = StringBuilder("$$$")
+        if (id.isNotBlank()) sb.append(" {#").append(id.trim()).append("}")
+        sb.append('\n')
+        if (content.isNotBlank()) sb.append(content.trim())
+        sb.append('\n').append("$$$")
+        return sb.toString()
+    }
+
+    /**
      * Returns the absolute line-start offsets of every *opening* fenced equation delimiter
      * in [text]. A single linear scan pairs each opening `$$$` with the next `$$$` line, so
      * closing fences never produce an entry (mirrors the code-block fence pairing).

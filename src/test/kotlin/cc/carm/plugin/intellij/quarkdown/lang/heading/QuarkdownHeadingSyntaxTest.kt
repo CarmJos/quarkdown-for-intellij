@@ -98,6 +98,27 @@ class QuarkdownHeadingSyntaxTest {
         assertEquals("# Title", QuarkdownHeadingSyntax.buildHeadingLine(original, 0, "Title", ""))
     }
 
+    @Test
+    fun `builds fresh heading insert line`() {
+        assertEquals(
+            "### Subsection {#sub}",
+            QuarkdownHeadingSyntax.buildHeadingInsert(3, "Subsection", "sub")
+        )
+    }
+
+    @Test
+    fun `builds fresh heading insert with indent`() {
+        assertEquals(
+            "    # Chapter {#ch}",
+            QuarkdownHeadingSyntax.buildHeadingInsert(1, "Chapter", "ch", indent = "    ")
+        )
+    }
+
+    @Test
+    fun `builds fresh heading insert without content or id`() {
+        assertEquals("#", QuarkdownHeadingSyntax.buildHeadingInsert(1, "", ""))
+    }
+
     // ------------------------------------------------------------------
     // Id extraction
     // ------------------------------------------------------------------

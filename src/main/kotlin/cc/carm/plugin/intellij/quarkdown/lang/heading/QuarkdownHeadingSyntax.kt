@@ -62,7 +62,15 @@ object QuarkdownHeadingSyntax {
     /** Rebuilds a heading line, preserving the original indentation. */
     fun buildHeadingLine(originalLine: String, level: Int, content: String, id: String): String {
         val info = parseHeadingLine(originalLine) ?: return originalLine
-        val sb = StringBuilder(info.indent).append("#".repeat(level.coerceIn(1, 6)))
+        return buildHeadingInsert(level, content, id, info.indent)
+    }
+
+    /**
+     * Builds a fresh heading line for insertion: `## content {#id}`.
+     * [indent] defaults to empty (new line); a caller may pass an existing line's indent.
+     */
+    fun buildHeadingInsert(level: Int, content: String, id: String, indent: String = ""): String {
+        val sb = StringBuilder(indent).append("#".repeat(level.coerceIn(1, 6)))
         val trimmedContent = content.trim()
         if (trimmedContent.isNotEmpty()) sb.append(' ').append(trimmedContent)
         val trimmedId = id.trim()

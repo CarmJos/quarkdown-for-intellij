@@ -160,6 +160,14 @@ class HeadingDialog(
         return QuarkdownHeadingSyntax.buildHeadingLine(originalLine, level, content, id)
     }
 
+    /** Builds a fresh heading line when inserting a new heading (no original line). */
+    fun buildInsertLine(): String {
+        val level = levelCombo?.selectedItem?.toString()?.toIntOrNull() ?: 1
+        val content = contentField?.text?.trim().orEmpty()
+        val id = idField?.text?.trim().orEmpty()
+        return QuarkdownHeadingSyntax.buildHeadingInsert(level, content, id)
+    }
+
     // ------------------------------------------------------------------
     // Test helpers
     // ------------------------------------------------------------------

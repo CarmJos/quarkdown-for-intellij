@@ -438,6 +438,14 @@
                     class="cc.carm.plugin.intellij.quarkdown.action.table.InsertTableAction">
                 <keyboard-shortcut first-keystroke="control shift T" keymap="$default"/>
             </action>
+            <action id="Quarkdown.InsertHeading"
+                    class="cc.carm.plugin.intellij.quarkdown.action.heading.InsertHeadingAction">
+                <keyboard-shortcut first-keystroke="control shift H" keymap="$default"/>
+            </action>
+            <action id="Quarkdown.InsertEquation"
+                    class="cc.carm.plugin.intellij.quarkdown.action.equation.InsertEquationAction">
+                <keyboard-shortcut first-keystroke="control shift E" keymap="$default"/>
+            </action>
         </group>
     </actions>
 </idea-plugin>
