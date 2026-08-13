@@ -2,12 +2,11 @@ package cc.carm.plugin.intellij.quarkdown.lang.structure
 
 import cc.carm.plugin.intellij.quarkdown.QuarkdownFileType
 import cc.carm.plugin.intellij.quarkdown.QuarkdownIcons
-import cc.carm.plugin.intellij.quarkdown.lang.lexer.QuarkdownTokenTypes
 import cc.carm.plugin.intellij.quarkdown.lang.psi.QuarkdownHeading
+import com.intellij.ide.util.PsiNavigationSupport
 import com.intellij.navigation.ChooseByNameContributorEx
 import com.intellij.navigation.ItemPresentation
 import com.intellij.navigation.NavigationItem
-import com.intellij.navigation.PsiElementNavigationItem
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiManager
@@ -23,7 +22,10 @@ import javax.swing.Icon
  * so `Ctrl+Alt+Shift+O` (Search Everywhere → Symbols) can find them project-wide.
  *
  * Headings are collected from every `.qd` file in the project scope by walking the
- * PSI tree for [QuarkdownHeading] nodes; `{#id}` tags are matched from the raw text.
+ * PSI tree for [QuarkdownHeading] nodes. `{#id}` tags are located by scanning the raw
+ * file text with a regular expression and resolving the PSI leaf at the matched offset
+ * (the PSI `children` walk cannot see leaf tokens — [com.intellij.extapi.psi.ASTDelegatePsiElement]
+ * only returns composite children).
  */
 class QuarkdownGoToSymbolContributor : ChooseByNameContributorEx {
 
@@ -71,14 +73,23 @@ class QuarkdownGoToSymbolContributor : ChooseByNameContributorEx {
         return names
     }
 
-    /** Returns the PSI elements in [file] that declare the given [name]. */
+    /**
+     * Returns the PSI elements in [file] that declare the given [name]: either a
+     * [QuarkdownHeading] whose text matches, or the leaf at every `{#id}` occurrence.
+     */
     private fun findSymbolsByName(file: PsiFile, name: String): List<PsiElement> {
         val result = mutableListOf<PsiElement>()
         collectHeadings(file).forEach { heading ->
             if (heading.headingText == name) result.add(heading)
         }
-        collectIdTags(file).forEach { element ->
-            if (element.text == name) result.add(element)
+        // Resolve the PSI leaf at each `{#name}` occurrence. The leaf is the ID_TAG
+        // token (a PsiNamedElement), found directly at the offset — do not traverse
+        // `psi.children` here, because it skips leaf tokens.
+        val escaped = Regex.escape(name)
+        val occurrencePattern = Regex("""\{#\s*($escaped)\s*}""")
+        for (match in occurrencePattern.findAll(file.text)) {
+            val idStart = match.groups[1]!!.range.first
+            file.findElementAt(idStart)?.let { result.add(it) }
         }
         return result
     }
@@ -95,18 +106,6 @@ class QuarkdownGoToSymbolContributor : ChooseByNameContributorEx {
         return result
     }
 
-    private fun collectIdTags(file: PsiFile): List<PsiElement> {
-        val result = mutableListOf<PsiElement>()
-        val stack = ArrayDeque<PsiElement>()
-        stack.add(file)
-        while (stack.isNotEmpty()) {
-            val element = stack.removeLast()
-            if (element.node?.elementType == QuarkdownTokenTypes.ID_TAG) result.add(element)
-            element.children.forEach { stack.addLast(it) }
-        }
-        return result
-    }
-
     private companion object {
         /** Matches `{#id}` element ID tags. */
         val ID_TAG_REGEX = Regex("""\{#([a-zA-Z0-9_\-]+)\}""")
@@ -114,13 +113,19 @@ class QuarkdownGoToSymbolContributor : ChooseByNameContributorEx {
 }
 
 /**
- * Navigation item for a symbol found via the contributor. It points back at the PSI
- * element so the IDE can navigate to it and display it in the Search Everywhere list.
+ * Navigation item for a symbol found via the contributor.
+ *
+ * This is a plain [NavigationItem] (NOT a [com.intellij.navigation.PsiElementNavigationItem]):
+ * the Search Everywhere symbol tab unwraps `PsiElementNavigationItem.getTargetElement()` and
+ * renders/navigates the raw PSI element, which is wrong for our elements (a heading is not a
+ * `PsiNamedElement`, so it would display as `<unnamed>` and fail to navigate). Presenting the
+ * name here and navigating through [PsiNavigationSupport] keeps the display and navigation
+ * working regardless of how the platform consumes the item.
  */
 private class SymbolNavigationItem(
     private val element: PsiElement,
     private val name: String,
-) : PsiElementNavigationItem {
+) : NavigationItem {
 
     private val presentation = object : ItemPresentation {
         override fun getPresentableText(): String = name
@@ -130,20 +135,17 @@ private class SymbolNavigationItem(
         override fun getIcon(unused: Boolean): Icon? = QuarkdownIcons.FILE
     }
 
-    override fun getTargetElement(): PsiElement = element
-
     override fun getName(): String = name
 
     override fun getPresentation(): ItemPresentation = presentation
 
     override fun navigate(requestFocus: Boolean) {
-        (element as? com.intellij.navigation.NavigationItem)?.navigate(requestFocus)
-            ?: element.containingFile?.let { (it as com.intellij.navigation.NavigationItem).navigate(requestFocus) }
+        val navigatable = PsiNavigationSupport.getInstance().getDescriptor(element)
+            ?: return
+        navigatable.navigate(requestFocus)
     }
 
-    override fun canNavigate(): Boolean =
-        (element as? com.intellij.navigation.NavigationItem)?.canNavigate() ?: element.isValid
+    override fun canNavigate(): Boolean = element.isValid && element.containingFile != null
 
-    override fun canNavigateToSource(): Boolean =
-        (element as? com.intellij.navigation.NavigationItem)?.canNavigateToSource() ?: element.isValid
+    override fun canNavigateToSource(): Boolean = canNavigate()
 }
