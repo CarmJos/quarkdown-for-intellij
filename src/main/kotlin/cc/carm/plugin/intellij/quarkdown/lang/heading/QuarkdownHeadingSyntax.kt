@@ -11,7 +11,7 @@ package cc.carm.plugin.intellij.quarkdown.lang.heading
  *
  * Headings can carry an explicit cross-reference id written as `{#id}`; without one,
  * Quarkdown derives an implicit slug from the text (see the Quarkdown wiki:
- * cross references). Unlike code blocks there is no language, so the editable
+ * cross-references). Unlike code blocks there is no language, so the editable
  * attributes are the level, the text content and the id.
  *
  * Kept dependency-free so the logic can be unit-tested and reused by the gutter marker

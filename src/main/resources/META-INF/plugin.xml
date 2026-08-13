@@ -233,7 +233,7 @@
 
         <!-- Go To Symbol (Ctrl+Alt+Shift+O): headings and {#id} tags as symbols -->
         <gotoSymbolContributor
-                implementationClass="cc.carm.plugin.intellij.quarkdown.lang.structure.QuarkdownGoToSymbolContributor"/>
+                implementation="cc.carm.plugin.intellij.quarkdown.lang.structure.QuarkdownGoToSymbolContributor"/>
 
         <!-- Code folding for sections, code blocks, and tables -->
         <lang.foldingBuilder
@@ -297,8 +297,10 @@
                          languageId="quarkdown"/>
 
         <!-- Maps the quarkdown-lsp semantic-token legend (function / parameter / enum)
-             to this plugin's existing highlight attributes. -->
+             to this plugin's existing highlight attributes. `serverId` is required to
+             bind the provider to the Quarkdown language server. -->
         <semanticTokensColorsProvider
+                serverId="quarkdownLspServer"
                 class="cc.carm.plugin.intellij.quarkdown.lang.lsp.QuarkdownSemanticTokensColorsProvider"/>
     </extensions>
 

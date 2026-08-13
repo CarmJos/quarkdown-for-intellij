@@ -11,13 +11,13 @@ import javax.swing.Icon
 
 class QuarkdownColorSettingsPage : ColorSettingsPage {
 
-    private val DESCRIPTORS = ATTRIBUTES
+    private val descriptors = ATTRIBUTES
 
     override fun getIcon(): Icon = QuarkdownIcons.FILE
     override fun getHighlighter(): SyntaxHighlighter = QuarkdownSyntaxHighlighter()
     override fun getDemoText(): String = DEMO_TEXT
     override fun getAdditionalHighlightingTagToDescriptorMap(): Map<String, TextAttributesKey>? = null
-    override fun getAttributeDescriptors(): Array<AttributesDescriptor> = DESCRIPTORS
+    override fun getAttributeDescriptors(): Array<AttributesDescriptor> = descriptors
     override fun getColorDescriptors(): Array<ColorDescriptor> = ColorDescriptor.EMPTY_ARRAY
     override fun getDisplayName(): String = QuarkdownBundle.message("quarkdown.settings.name")
 
