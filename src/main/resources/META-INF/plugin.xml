@@ -31,7 +31,6 @@
 
     <depends>org.intellij.intelliLang</depends>
     <depends>com.intellij.modules.platform</depends>
-    <depends>org.intellij.plugins.markdown</depends>
     <!-- IntelliJ platform LSP integration (LspServerSupportProvider / LspServerDescriptor) -->
     <depends>com.intellij.modules.lsp</depends>
     <!-- Spell checking (SpellcheckingStrategy) -->

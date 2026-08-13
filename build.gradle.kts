@@ -403,7 +403,6 @@ dependencies {
         bundledPlugin("com.intellij.java")
         bundledPlugin("org.intellij.intelliLang")
         bundledPlugin("com.intellij.platform.images")
-        bundledPlugin("org.intellij.plugins.markdown")
 
     }
 
