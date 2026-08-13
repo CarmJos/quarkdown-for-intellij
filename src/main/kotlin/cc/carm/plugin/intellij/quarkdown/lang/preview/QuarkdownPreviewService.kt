@@ -108,9 +108,23 @@ class QuarkdownPreviewService(private val project: Project) : Disposable {
     val autoSaveEnabled: Boolean
         get() = QuarkdownSettings.getInstance(project).state.autoSavePreviewFiles
 
-    /** Port of the preview web server. */
+    /**
+     * Port of the preview web server.
+     *
+     * Returns the *effective* port (the configured one, or the auto-shifted port when the
+     * configured one was occupied at start time). Falls back to the configured value when
+     * no server has started yet.
+     */
     val port: Int
+        get() = if (activePort > 0) activePort else configuredPort
+
+    /** The port configured in Settings. */
+    private val configuredPort: Int
         get() = QuarkdownSettings.getInstance(project).state.previewPort
+
+    /** The port actually used by the running (or last) preview server; 0 = not started. */
+    @Volatile
+    private var activePort: Int = 0
 
     private val serverProcessLock = Any()
     private var serverProcess: Process? = null
@@ -407,13 +421,23 @@ class QuarkdownPreviewService(private val project: Project) : Disposable {
         executeOnPooledThread {
             try {
                 stopCurrentProcess()
-                if (!QuarkdownCli.waitForPortClosed(port, 8)) {
-                    logger.warn("Port $port is still busy, forcing a short wait")
+
+                // Resolve an available port: keep the configured one when free, otherwise
+                // shift upward until a free port is found (and notify the user).
+                val resolvedPort = resolveAvailablePort()
+                if (resolvedPort != configuredPort) {
+                    activePort = resolvedPort
+                    notifyPortShifted(configuredPort, resolvedPort)
+                } else {
+                    activePort = resolvedPort
+                }
+                if (!QuarkdownCli.waitForPortClosed(resolvedPort, 8)) {
+                    logger.warn("Port $resolvedPort is still busy, forcing a short wait")
                     Thread.sleep(1500)
                 }
                 if (generation != serverGeneration) return@executeOnPooledThread
 
-                val process = startServerProcess(file, clean, generation) ?: return@executeOnPooledThread
+                val process = startServerProcess(file, clean, generation, resolvedPort) ?: return@executeOnPooledThread
 
                 synchronized(serverProcessLock) {
                     if (generation != serverGeneration) {
@@ -430,7 +454,7 @@ class QuarkdownPreviewService(private val project: Project) : Disposable {
                 watchServerExit(process, generation)
 
                 // Wait until the server is reachable.
-                waitForServerReady(generation)
+                waitForServerReady(generation, resolvedPort)
             } catch (e: Exception) {
                 logger.warn("Preview server restart failed", e)
                 if (generation == serverGeneration) {
@@ -448,10 +472,34 @@ class QuarkdownPreviewService(private val project: Project) : Disposable {
     }
 
     /**
+     * Returns a free port to use for the preview server. Prefers the configured port;
+     * when it is already occupied, scans upward until a free one is found.
+     */
+    private fun resolveAvailablePort(): Int {
+        var candidate = configuredPort
+        if (!QuarkdownCli.isPortReady(candidate)) return candidate
+        // The configured port is busy — scan up to a safe upper bound.
+        while (candidate < MAX_PORT && QuarkdownCli.isPortReady(candidate)) candidate++
+        return candidate
+    }
+
+    /** Notifies the user that the configured port was occupied and a new one was chosen. */
+    private fun notifyPortShifted(oldPort: Int, newPort: Int) {
+        NotificationGroupManager.getInstance()
+            .getNotificationGroup("Quarkdown")
+            .createNotification(
+                QuarkdownBundle.message("quarkdown.preview.build.title"),
+                QuarkdownBundle.message("quarkdown.preview.status.port.shifted", oldPort, newPort),
+                NotificationType.WARNING,
+            )
+            .notify(project)
+    }
+
+    /**
      * Resolves the CLI, prepares the output directory and starts the preview server
      * process. Reports failure state and returns `null` when the server cannot start.
      */
-    private fun startServerProcess(file: VirtualFile, clean: Boolean, generation: Int): Process? {
+    private fun startServerProcess(file: VirtualFile, clean: Boolean, generation: Int, serverPort: Int): Process? {
         val executable = QuarkdownCli.resolveExecutable(project)
         if (executable == null) {
             if (generation == serverGeneration) {
@@ -469,7 +517,7 @@ class QuarkdownPreviewService(private val project: Project) : Disposable {
         val args = QuarkdownCli.previewServerArgs(
             executable = executable,
             source = File(file.path),
-            port = port,
+            port = serverPort,
             outputDir = outputDir,
             watch = watchEnabled,
             extraArgs = settings.state.previewCliArgs.orEmpty(),
@@ -539,9 +587,9 @@ class QuarkdownPreviewService(private val project: Project) : Disposable {
     }
 
     /** Waits until the server is reachable and updates the state / opens the browser. */
-    private fun waitForServerReady(generation: Int) {
+    private fun waitForServerReady(generation: Int, serverPort: Int) {
         executeOnPooledThread {
-            val ready = QuarkdownCli.waitForPortReady(port)
+            val ready = QuarkdownCli.waitForPortReady(serverPort)
             if (generation != serverGeneration) return@executeOnPooledThread
             setBusy(false)
             if (ready) {
@@ -556,7 +604,7 @@ class QuarkdownPreviewService(private val project: Project) : Disposable {
                     State.ERROR,
                     QuarkdownBundle.message(
                         "quarkdown.preview.status.start.timeout",
-                        port.toString(),
+                        serverPort.toString(),
                         lastError ?: "",
                     ),
                 )
@@ -675,6 +723,9 @@ class QuarkdownPreviewService(private val project: Project) : Disposable {
 
         /** Debounce delay before the previewed document is auto-saved after typing stops. */
         private const val AUTO_SAVE_DELAY_MS = 100L
+
+        /** Upper bound for auto-shifting the preview port when the configured one is busy. */
+        private const val MAX_PORT = 65535
 
         fun getInstance(project: Project): QuarkdownPreviewService =
             project.getService(QuarkdownPreviewService::class.java)
