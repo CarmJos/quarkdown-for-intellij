@@ -309,6 +309,9 @@
             <action id="Quarkdown.Preview.Build"
                     class="cc.carm.plugin.intellij.quarkdown.action.preview.QuarkdownBuildAction"
                     icon="cc.carm.plugin.intellij.quarkdown.QuarkdownIcons.PREVIEW_BUILD"/>
+            <action id="Quarkdown.Preview.ShowOutput"
+                    class="cc.carm.plugin.intellij.quarkdown.action.preview.QuarkdownShowOutputAction"
+                    icon="cc.carm.plugin.intellij.quarkdown.QuarkdownIcons.PREVIEW_BUILD"/>
             <separator/>
             <action id="Quarkdown.Preview.WatchChanges"
                     class="cc.carm.plugin.intellij.quarkdown.action.preview.QuarkdownWatchChangesAction"

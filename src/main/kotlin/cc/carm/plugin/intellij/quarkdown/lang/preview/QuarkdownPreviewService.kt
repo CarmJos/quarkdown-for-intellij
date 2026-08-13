@@ -262,6 +262,15 @@ class QuarkdownPreviewService(private val project: Project) : Disposable {
     fun fullLogText(): String = synchronized(recentOutput) { fullLog.joinToString("\n") }
 
     /**
+     * The directory where one-shot builds (PDF export) write their output.
+     *
+     * The Quarkdown CLI writes the produced PDF (and intermediate HTML) into the
+     * configured output directory; this returns that directory so UI actions can
+     * reveal it in the OS file manager.
+     */
+    fun buildOutputDirectory(): File = resolveBuildOutputDir()
+
+    /**
      * Opens the port-based preview in an external browser. Starts the server first when
      * it is not running, and opens the URL as soon as it becomes ready.
      */
