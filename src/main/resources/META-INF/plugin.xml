@@ -315,7 +315,7 @@
                     icon="cc.carm.plugin.intellij.quarkdown.QuarkdownIcons.PREVIEW_BUILD"/>
             <action id="Quarkdown.Preview.ShowOutput"
                     class="cc.carm.plugin.intellij.quarkdown.action.preview.QuarkdownShowOutputAction"
-                    icon="cc.carm.plugin.intellij.quarkdown.QuarkdownIcons.PREVIEW_BUILD"/>
+                    icon="cc.carm.plugin.intellij.quarkdown.QuarkdownIcons.PREVIEW_SHOW_OUTPUT"/>
             <separator/>
             <action id="Quarkdown.Preview.WatchChanges"
                     class="cc.carm.plugin.intellij.quarkdown.action.preview.QuarkdownWatchChangesAction"

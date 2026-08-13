@@ -1,6 +1,49 @@
 # Changelog
 
+> 自 1.2.0 起，变更记录遵循[约定式提交](https://www.conventionalcommits.org/zh-hans/v1.0.0/)风格分组。
+
 ## [Unreleased]
+
+### Features
+
+- **索引 TODO / FIXME 到 IDE 的 TODO 工具窗口** — 新增 `todoIndexer` 扩展（`QuarkdownTodoIndexer`），注释中的 `TODO` / `FIXME` 不再只是编辑器着色，而是真正出现在 IDE 的 TODO 面板中；同时将名不符实的 `QuarkdownTodoIndexContributor` 文件重命名为 `QuarkdownTodoAnnotator`。
+- **设置页一键下载并安装 Quarkdown** — 检测到未安装时，设置页提供「下载并安装」入口，异步获取最新版本号（带缓存），下载官方发行包并自动配置 Quarkdown 主目录。
+- **Quarkdown 正文拼写检查** — 新增 `SpellCheckingStrategy`，对 `.qd` 文档的纯文本与标题内容提供拼写检查，自动排除函数调用、代码块、路径与语法标记。
+- **Go To Symbol（Ctrl+Alt+Shift+O）** — 新增 `GoToSymbolContributor`，标题文本与 `{#id}` 元素 ID 现在可作为符号在全局搜索中检索并跳转。
+- **插入标题 / 插入公式动作与快捷键** — 新增 `InsertHeadingAction` / `InsertEquationAction`（快捷键 `Ctrl+Shift+H` / `Ctrl+Shift+E`），并在对话框支持插入模式；编辑器右键菜单与快捷键即可插入标题与公式。
+- **文件路径引用的重命名 / 移动同步** — `.include` / `.read` / `.css` / `.code` 与图片引用的目标文件重命名或移动后，引用路径会自动同步更新。
+- **构建产物一键定位** — 预览工具栏新增「在文件管理器中显示输出」动作，PDF 等构建产物所在目录可一键在系统文件管理器中打开。
+- **预览端口冲突自动顺延** — 配置的端口被占用时自动向上寻找空闲端口，并通过通知明确提示实际使用的端口。
+- **中文（CJK）字数统计** — 中文字符逐字计数而非合并为一个词，状态栏新增「CJK 字符数」显示，中文文档的字数统计更有意义。
+
+### Fixes
+
+- **结构视图标题顺序** — 移除字母排序器，文档大纲遵循章节在文档中的出现顺序（例如 "Chapter 10" 不再排在 "Chapter 2" 之前）。
+
+### Performance Improvements
+
+- **引用锚点文件索引** — 新增 `FileBasedIndexExtension`（`QuarkdownReferenceIndex`），按 id 快速定位包含引用的文件，避免 Go to Declaration / Find Usages 时每次遍历全部 `.qd` 文件。
+
+### Documentation
+
+- **移除未实现的格式化宣传** — README 与插件描述不再声称支持 "Reformat documents"（项目尚未实现 Formatter）。
+- **移除不支持的路径补全宣传** — README 不再声称 `.css` / `.code` 路径补全覆盖（当前仅支持 `.include` / `.read` 与图片路径）。
+- **修正失效的文档引用** — 代码注释与 plugin.xml 中指向不存在的 `docs/LSP-integration-plan.md` 的引用改为官方 LSP 文档链接。
+- **同步 Marketplace 入门文档** — `.doc/getting-started-marketplace.html` 与当前设置页保持一致，并移除其中所有 VS Code 相关内容。
+
+### Tests
+
+- **测试离线模式** — 新增 `-Pquarkdown.test.offline=true`：本地无 Quarkdown 时跳过 LSP 集成测试，其余测试照常运行，网络不可用时整个测试套件不再不可用。
+- **补充核心模块测试** — 新增 `QuarkdownCliTest`、`QuarkdownCommenterTest`、`QuarkdownBraceMatcherTest`、`QuarkdownImagePathAnnotatorTest` 与 `QuarkdownSettingsTest`，覆盖命令参数拼接、注释器、括号匹配、图片路径校验与设置序列化。
+
+### Continuous Integration
+
+- **CI 测试矩阵覆盖 Windows / macOS** — `test` job 在 `ubuntu-latest`、`windows-latest`、`macos-latest` 三个平台上运行，覆盖启动器检测与进程终止等平台相关逻辑。
+
+### Chores
+
+- **移除未使用的 Markdown 插件依赖** — 源码未引用 Markdown 插件 API，移除 `org.intellij.plugins.markdown` 依赖声明与 `bundledPlugin` 配置。
+- **移除冗余的 dependabot 配置** — 仅保留 `renovate.json`。
 
 ## [1.1.0] - 2026-08-13
 

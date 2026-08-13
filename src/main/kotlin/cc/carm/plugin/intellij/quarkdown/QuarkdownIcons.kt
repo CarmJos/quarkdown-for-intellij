@@ -173,6 +173,11 @@ object QuarkdownIcons {
     @JvmField
     val PREVIEW_BUILD: Icon = IconLoader.getIcon("/icons/action/preview/build.svg", QuarkdownIcons::class.java)
 
+    /** Show the build output file in the OS file manager (green folder with a page) */
+    @JvmField
+    val PREVIEW_SHOW_OUTPUT: Icon =
+        IconLoader.getIcon("/icons/action/preview/show_output.svg", QuarkdownIcons::class.java)
+
     // ------------------------------------------------------------------
     // Preview panel — bottom bar
     // ------------------------------------------------------------------

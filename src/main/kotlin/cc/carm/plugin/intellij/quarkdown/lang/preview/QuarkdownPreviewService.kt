@@ -285,6 +285,21 @@ class QuarkdownPreviewService(private val project: Project) : Disposable {
     fun buildOutputDirectory(): File = resolveBuildOutputDir()
 
     /**
+     * The most recently produced build artifact (a `.pdf` file) under the build output
+     * directory, or `null` when no build output exists yet. The scan is recursive so it
+     * also finds PDFs written into per-file subdirectories by the Quarkdown CLI.
+     */
+    fun buildOutputFile(): File? {
+        val dir = buildOutputDirectory()
+        if (!dir.isDirectory) return null
+        val pdfs = mutableListOf<File>()
+        dir.walkTopDown()
+            .filter { it.isFile && it.extension.equals("pdf", ignoreCase = true) }
+            .forEach { pdfs.add(it) }
+        return pdfs.maxByOrNull { it.lastModified() }
+    }
+
+    /**
      * Opens the port-based preview in an external browser. Starts the server first when
      * it is not running, and opens the URL as soon as it becomes ready.
      */
