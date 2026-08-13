@@ -56,7 +56,8 @@
 
         <!-- LSP integration: starts `quarkdown language-server` for opened .qd files.
              Provides hover docs, diagnostics, function completion and semantic highlighting
-             from the official Quarkdown LSP (see docs/LSP-integration-plan.md). -->
+             from the official Quarkdown LSP
+             (see https://plugins.jetbrains.com/docs/intellij/language-server-protocol.html). -->
         <platform.lsp.serverSupportProvider
                 implementation="cc.carm.plugin.intellij.quarkdown.lang.lsp.QuarkdownLspServerSupportProvider"/>
 

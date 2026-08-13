@@ -57,7 +57,8 @@ class QuarkdownLspServerDescriptor(
     // completion and semantic tokens; we only override the semantic-token color mapping
     // (quarkdown-lsp's legend → this plugin's existing highlight attributes) and the
     // completion support (to auto-trigger the parameter-info popup after insertion).
-    // `LspServerDescriptor` is an experimental platform API (see docs/LSP-integration-plan.md).
+    // `LspServerDescriptor` is an experimental platform API
+    // (see https://plugins.jetbrains.com/docs/intellij/language-server-protocol.html).
     @Suppress("OVERRIDE_DEPRECATION")
     override val lspSemanticTokensSupport: LspSemanticTokensSupport get() =
         QuarkdownLspSemanticTokensSupport()
