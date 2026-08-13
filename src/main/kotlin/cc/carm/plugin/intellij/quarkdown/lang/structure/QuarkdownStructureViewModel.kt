@@ -13,6 +13,9 @@ import com.intellij.psi.PsiFile
  * Uses [StructureViewModelBase] which handles filtering, sorting, and
  * auto-expansion. The tree is built from [QuarkdownStructureTreeElement]
  * nodes that walk the PSI heading hierarchy.
+ *
+ * No sorters are registered on purpose: headings must follow their document
+ * order (a chapter outline must not be alphabetized).
  */
 class QuarkdownStructureViewModel(psiFile: PsiFile, editor: Editor?) :
     StructureViewModelBase(psiFile, editor, QuarkdownStructureTreeElement(psiFile)),
@@ -26,5 +29,5 @@ class QuarkdownStructureViewModel(psiFile: PsiFile, editor: Editor?) :
         // A leaf has no child headings
         (structureViewTreeElement as? QuarkdownStructureTreeElement)?.hasNestedHeadings() == false
 
-    override fun getSorters(): Array<Sorter> = arrayOf(Sorter.ALPHA_SORTER)
+    override fun getSorters(): Array<Sorter> = emptyArray()
 }
