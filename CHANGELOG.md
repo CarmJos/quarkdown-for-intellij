@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-08-13
+
 ### Features
 
 - **Index TODO / FIXME markers into the IDE TODO tool window** — a new `todoIndexer` extension (`QuarkdownTodoIndexer`) registers HTML comments so `TODO` / `FIXME` markers are picked up by the IDE's TODO panel, not just highlighted in the editor; the mismatched `QuarkdownTodoIndexContributor` file was also renamed to `QuarkdownTodoAnnotator` to match its class.
@@ -133,7 +135,8 @@ After two rounds of pre-release iterations, this version brings a mature, battle
 - Initial release
 - Quarkdown syntax support for IntelliJ IDEA
 
-[Unreleased]: https://github.com/CarmJos/quarkdown-for-intellij/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/CarmJos/quarkdown-for-intellij/compare/v1.1.1...HEAD
+[1.1.1]: https://github.com/CarmJos/quarkdown-for-intellij/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/CarmJos/quarkdown-for-intellij/compare/v1.0.1...v1.1.0
 [1.0.1]: https://github.com/CarmJos/quarkdown-for-intellij/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/CarmJos/quarkdown-for-intellij/compare/v0.1.1...v1.0.0
