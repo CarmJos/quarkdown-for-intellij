@@ -114,8 +114,15 @@ class QuarkdownStatsParserTest {
     }
 
     @Test
-    fun `cjk text counts as words`() {
-        assertEquals(QuarkdownStats(2, 1), stats("你好世界 测试"))
+    fun `cjk text counts each character as a word`() {
+        // Each CJK ideograph counts individually: 你好世界 = 4, 测试 = 2.
+        assertEquals(QuarkdownStats(6, 1, 6), stats("你好世界 测试"))
+    }
+
+    @Test
+    fun `mixed cjk and latin text counts separately`() {
+        // "Hello" = 1 word + 5 latin letters, "你好" = 2 CJK chars/words, "world" = 1.
+        assertEquals(QuarkdownStats(4, 1, 2), stats("Hello 你好 world"))
     }
 
     @Test

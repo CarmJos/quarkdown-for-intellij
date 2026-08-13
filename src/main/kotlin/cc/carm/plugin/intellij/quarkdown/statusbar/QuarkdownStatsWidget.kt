@@ -85,7 +85,8 @@ class QuarkdownStatsWidget(project: Project) : EditorBasedWidget(project) {
             return QuarkdownBundle.message(
                 "quarkdown.statusbar.stats.text",
                 cachedStats.wordCount,
-                cachedStats.paragraphCount
+                cachedStats.paragraphCount,
+                cachedStats.cjkCharCount
             )
         }
 

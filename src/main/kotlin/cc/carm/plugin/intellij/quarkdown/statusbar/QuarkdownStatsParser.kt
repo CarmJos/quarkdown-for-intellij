@@ -8,9 +8,9 @@ import cc.carm.plugin.intellij.quarkdown.lang.function.QuarkdownCallParser
  * Kept free of IntelliJ dependencies so it can be unit-tested in isolation.
  *
  * Counting rules:
- *  - **Words** are matched as runs of Unicode letters/digits (CJK text counts as a
- *    single run). Markdown structure (`#` headings, `-` lists, `>`, `|` table cells,
- *    `**bold**` etc.) is stripped before counting, and link text `[text](url)` is kept.
+ *  - **Words** are matched as runs of Unicode letters/digits, while **CJK characters**
+ *    (Unicode category Lo: CJK ideographs, Hangul syllables, …) are counted one by one,
+ *    so a Chinese paragraph produces a meaningful count instead of a single word.
  *  - **Paragraphs** are blocks of non-empty text lines; blank lines, function calls,
  *    fenced code blocks, separators and HTML comments delimit them.
  *  - **Function calls** (`.var`, `.read`, `.center`, `.container`, …) and their
@@ -18,9 +18,6 @@ import cc.carm.plugin.intellij.quarkdown.lang.function.QuarkdownCallParser
  *  - Fenced code block contents are excluded from the word count too.
  */
 object QuarkdownStatsParser {
-
-    /** Matches a word: a run of letters/digits, allowing inner apostrophes/hyphens. */
-    private val WORD_PATTERN = Regex("[\\p{L}\\p{N}]+(?:['’\\-][\\p{L}\\p{N}]+)*")
 
     private val headingMarkerPattern = Regex("^#{1,6}\\s+")
     private val blockquotePattern = Regex("^>+\\s?")
@@ -37,7 +34,9 @@ object QuarkdownStatsParser {
     /** Counting result for one document. */
     data class QuarkdownStats(
         val wordCount: Int,
-        val paragraphCount: Int
+        val paragraphCount: Int,
+        /** Number of CJK ideograph characters (counted individually as words). */
+        val cjkCharCount: Int = 0
     )
 
     /** Computes the word & paragraph counts of a Quarkdown document. */
@@ -179,6 +178,7 @@ object QuarkdownStatsParser {
     private fun countLines(text: String): QuarkdownStats {
         var wordCount = 0
         var paragraphCount = 0
+        var cjkCharCount = 0
         var inParagraph = false
         var inCodeBlock = false
 
@@ -223,16 +223,53 @@ object QuarkdownStatsParser {
             // the table paragraph.
             if (tableSeparatorPattern.matches(line)) continue
 
-            val words = countWords(stripMarkdown(line))
+            val stripped = stripMarkdown(line)
+            val words = countWords(stripped)
             if (words > 0) inParagraph = true
             wordCount += words
+            cjkCharCount += countCjkChars(stripped)
         }
         if (inParagraph) paragraphCount++
 
-        return QuarkdownStats(wordCount, paragraphCount)
+        return QuarkdownStats(wordCount, paragraphCount, cjkCharCount)
     }
 
-    private fun countWords(text: String): Int = WORD_PATTERN.findAll(text).count()
+    /**
+     * Counts the words in [text]. Regular words are runs of letters/digits, while CJK
+     * characters (Unicode category Lo — CJK ideographs, Hangul, …) count individually.
+     */
+    private fun countWords(text: String): Int {
+        var count = 0
+        var i = 0
+        val n = text.length
+        while (i < n) {
+            val c = text[i]
+            if (c.isCjkChar()) {
+                count++ // each CJK char is a word
+                i++
+                continue
+            }
+            if (c.isLetterOrDigit()) {
+                count++
+                // consume the rest of the word (letters/digits + inner apostrophes/hyphens)
+                while (i < n && (text[i].isLetterOrDigit() || text[i] == '\'' || text[i] == '’' || text[i] == '-')) {
+                    if (text[i].isCjkChar()) break // a CJK char always starts its own word
+                    i++
+                }
+                continue
+            }
+            i++
+        }
+        return count
+    }
+
+    /** Counts the number of CJK characters (Unicode category Lo) in [text]. */
+    private fun countCjkChars(text: String): Int =
+        text.count { it.isCjkChar() }
+
+    /** True for characters in Unicode category Letter, other (Lo) — CJK ideographs etc. */
+    private fun Char.isCjkChar(): Boolean =
+        Character.getType(this) == Character.OTHER_LETTER.toInt()
 
     /** Removes Markdown / Quarkdown syntax markers, keeping the visible text. */
     private fun stripMarkdown(line: String): String {
