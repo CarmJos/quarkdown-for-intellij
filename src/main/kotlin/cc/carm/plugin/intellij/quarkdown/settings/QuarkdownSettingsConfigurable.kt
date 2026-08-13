@@ -6,8 +6,11 @@ import com.intellij.icons.AllIcons
 import com.intellij.ide.BrowserUtil
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
 import com.intellij.openapi.options.BoundSearchableConfigurable
+import com.intellij.openapi.progress.ProgressManager
+import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogPanel
+import com.intellij.openapi.ui.Messages
 import com.intellij.openapi.ui.TextFieldWithBrowseButton
 import com.intellij.ui.components.JBTextField
 import com.intellij.ui.dsl.builder.*
@@ -30,6 +33,8 @@ class QuarkdownSettingsConfigurable(private val project: Project) :
     private var checkButton: JButton? = null
     private var checkResultLabel: JLabel? = null
     private var homeField: TextFieldWithBrowseButton? = null
+    private var installButton: JButton? = null
+    private var latestVersionLabel: JLabel? = null
 
     override fun createPanel(): DialogPanel {
         return panel {
@@ -57,6 +62,15 @@ class QuarkdownSettingsConfigurable(private val project: Project) :
                                         QuarkdownBundle.message("quarkdown.settings.installation.not.found.detail")
                                 }
                             }
+                            // Re-evaluate install-button visibility whenever the user
+                            // edits the path field (e.g. after typing a valid home).
+                            (textField as? JBTextField)?.document?.addDocumentListener(
+                                object : javax.swing.event.DocumentListener {
+                                    override fun insertUpdate(e: javax.swing.event.DocumentEvent?) = refreshInstallState()
+                                    override fun removeUpdate(e: javax.swing.event.DocumentEvent?) = refreshInstallState()
+                                    override fun changedUpdate(e: javax.swing.event.DocumentEvent?) = refreshInstallState()
+                                }
+                            )
                         }
                     button(QuarkdownBundle.message("quarkdown.settings.installation.check")) {
                         doVersionCheck()
@@ -71,11 +85,25 @@ class QuarkdownSettingsConfigurable(private val project: Project) :
                     }
                 }
                 row {
+                    button(QuarkdownBundle.message("quarkdown.settings.installation.download")) {
+                        doDownloadAndInstall()
+                    }.applyToComponent {
+                        installButton = this
+                        isVisible = false
+                    }
+                    label("").applyToComponent {
+                        latestVersionLabel = this
+                        isVisible = false
+                    }
+                }
+                row {
                     button(QuarkdownBundle.message("quarkdown.settings.installation.help")) {
                         BrowserUtil.browse("https://quarkdown.com/#install")
                     }
                 }
             }
+
+            refreshInstallState()
 
             group(QuarkdownBundle.message("quarkdown.settings.compile")) {
                 row(QuarkdownBundle.message("quarkdown.settings.compile.cli.args")) {
@@ -161,6 +189,14 @@ class QuarkdownSettingsConfigurable(private val project: Project) :
         checkButton?.isEnabled = false
         checkButton?.text = QuarkdownBundle.message("quarkdown.settings.installation.checking")
 
+        // Notify the user of a cached latest version (if any) right away.
+        QuarkdownInstaller.cachedLatestVersion()?.let { cached ->
+            showCheckResult(
+                true,
+                QuarkdownBundle.message("quarkdown.settings.installation.latest.cached", cached)
+            )
+        }
+
         Thread {
             try {
                 val homeDir = File(path)
@@ -233,6 +269,91 @@ class QuarkdownSettingsConfigurable(private val project: Project) :
                 }
             }
         }.apply { isDaemon = true }.start()
+
+        // Asynchronously fetch the latest version so it can be cached for later checks.
+        Thread {
+            val latest = QuarkdownInstaller.fetchLatestVersion()
+            SwingUtilities.invokeLater {
+                showLatestVersion(latest)
+            }
+        }.apply { isDaemon = true }.start()
+    }
+
+    /** Shows the latest-version hint next to the install button. */
+    private fun showLatestVersion(latest: String?) {
+        latestVersionLabel?.let {
+            if (latest != null) {
+                it.text = QuarkdownBundle.message("quarkdown.settings.installation.latest", latest)
+            } else {
+                it.text = QuarkdownBundle.message("quarkdown.settings.installation.latest.failed")
+            }
+            it.isVisible = true
+        }
+    }
+
+    /**
+     * Downloads the latest Quarkdown release into a user-selected directory and
+     * configures it as the Quarkdown home.
+     */
+    private fun doDownloadAndInstall() {
+        val descriptor = FileChooserDescriptorFactory.createSingleFolderDescriptor()
+            .apply { title = QuarkdownBundle.message("quarkdown.settings.installation.download.choose") }
+        val chosen = com.intellij.openapi.fileChooser.FileChooser.chooseFile(descriptor, project, null)
+        val targetDir = chosen?.toNioPath()?.toFile() ?: return
+
+        val version = QuarkdownInstaller.fetchLatestVersion()
+        if (version == null) {
+            Messages.showErrorDialog(
+                project,
+                QuarkdownBundle.message("quarkdown.settings.installation.download.version.failed"),
+                QuarkdownBundle.message("quarkdown.settings.installation.download")
+            )
+            return
+        }
+
+        installButton?.isEnabled = false
+        installButton?.text = QuarkdownBundle.message("quarkdown.settings.installation.downloading")
+
+        ProgressManager.getInstance().run(
+            object : Task.Backgroundable(project, QuarkdownBundle.message("quarkdown.settings.installation.download.progress", version)) {
+                override fun run(indicator: com.intellij.openapi.progress.ProgressIndicator) {
+                    val home = QuarkdownInstaller.downloadAndInstall(version, targetDir)
+                    SwingUtilities.invokeLater {
+                        try {
+                            if (home != null && home.isDirectory) {
+                                settings.state.quarkdownPath = home.absolutePath
+                                homeField?.text = home.absolutePath
+                                showCheckResult(
+                                    true,
+                                    QuarkdownBundle.message(
+                                        "quarkdown.settings.installation.download.success",
+                                        version,
+                                        home.absolutePath
+                                    )
+                                )
+                            } else {
+                                showCheckResult(
+                                    false,
+                                    QuarkdownBundle.message(
+                                        "quarkdown.settings.installation.download.failed",
+                                        "download or extraction failed"
+                                    )
+                                )
+                            }
+                        } finally {
+                            installButton?.isEnabled = true
+                            installButton?.text = QuarkdownBundle.message("quarkdown.settings.installation.download")
+                        }
+                    }
+                }
+            }
+        )
+    }
+
+    /** Refreshes the visibility/state of the install-related controls. */
+    private fun refreshInstallState() {
+        val configured = homeField?.text.isNullOrBlank() && QuarkdownPathDetector.detect() == null
+        installButton?.isVisible = configured
     }
 
     private fun resolveExecutable(homeDir: File): File? {
@@ -267,6 +388,8 @@ class QuarkdownSettingsConfigurable(private val project: Project) :
         checkResultLabel = null
         homeField = null
         checkButton = null
+        installButton = null
+        latestVersionLabel = null
         super.disposeUIResources()
     }
 }
