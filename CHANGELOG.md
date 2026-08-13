@@ -1,49 +1,47 @@
 # Changelog
 
-> 自 1.2.0 起，变更记录遵循[约定式提交](https://www.conventionalcommits.org/zh-hans/v1.0.0/)风格分组。
-
 ## [Unreleased]
 
 ### Features
 
-- **索引 TODO / FIXME 到 IDE 的 TODO 工具窗口** — 新增 `todoIndexer` 扩展（`QuarkdownTodoIndexer`），注释中的 `TODO` / `FIXME` 不再只是编辑器着色，而是真正出现在 IDE 的 TODO 面板中；同时将名不符实的 `QuarkdownTodoIndexContributor` 文件重命名为 `QuarkdownTodoAnnotator`。
-- **设置页一键下载并安装 Quarkdown** — 检测到未安装时，设置页提供「下载并安装」入口，异步获取最新版本号（带缓存），下载官方发行包并自动配置 Quarkdown 主目录。
-- **Quarkdown 正文拼写检查** — 新增 `SpellCheckingStrategy`，对 `.qd` 文档的纯文本与标题内容提供拼写检查，自动排除函数调用、代码块、路径与语法标记。
-- **Go To Symbol（Ctrl+Alt+Shift+O）** — 新增 `GoToSymbolContributor`，标题文本与 `{#id}` 元素 ID 现在可作为符号在全局搜索中检索并跳转。
-- **插入标题 / 插入公式动作与快捷键** — 新增 `InsertHeadingAction` / `InsertEquationAction`（快捷键 `Ctrl+Shift+H` / `Ctrl+Shift+E`），并在对话框支持插入模式；编辑器右键菜单与快捷键即可插入标题与公式。
-- **文件路径引用的重命名 / 移动同步** — `.include` / `.read` / `.css` / `.code` 与图片引用的目标文件重命名或移动后，引用路径会自动同步更新。
-- **构建产物一键定位** — 预览工具栏新增「在文件管理器中显示输出」动作，PDF 等构建产物所在目录可一键在系统文件管理器中打开。
-- **预览端口冲突自动顺延** — 配置的端口被占用时自动向上寻找空闲端口，并通过通知明确提示实际使用的端口。
-- **中文（CJK）字数统计** — 中文字符逐字计数而非合并为一个词，状态栏新增「CJK 字符数」显示，中文文档的字数统计更有意义。
+- **Index TODO / FIXME markers into the IDE TODO tool window** — a new `todoIndexer` extension (`QuarkdownTodoIndexer`) registers HTML comments so `TODO` / `FIXME` markers are picked up by the IDE's TODO panel, not just highlighted in the editor; the mismatched `QuarkdownTodoIndexContributor` file was also renamed to `QuarkdownTodoAnnotator` to match its class.
+- **One-click Quarkdown download & install in Settings** — when no installation is detected, the settings page now offers a "Download & Install" entry that fetches the latest version asynchronously (with caching), downloads the official distribution and configures the Quarkdown home automatically.
+- **Spell checking for Quarkdown prose** — a new `SpellCheckingStrategy` checks plain text and heading content of `.qd` documents while automatically excluding function calls, code blocks, paths and syntax markers.
+- **Go To Symbol (Ctrl+Alt+Shift+O)** — a new `GoToSymbolContributor` registers heading text and `{#id}` element IDs as searchable symbols that can be located and navigated to from the global search.
+- **Insert Heading / Insert Equation actions and shortcuts** — new `InsertHeadingAction` / `InsertEquationAction` (`Ctrl+Shift+H` / `Ctrl+Shift+E`), with insert-mode support in the dialogs; headings and equations can now be inserted from the editor context menu and via shortcuts.
+- **Rename / move sync for file-path references** — references to `.include` / `.read` / `.css` / `.code` and image targets are updated automatically when the referenced file is renamed or moved.
+- **Reveal build output in the file manager** — a new "Show Output in File Manager" action on the preview toolbar opens the directory containing the build artifacts (e.g. the generated PDF) in the OS file manager.
+- **Automatic port conflict resolution for the preview** — when the configured port is occupied, the preview server automatically shifts to the next free port and a notification clearly reports the port actually in use.
+- **Accurate CJK word counting** — CJK characters are counted individually instead of as a single run, and the status bar now also reports the CJK character count, making word statistics meaningful for Chinese documents.
 
 ### Fixes
 
-- **结构视图标题顺序** — 移除字母排序器，文档大纲遵循章节在文档中的出现顺序（例如 "Chapter 10" 不再排在 "Chapter 2" 之前）。
+- **Structure view keeps heading order** — the alphabetical sorter was removed so the outline follows the document order of sections (e.g. "Chapter 10" no longer sorts before "Chapter 2").
 
 ### Performance Improvements
 
-- **引用锚点文件索引** — 新增 `FileBasedIndexExtension`（`QuarkdownReferenceIndex`），按 id 快速定位包含引用的文件，避免 Go to Declaration / Find Usages 时每次遍历全部 `.qd` 文件。
+- **File-based index of reference anchors** — a new `FileBasedIndexExtension` (`QuarkdownReferenceIndex`) locates files containing a given reference id directly, instead of scanning every `.qd` file on each Go to Declaration / Find Usages query.
 
 ### Documentation
 
-- **移除未实现的格式化宣传** — README 与插件描述不再声称支持 "Reformat documents"（项目尚未实现 Formatter）。
-- **移除不支持的路径补全宣传** — README 不再声称 `.css` / `.code` 路径补全覆盖（当前仅支持 `.include` / `.read` 与图片路径）。
-- **修正失效的文档引用** — 代码注释与 plugin.xml 中指向不存在的 `docs/LSP-integration-plan.md` 的引用改为官方 LSP 文档链接。
-- **同步 Marketplace 入门文档** — `.doc/getting-started-marketplace.html` 与当前设置页保持一致，并移除其中所有 VS Code 相关内容。
+- **Remove the unfulfilled formatter claim** — the README and plugin description no longer advertise "Reformat documents" (no Formatter is implemented yet).
+- **Remove the unsupported path-completion claim** — the README no longer advertises `.css` / `.code` path completion (only `.include` / `.read` and image paths are currently supported).
+- **Fix stale documentation references** — references to the non-existent `docs/LSP-integration-plan.md` in comments and plugin.xml now point to the official LSP documentation.
+- **Sync the Marketplace getting-started document** — `.doc/getting-started-marketplace.html` now matches the current settings page, and all VS Code content has been removed from it.
 
 ### Tests
 
-- **测试离线模式** — 新增 `-Pquarkdown.test.offline=true`：本地无 Quarkdown 时跳过 LSP 集成测试，其余测试照常运行，网络不可用时整个测试套件不再不可用。
-- **补充核心模块测试** — 新增 `QuarkdownCliTest`、`QuarkdownCommenterTest`、`QuarkdownBraceMatcherTest`、`QuarkdownImagePathAnnotatorTest` 与 `QuarkdownSettingsTest`，覆盖命令参数拼接、注释器、括号匹配、图片路径校验与设置序列化。
+- **Offline test mode** — a new `-Pquarkdown.test.offline=true` flag skips the LSP integration tests when no local Quarkdown installation is available, so the rest of the suite runs normally even without network access.
+- **Additional core-module tests** — added `QuarkdownCliTest`, `QuarkdownCommenterTest`, `QuarkdownBraceMatcherTest`, `QuarkdownImagePathAnnotatorTest` and `QuarkdownSettingsTest`, covering command-line construction, the commenter, brace matching, image-path validation and settings serialization.
 
 ### Continuous Integration
 
-- **CI 测试矩阵覆盖 Windows / macOS** — `test` job 在 `ubuntu-latest`、`windows-latest`、`macos-latest` 三个平台上运行，覆盖启动器检测与进程终止等平台相关逻辑。
+- **CI test matrix covers Windows / macOS** — the `test` job now runs on `ubuntu-latest`, `windows-latest` and `macos-latest`, covering platform-specific logic such as launcher detection and process termination.
 
 ### Chores
 
-- **移除未使用的 Markdown 插件依赖** — 源码未引用 Markdown 插件 API，移除 `org.intellij.plugins.markdown` 依赖声明与 `bundledPlugin` 配置。
-- **移除冗余的 dependabot 配置** — 仅保留 `renovate.json`。
+- **Remove the unused Markdown plugin dependency** — no source code references the Markdown plugin API, so the `org.intellij.plugins.markdown` dependency and its `bundledPlugin` entry were removed.
+- **Remove the redundant dependabot config** — only `renovate.json` is kept.
 
 ## [1.1.0] - 2026-08-13
 
@@ -125,7 +123,7 @@ After two rounds of pre-release iterations, this version brings a mature, battle
 - Floating formatting toolbar shown when selecting text in a `.qd` file (mirrors the Markdown plugin): Bold, Italic, Strikethrough, Inline Code and Link buttons appear above the selection. Each button has its own icon color; the Link button places the caret inside `()` for immediate URL input; the toolbar is suppressed over non-prose content (function arguments, image paths, inline code, front matter).
 - Gutter icon for code blocks (fenced ` ```lang "caption" {#id}` and `.code lang:{…} caption:{…} ref:{…}`): clicking it opens a dialog to edit the block's language, caption and cross-reference id.
 - Gutter icon for equations (inline `$ … $ {#id}` and fenced `$$$ {#id}`): clicking it opens a dialog to edit the cross-reference id.
-- Gutter icon for headings (`# … ###### {#id}`): clicking it opens a dialog to edit the heading level, content and cross-reference id, with a "快速提取" button that derives a default id from the heading content.
+- Gutter icon for headings (`# … ###### {#id}`): clicking it opens a dialog to edit the heading level, content and cross-reference id, with an "extract" button that derives a default id from the heading content.
 
 ## [0.1.0] - 2026-05-29
 
