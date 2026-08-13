@@ -240,6 +240,10 @@
                 language="Quarkdown"
                 implementationClass="cc.carm.plugin.intellij.quarkdown.lang.structure.QuarkdownStructureViewFactory"/>
 
+        <!-- Go To Symbol (Ctrl+Alt+Shift+O): headings and {#id} tags as symbols -->
+        <gotoSymbolContributor
+                implementationClass="cc.carm.plugin.intellij.quarkdown.lang.structure.QuarkdownGoToSymbolContributor"/>
+
         <!-- Code folding for sections, code blocks, and tables -->
         <lang.foldingBuilder
                 language="Quarkdown"
