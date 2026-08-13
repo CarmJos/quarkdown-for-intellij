@@ -145,8 +145,9 @@ enabling developers to write and edit Quarkdown documents with full IDE assistan
 
 ## Requirements
 
-- IntelliJ IDEA 2025.2 or later (Community or Ultimate)
-- [Quarkdown CLI](https://github.com/iamgio/quarkdown) installed and available in `PATH` or configured in plugin settings
+- Any JetBrains IntelliJ Platform product **2025.2 or later** — IntelliJ IDEA (Community & Ultimate), Android Studio, PyCharm, WebStorm, PhpStorm, GoLand, RubyMine, CLion, Rider, DataSpell, DataGrip, RustRover, JetBrains Gateway, JetBrains Client, and Code With Me Guest.
+- [Quarkdown CLI](https://github.com/iamgio/quarkdown) installed and available in `PATH` or configured in plugin settings.
+- [LSP4IJ](https://plugins.jetbrains.com/plugin/23257-lsp4ij) — installed automatically by the JetBrains Marketplace when installing this plugin from the plugin repository.
 
 ## Support and Donation
 <img src="https://resources.jetbrains.com/storage/products/company/brand/logos/jb_beam.svg" width="150px" alt="logo" align="right" style="float: right"/>

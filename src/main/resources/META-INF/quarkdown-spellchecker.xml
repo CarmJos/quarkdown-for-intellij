@@ -1,0 +1,12 @@
+<idea-plugin>
+    <!-- Optional spell-checking integration, loaded only when the
+         com.intellij.modules.spellchecker module is present in the IDE.
+         Plain-text tokens (TEXT, HEADING_CONTENT) are checked; everything else —
+         function names, parameter lists, code blocks, link/image URLs, id tags,
+         table syntax and markers — is skipped. -->
+    <extensions defaultExtensionNs="com.intellij">
+        <spellchecker.support
+                language="Quarkdown"
+                implementationClass="cc.carm.plugin.intellij.quarkdown.lang.spellchecker.QuarkdownSpellcheckingStrategy"/>
+    </extensions>
+</idea-plugin>

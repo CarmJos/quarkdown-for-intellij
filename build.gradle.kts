@@ -412,8 +412,12 @@ dependencies {
 
         // Plugin dependencies - bundled plugins
         bundledPlugin("com.intellij.java")
-        bundledPlugin("org.intellij.intelliLang")
         bundledPlugin("com.intellij.platform.images")
+
+        // LSP4IJ provides the Language Server Protocol client and works in ALL IntelliJ
+        // products (unlike com.intellij.modules.lsp, which is only bundled with the
+        // commercial IDEs). The version must match a published JetBrains Marketplace build.
+        plugin("com.redhat.devtools.lsp4ij:0.20.1")
 
     }
 

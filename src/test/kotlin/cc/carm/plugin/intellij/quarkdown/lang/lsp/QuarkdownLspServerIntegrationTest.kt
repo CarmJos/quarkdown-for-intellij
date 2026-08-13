@@ -13,7 +13,7 @@ import java.util.concurrent.TimeUnit
  * Integration test for the official `quarkdown language-server`.
  *
  * These tests launch a real `quarkdown language-server` JVM process (using the same
- * JVM command the plugin's [QuarkdownLspServerDescriptor] builds — `java` with the
+ * JVM command the plugin's [QuarkdownLanguageServerConnectionProvider] builds — `java` with the
  * `<home>/lib/asterisk` wildcard classpath and `com.quarkdown.cli.QuarkdownCliKt
  * language-server`) and drive it over the LSP stdio protocol:
  *

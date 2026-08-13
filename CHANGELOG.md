@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+### Changed
+
+- **LSP integration migrated to LSP4IJ for full product compatibility** — the language server is now integrated through the [LSP4IJ](https://github.com/redhat-developer/lsp4ij) client instead of the platform LSP module (`com.intellij.modules.lsp`). This makes the Quarkdown language server (diagnostics, completion, hover, semantic highlighting) available in **every** IntelliJ-based product — including IntelliJ IDEA Community, Android Studio, DataSpell, JetBrains Gateway, JetBrains Client and Code With Me Guest — instead of only the commercial IDEs.
+- **Spell checking is now an optional dependency** — the `com.intellij.modules.spellchecker` module is declared optional so the plugin still loads in products that do not bundle the spell checker (e.g. Android Studio, Code With Me Guest).
+- **Removed the unused IntelliLang dependency** — `org.intellij.intelliLang` was declared but never referenced in code, and its hard requirement blocked installation in JetBrains Gateway / Client / Code With Me Guest.
+
+### Requirements
+
+- The plugin now requires [LSP4IJ](https://plugins.jetbrains.com/plugin/23257-lsp4ij) to be installed. The JetBrains Marketplace resolves and installs this dependency automatically.
+
 ## [1.1.1] - 2026-08-13
 
 ### Features

@@ -13,19 +13,17 @@ import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.options.ShowSettingsUtil
 import com.intellij.openapi.project.Project
-import com.intellij.platform.lsp.api.LspServerManager
+import com.redhat.devtools.lsp4ij.LanguageServerManager
 import java.util.concurrent.ConcurrentHashMap
 
 /**
  * Watches the `quarkdown language-server` lifecycle and keeps it usable.
  *
- * The IntelliJ platform LSP integration does **not** automatically restart a server
- * that crashed or failed to initialize; it only reports the unexpected shutdown to
- * `LspServerListener`s and otherwise leaves the Quarkdown features dead. The lifecycle
- * notifications arrive through [QuarkdownLspServerDescriptor.lspServerListener]
- * (the public LSP API), which forwards them here. This service:
+ * LSP4IJ does not automatically retry a server that crashed or failed to initialize; it
+ * only reports the unexpected shutdown. This service therefore:
  *
- *  - listens for unexpected shutdowns and retries the server with a short backoff
+ *  - listens for unexpected shutdowns (via the connection provider's
+ *    `addUnexpectedServerStopHandler`) and retries the server with a short backoff
  *    (bounded, so a genuinely broken installation is never retried forever);
  *  - raises an alarm balloon when the server still cannot start, with an "Open
  *    Settings" action so the user can fix the Quarkdown home path;
@@ -35,13 +33,13 @@ import java.util.concurrent.ConcurrentHashMap
 @Service(Service.Level.PROJECT)
 class QuarkdownLspServerManager(private val project: Project) : Disposable {
 
-    private val retryAttempts = ConcurrentHashMap<Class<*>, Int>()
+    private val retryAttempts = ConcurrentHashMap<String, Int>()
 
     /**
-     * Called by [QuarkdownLspServerDescriptor.lspServerListener] once the Quarkdown
-     * language server has been initialized successfully (i.e. reached the `Running`
-     * state). Clears any pending retry state and, when the server was brought back by
-     * an automatic retry, informs the user.
+     * Called by [QuarkdownLanguageClient] once the Quarkdown language server has been
+     * initialized successfully (i.e. reached the `started` state). Clears any pending
+     * retry state and, when the server was brought back by an automatic retry, informs
+     * the user.
      */
     fun onServerInitialized() {
         if (project.isDisposed) return
@@ -49,10 +47,9 @@ class QuarkdownLspServerManager(private val project: Project) : Disposable {
     }
 
     /**
-     * Called by [QuarkdownLspServerDescriptor.lspServerListener] when the Quarkdown
-     * language server stops. An unexpected shutdown ([shutdownNormally] == false, e.g.
-     * the process crashed or failed to initialize) triggers the bounded retry logic; a
-     * normal shutdown (user-initiated restart, project close) is ignored.
+     * Called by the connection provider's unexpected-stop handler when the Quarkdown
+     * language server process terminates unexpectedly (crash or failed initialization).
+     * A normal shutdown (user-initiated restart, project close) is not routed here.
      */
     fun onServerStopped(shutdownNormally: Boolean) {
         if (project.isDisposed) return
@@ -69,8 +66,7 @@ class QuarkdownLspServerManager(private val project: Project) : Disposable {
     fun restart() {
         retryAttempts.clear()
         try {
-            LspServerManager.getInstance(project)
-                .stopAndRestartIfNeeded(QuarkdownLspServerSupportProvider::class.java)
+            LanguageServerManager.getInstance(project).start(SERVER_ID)
             LOG.info("Restarted the Quarkdown LSP server")
         } catch (e: Throwable) {
             LOG.warn("Failed to restart the Quarkdown LSP server", e)
@@ -79,7 +75,7 @@ class QuarkdownLspServerManager(private val project: Project) : Disposable {
 
     /** A Quarkdown LSP server stopped without being asked to — try to bring it back. */
     private fun handleUnexpectedStop() {
-        val key = QuarkdownLspServerSupportProvider::class.java
+        val key = SERVER_ID
         val attempts = retryAttempts.merge(key, 1, Int::plus) ?: 1
 
         // A broken installation (missing home / Java / libraries) is guaranteed to fail
@@ -102,9 +98,9 @@ class QuarkdownLspServerManager(private val project: Project) : Disposable {
         scheduleRestart(delayMs)
     }
 
-    /** The server reached `Running` — if it was restarted after a failure, say so. */
+    /** The server reached `started` — if it was restarted after a failure, say so. */
     private fun handleServerRunning() {
-        val attempts = retryAttempts.remove(QuarkdownLspServerSupportProvider::class.java)
+        val attempts = retryAttempts.remove(SERVER_ID)
         if (attempts != null && attempts > 0) {
             LOG.info("Quarkdown LSP server recovered after $attempts retries")
             notifyRecovered(attempts)
@@ -117,18 +113,18 @@ class QuarkdownLspServerManager(private val project: Project) : Disposable {
      */
     private fun validateLaunch(): String? {
         val configured = QuarkdownSettings.getInstance(project).state.quarkdownPath
-        val home = QuarkdownLspServerDescriptor.resolveQuarkdownHome(project)
+        val home = QuarkdownLanguageServerConnectionProvider.resolveQuarkdownHome(project)
         if (home == null) {
             return QuarkdownBundle.message("quarkdown.lsp.error.home.not.found")
         }
         if (!configured.isNullOrBlank() && QuarkdownPathDetector.resolveHome(configured) == null) {
             return QuarkdownBundle.message("quarkdown.lsp.error.home.invalid", configured)
         }
-        val java = QuarkdownLspServerDescriptor.resolveJavaExecutable(home)
+        val java = QuarkdownLanguageServerConnectionProvider.resolveJavaExecutable(home)
         if (java == null) {
             return QuarkdownBundle.message("quarkdown.lsp.error.java.not.found", home)
         }
-        if (!QuarkdownLspServerDescriptor.hasLspLibraries(home)) {
+        if (!QuarkdownLanguageServerConnectionProvider.hasLspLibraries(home)) {
             return QuarkdownBundle.message("quarkdown.lsp.error.lib.missing", home)
         }
         return null
@@ -145,8 +141,7 @@ class QuarkdownLspServerManager(private val project: Project) : Disposable {
             ApplicationManager.getApplication().invokeLater {
                 if (project.isDisposed) return@invokeLater
                 try {
-                    LspServerManager.getInstance(project)
-                        .stopAndRestartIfNeeded(QuarkdownLspServerSupportProvider::class.java)
+                    LanguageServerManager.getInstance(project).start(SERVER_ID)
                 } catch (e: Throwable) {
                     LOG.warn("Failed to restart the Quarkdown LSP server after an unexpected stop", e)
                 }
@@ -188,6 +183,7 @@ class QuarkdownLspServerManager(private val project: Project) : Disposable {
     companion object {
         private val LOG = Logger.getInstance(QuarkdownLspServerManager::class.java)
 
+        private const val SERVER_ID = "quarkdownLspServer"
         private const val NOTIFICATION_GROUP = "Quarkdown"
         private const val MAX_RETRIES = 3
         private const val RETRY_DELAY_MS = 3_000L

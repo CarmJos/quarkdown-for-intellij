@@ -8,11 +8,11 @@ import org.junit.Test
 import java.io.File
 
 /**
- * Unit tests for the LSP server descriptor — verifies the command line the plugin would
- * launch without starting an actual process (that is covered by
+ * Unit tests for the LSP server connection provider — verifies the command line the plugin
+ * would launch without starting an actual process (that is covered by
  * [QuarkdownLspServerIntegrationTest]).
  */
-class QuarkdownLspServerDescriptorTest {
+class QuarkdownLanguageServerConnectionProviderTest {
 
     private var home: String? = null
 
@@ -32,7 +32,7 @@ class QuarkdownLspServerDescriptorTest {
             Assume.assumeTrue("quarkdown home not configured, skipping", false)
             return
         }
-        val java = QuarkdownLspServerDescriptor.resolveJavaExecutable(home)
+        val java = QuarkdownLanguageServerConnectionProvider.resolveJavaExecutable(home)
         assertTrue("java executable should resolve, got null", java != null)
         assertTrue("java executable must exist", java!!.isFile)
     }
@@ -44,7 +44,7 @@ class QuarkdownLspServerDescriptorTest {
             Assume.assumeTrue("quarkdown home not configured, skipping", false)
             return
         }
-        val java = QuarkdownLspServerDescriptor.resolveJavaExecutable(home)!!
+        val java = QuarkdownLanguageServerConnectionProvider.resolveJavaExecutable(home)!!
         val libDir = File(home, "lib")
         val expected = "${libDir.absolutePath}${File.separator}*"
         assertEquals(

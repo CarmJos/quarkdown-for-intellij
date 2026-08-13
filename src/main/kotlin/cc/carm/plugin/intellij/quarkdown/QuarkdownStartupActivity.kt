@@ -35,8 +35,8 @@ class QuarkdownStartupActivity : ProjectActivity {
         val path = settings.state.quarkdownPath
 
         // The official Quarkdown Language Server is launched lazily when a .qd file is
-        // opened (see QuarkdownLspServerSupportProvider); the startup activity only
-        // persists the detected installation path so the LSP descriptor can find it.
+        // opened by LSP4IJ (see QuarkdownLanguageServerFactory); the startup activity only
+        // persists the detected installation path so the LSP connection provider can find it.
         if (path.isNullOrEmpty()) {
             val detected = QuarkdownPathDetector.detect()
             if (detected != null) {
@@ -60,8 +60,8 @@ class QuarkdownStartupActivity : ProjectActivity {
 
         // Activate the LSP lifecycle watcher: it retries a crashed/failed language server
         // and restarts it whenever the Quarkdown home path changes. Lifecycle events are
-        // delivered through the descriptor's public `lspServerListener` (see
-        // QuarkdownLspServerDescriptor), which forwards them to this service.
+        // delivered through the connection provider's unexpected-stop handler and the
+        // LSP4IJ language client (see QuarkdownLspServerManager).
         QuarkdownLspServerManager.getInstance(project)
     }
 

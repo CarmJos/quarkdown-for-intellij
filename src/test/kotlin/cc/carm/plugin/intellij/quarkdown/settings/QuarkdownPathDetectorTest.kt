@@ -1,6 +1,6 @@
 package cc.carm.plugin.intellij.quarkdown.settings
 
-import cc.carm.plugin.intellij.quarkdown.lang.lsp.QuarkdownLspServerDescriptor
+import cc.carm.plugin.intellij.quarkdown.lang.lsp.QuarkdownLanguageServerConnectionProvider
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -80,13 +80,13 @@ class QuarkdownPathDetectorTest {
     @Test
     fun `hasLspLibraries requires a non-empty lib folder with jars`() {
         val home = fakeHome()
-        assertTrue(QuarkdownLspServerDescriptor.hasLspLibraries(home.absolutePath))
+        assertTrue(QuarkdownLanguageServerConnectionProvider.hasLspLibraries(home.absolutePath))
 
         val noLib = tmp.newFolder("no-lib")
-        assertFalse(QuarkdownLspServerDescriptor.hasLspLibraries(noLib.absolutePath))
+        assertFalse(QuarkdownLanguageServerConnectionProvider.hasLspLibraries(noLib.absolutePath))
 
         val emptyLib = tmp.newFolder("empty-lib")
         File(emptyLib, "lib").mkdirs()
-        assertFalse(QuarkdownLspServerDescriptor.hasLspLibraries(emptyLib.absolutePath))
+        assertFalse(QuarkdownLanguageServerConnectionProvider.hasLspLibraries(emptyLib.absolutePath))
     }
 }

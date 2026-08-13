@@ -7,10 +7,13 @@ import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.ModificationTracker
+import com.redhat.devtools.lsp4ij.LSPIJUtils
+import com.redhat.devtools.lsp4ij.LanguageServerManager
 import org.eclipse.lsp4j.HoverParams
 import org.eclipse.lsp4j.Position
 import org.eclipse.lsp4j.TextDocumentIdentifier
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
 
 /**
@@ -92,13 +95,10 @@ class QuarkdownLspFunctionSignatureCache(private val project: Project) {
         }
 
         val virtualFile = file.virtualFile
-        val server = if (virtualFile != null && virtualFile.isValid) {
-            QuarkdownLspServerDescriptor.currentServer(project)
-        } else {
-            null
-        } ?: return
+        if (virtualFile == null || !virtualFile.isValid) return
+        val server = currentServer() ?: return
 
-        val fileUri = try { server.getDocumentIdentifier(virtualFile!!) } catch (e: Exception) { null }
+        val fileUri = try { TextDocumentIdentifier(LSPIJUtils.toUriAsString(virtualFile)) } catch (e: Exception) { null }
         if (fileUri == null) return
         val text = file.text.takeIf { it.isNotEmpty() } ?: return
 
@@ -148,8 +148,8 @@ class QuarkdownLspFunctionSignatureCache(private val project: Project) {
         val missing = names.map { it.trim().lowercase() }.filter { it.isNotEmpty() && !signatures.containsKey(it) }
         if (missing.isEmpty()) return
 
-        val server = QuarkdownLspServerDescriptor.currentServer(project) ?: return
-        val fileUri = try { server.getDocumentIdentifier(virtualFile) } catch (e: Exception) { null }
+        val server = currentServer() ?: return
+        val fileUri = try { TextDocumentIdentifier(LSPIJUtils.toUriAsString(virtualFile)) } catch (e: Exception) { null }
         if (fileUri == null) return
 
         val text = file.text.takeIf { it.isNotEmpty() } ?: return
@@ -181,8 +181,22 @@ class QuarkdownLspFunctionSignatureCache(private val project: Project) {
         }
     }
 
+    /**
+     * Returns the currently running Quarkdown LSP4J server, or `null` when it is not
+     * initialized. Uses LSP4IJ's [LanguageServerManager] to look up the server by id.
+     */
+    private fun currentServer(): org.eclipse.lsp4j.services.LanguageServer? =
+        try {
+            LanguageServerManager.getInstance(project)
+                .getLanguageServer(SERVER_ID)
+                .get(3, TimeUnit.SECONDS)
+                ?.server
+        } catch (e: Exception) {
+            null
+        }
+
     private fun fetchSignature(
-        server: com.intellij.platform.lsp.api.LspServer,
+        server: org.eclipse.lsp4j.services.LanguageServer,
         fileUri: TextDocumentIdentifier,
         text: String,
         name: String
@@ -190,8 +204,12 @@ class QuarkdownLspFunctionSignatureCache(private val project: Project) {
         // Hover at the first occurrence of the function call name in the document.
         val offset = findNameOffset(text, name) ?: return null
         val position = offsetToPosition(text, offset)
-        val hover = server.sendRequestSync(com.intellij.platform.lsp.api.LspServer.DEFAULT_REQUEST_TIMEOUT_MS) { ls ->
-            ls.textDocumentService.hover(HoverParams(fileUri, position))
+        val hover = try {
+            server.textDocumentService.hover(HoverParams(fileUri, position))
+                .get(REQUEST_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+        } catch (e: Exception) {
+            logger.debug("Hover request failed for '$name': ${e.message}")
+            null
         } ?: return null
 
         val contents = hover.contents
@@ -230,6 +248,9 @@ class QuarkdownLspFunctionSignatureCache(private val project: Project) {
         parseFunctionSignature(markdown)?.parameterNames
 
     companion object {
+        private const val SERVER_ID = "quarkdownLspServer"
+        private const val REQUEST_TIMEOUT_SECONDS = 5L
+
         fun getInstance(project: Project): QuarkdownLspFunctionSignatureCache = project.service()
     }
 }

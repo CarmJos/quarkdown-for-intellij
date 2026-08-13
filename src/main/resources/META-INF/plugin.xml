@@ -21,20 +21,23 @@
 
         <h3>Requirements</h3>
         <ul>
-            <li>IntelliJ IDEA 2025.2 or later (Community or Ultimate), or other IntelliJ-based IDEs.</li>
+            <li>Any IntelliJ Platform product 2025.2 or later (IntelliJ IDEA Community &amp; Ultimate, Android Studio, PyCharm, WebStorm, PhpStorm, GoLand, RubyMine, CLion, Rider, DataSpell, DataGrip, RustRover, JetBrains Gateway, JetBrains Client, Code With Me Guest).</li>
             <li><a href="https://github.com/iamgio/quarkdown">Quarkdown</a> CLI installed and available in <code>PATH</code>, or configured in plugin settings.</li>
+            <li><a href="https://plugins.jetbrains.com/plugin/23257-lsp4ij">LSP4IJ</a> (installed automatically by the JetBrains Marketplace).</li>
         </ul>
 
         <h3>Support</h3>
         <p>If you appreciate this plugin, consider supporting the project with a donation via <a href="https://github.com/sponsors/CarmJos">GitHub Sponsors</a> or <a href="https://www.ifdian.net/a/carmjos/plan">爱发电</a>. Thank you for supporting open-source projects!</p>
     ]]></description>
 
-    <depends>org.intellij.intelliLang</depends>
     <depends>com.intellij.modules.platform</depends>
-    <!-- IntelliJ platform LSP integration (LspServerSupportProvider / LspServerDescriptor) -->
-    <depends>com.intellij.modules.lsp</depends>
-    <!-- Spell checking (SpellcheckingStrategy) -->
-    <depends>com.intellij.modules.spellchecker</depends>
+    <!-- LSP4IJ (com.redhat.devtools.lsp4ij) provides the Language Server Protocol
+         client and works in ALL IntelliJ products — unlike the platform LSP module
+         (com.intellij.modules.lsp), which is only bundled with commercial IDEs. -->
+    <depends>com.redhat.devtools.lsp4ij</depends>
+    <!-- Spell checking (SpellcheckingStrategy) is optional: the spell checker plugin
+         is not available in every product (e.g. Android Studio, Code With Me Guest). -->
+    <depends optional="true" config-file="quarkdown-spellchecker.xml">com.intellij.modules.spellchecker</depends>
     <extensions defaultExtensionNs="com.intellij">
         <fileType name="Quarkdown"
                   implementationClass="cc.carm.plugin.intellij.quarkdown.QuarkdownFileType"
@@ -53,13 +56,6 @@
                 key="quarkdown.settings.name"/>
 
         <postStartupActivity implementation="cc.carm.plugin.intellij.quarkdown.QuarkdownStartupActivity"/>
-
-        <!-- LSP integration: starts `quarkdown language-server` for opened .qd files.
-             Provides hover docs, diagnostics, function completion and semantic highlighting
-             from the official Quarkdown LSP
-             (see https://plugins.jetbrains.com/docs/intellij/language-server-protocol.html). -->
-        <platform.lsp.serverSupportProvider
-                implementation="cc.carm.plugin.intellij.quarkdown.lang.lsp.QuarkdownLspServerSupportProvider"/>
 
         <completion.contributor
                 language="Quarkdown"
@@ -121,11 +117,6 @@
         <lang.commenter
                 language="Quarkdown"
                 implementationClass="cc.carm.plugin.intellij.quarkdown.lang.commenter.QuarkdownCommenter"/>
-
-        <!-- Spell checking for plain-text tokens (excludes function calls, code, paths) -->
-        <spellchecker.support
-                language="Quarkdown"
-                implementationClass="cc.carm.plugin.intellij.quarkdown.lang.spellchecker.QuarkdownSpellcheckingStrategy"/>
 
         <!-- Parser definition (creates Lexer + PSI tree) -->
         <lang.parserDefinition
@@ -284,6 +275,31 @@
         <!-- File-based index of reference ids → file offsets (speeds up Go-to-declaration
              and Find Usages instead of scanning every .qd file) -->
         <fileBasedIndex implementation="cc.carm.plugin.intellij.quarkdown.lang.reference.QuarkdownReferenceIndex"/>
+    </extensions>
+
+    <!-- LSP4IJ integration: registers the Quarkdown language server and maps the
+         Quarkdown language to it. LSP4IJ works in every IntelliJ product, so the
+         language server (hover, diagnostics, completion, semantic tokens) is available
+         even in IntelliJ IDEA Community and Android Studio. -->
+    <extensions defaultExtensionNs="com.redhat.devtools.lsp4ij">
+        <server id="quarkdownLspServer"
+                name="Quarkdown Language Server"
+                factoryClass="cc.carm.plugin.intellij.quarkdown.lang.lsp.QuarkdownLanguageServerFactory">
+            <description><![CDATA[
+                The official <a href="https://github.com/iamgio/quarkdown">Quarkdown</a>
+                language server, providing compiler-level diagnostics, completion, hover
+                documentation and semantic highlighting for <code>.qd</code> documents.
+            ]]></description>
+        </server>
+
+        <languageMapping language="Quarkdown"
+                         serverId="quarkdownLspServer"
+                         languageId="quarkdown"/>
+
+        <!-- Maps the quarkdown-lsp semantic-token legend (function / parameter / enum)
+             to this plugin's existing highlight attributes. -->
+        <semanticTokensColorsProvider
+                class="cc.carm.plugin.intellij.quarkdown.lang.lsp.QuarkdownSemanticTokensColorsProvider"/>
     </extensions>
 
     <actions>
