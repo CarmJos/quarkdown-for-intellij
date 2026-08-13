@@ -5,3 +5,9 @@
 .intellijPlatform
 .kotlin
 build
+
+# Accidentally extracted dependency artifacts (IntelliJ platform descriptors,
+# Maven POMs, CLDR data) that end up in the repo root when unpacking jars.
+/intellij.*.xml
+/META-INF/
+/data/

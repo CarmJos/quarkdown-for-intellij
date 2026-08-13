@@ -2,7 +2,7 @@ package cc.carm.plugin.intellij.quarkdown.statusbar
 
 import cc.carm.plugin.intellij.quarkdown.QuarkdownBundle
 import cc.carm.plugin.intellij.quarkdown.QuarkdownFileType
-import cc.carm.plugin.intellij.quarkdown.statusbar.QuarkdownStatsParser.QuarkdownStats
+import cc.carm.plugin.intellij.quarkdown.statusbar.QuarkdownStatsParser.Stats
 import com.intellij.openapi.editor.Document
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.event.DocumentEvent
@@ -52,7 +52,7 @@ class QuarkdownStatsWidgetFactory : StatusBarWidgetFactory {
 class QuarkdownStatsWidget(project: Project) : EditorBasedWidget(project) {
 
     private var cachedModCount = -1L
-    private var cachedStats = QuarkdownStats(0, 0)
+    private var cachedStats = Stats(0, 0)
 
     private var listenedEditor: Editor? = null
 

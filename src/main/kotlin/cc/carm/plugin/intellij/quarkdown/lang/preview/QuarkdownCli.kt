@@ -50,7 +50,7 @@ object QuarkdownCli {
             val path = File(configured.trim())
             if (path.isFile && path.name.startsWith("quarkdown")) return path
             if (path.isDirectory) {
-                findInDirectory(path)?.let { return it }
+                findLauncherIn(path)?.let { return it }
             }
         }
         return findOnPath()
@@ -193,7 +193,11 @@ object QuarkdownCli {
         }
     }
 
-    private fun findInDirectory(dir: File): File? {
+    /**
+     * Finds the `quarkdown` launcher inside [dir] (or its `bin/` sub-directory), or `null`
+     * when neither holds a launcher for the current platform.
+     */
+    fun findLauncherIn(dir: File): File? {
         for (name in LAUNCHER_NAMES) {
             File(File(dir, "bin"), name).takeIf { it.isFile }?.let { return it }
         }

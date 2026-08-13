@@ -171,8 +171,4 @@ Please make sure to update tests as appropriate.
 This project's source code is licensed under
 the [GNU General Public License, Version 3](https://www.gnu.org/licenses/gpl-3.0.html).
 
-[gh:build]: https://github.com/CarmJos/quarkdown-for-intellij/actions?query=workflow%3ABuild
-
 [gh:releases]: https://github.com/CarmJos/quarkdown-for-intellij/releases
-
-[jb:plugin]: https://plugins.jetbrains.com/plugin/cc.carm.plugin.quarkdown

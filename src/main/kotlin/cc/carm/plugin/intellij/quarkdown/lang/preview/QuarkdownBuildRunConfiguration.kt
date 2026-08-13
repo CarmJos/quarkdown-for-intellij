@@ -19,10 +19,10 @@ class QuarkdownBuildRunConfiguration(
     project: Project,
     factory: ConfigurationFactory,
     name: String,
-) : LocatableConfigurationBase<QuarkdownBuildRunConfiguration.QuarkdownBuildOptions>(project, factory, name) {
+) : LocatableConfigurationBase<QuarkdownBuildRunConfiguration.BuildOptions>(project, factory, name) {
 
     /** Options holder required by the platform (kept empty; state is transient). */
-    class QuarkdownBuildOptions : LocatableRunConfigurationOptions()
+    class BuildOptions : LocatableRunConfigurationOptions()
 
     /** Full command line (executable + arguments) executed by the *Run* tool window. */
     @Volatile

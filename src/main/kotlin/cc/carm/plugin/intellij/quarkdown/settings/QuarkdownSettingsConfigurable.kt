@@ -383,17 +383,7 @@ class QuarkdownSettingsConfigurable(private val project: Project) :
         installButton?.isVisible = configured
     }
 
-    private fun resolveExecutable(homeDir: File): File? {
-        for (name in QuarkdownCli.LAUNCHER_NAMES) {
-            val f = File(File(homeDir, "bin"), name)
-            if (f.isFile) return f
-        }
-        for (name in QuarkdownCli.LAUNCHER_NAMES) {
-            val f = File(homeDir, name)
-            if (f.isFile) return f
-        }
-        return null
-    }
+    private fun resolveExecutable(homeDir: File): File? = QuarkdownCli.findLauncherIn(homeDir)
 
     private fun extractVersion(output: String): String =
         output.split("\\s+".toRegex()).lastOrNull() ?: output

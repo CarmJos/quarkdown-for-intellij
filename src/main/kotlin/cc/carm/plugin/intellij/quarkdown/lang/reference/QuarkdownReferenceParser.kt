@@ -30,6 +30,7 @@ object QuarkdownReferenceParser {
     private val varRefPattern = Regex("""\.([a-zA-Z][a-zA-Z0-9]*)\b""")
     private val refBlockPattern = Regex("""\.ref\s*\{\s*([^}]+?)\s*\}""", RegexOption.IGNORE_CASE)
     private val labelPattern = Regex("""\{#([a-zA-Z0-9_-]+)}""")
+    private val varDeclPattern = Regex("""\.var\s*\{\s*([a-zA-Z][a-zA-Z0-9]*)\s*\}""", RegexOption.IGNORE_CASE)
     private val filePattern =
         Regex("""\.(read|include)\s*\{\s*(?:"([^"]+)"|([^{}"]+?))\s*\}""", RegexOption.IGNORE_CASE)
 
@@ -83,7 +84,6 @@ object QuarkdownReferenceParser {
     /** `.var { <name> }` declarations (so the declaration itself is navigable). */
     private fun varDeclAnchors(fileText: String): List<Anchor> {
         val anchors = mutableListOf<Anchor>()
-        val varDeclPattern = Regex("""\.var\s*\{\s*([a-zA-Z][a-zA-Z0-9]*)\s*\}""", RegexOption.IGNORE_CASE)
         for (match in varDeclPattern.findAll(fileText)) {
             val name = match.groupValues[1]
             if (name.isEmpty()) continue

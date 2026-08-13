@@ -39,14 +39,12 @@ class QuarkdownStatsWidgetTest : BasePlatformTestCase() {
         myFixture.configureByText("test.qd", "# Title\n\nSome prose here.\n\n.center {}\nmore text")
         FileEditorManager.getInstance(project).openFile(myFixture.file.virtualFile, true)
         val text = widgetText()
-        System.out.println("widget text: '$text'")
         assertTrue("widget should show counts, got '$text'", text.contains("words") || text.contains("paragraphs"))
     }
 
     fun `test empty text when no quarkdown editor selected`() {
         myFixture.configureByText("plain.txt", "hello world")
         val text = widgetText()
-        System.out.println("widget text for non-qd: '$text'")
         assertTrue(
             "expected empty or no qd text, got '$text'",
             text.isEmpty() || !text.contains("words")

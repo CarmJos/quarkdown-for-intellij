@@ -79,11 +79,8 @@ class QuarkdownLanguageServerConnectionProvider(
         }
 
         /** True when `<home>/lib` exists and contains at least one `.jar` (the LSP classpath). */
-        fun hasLspLibraries(home: String): Boolean {
-            val libDir = File(File(home), "lib")
-            if (!libDir.isDirectory) return false
-            return libDir.listFiles { f -> f.name.endsWith(".jar") }?.isNotEmpty() == true
-        }
+        fun hasLspLibraries(home: String): Boolean =
+            QuarkdownPathDetector.hasStdlibJars(File(home))
 
         /**
          * Resolves the JVM used to launch the LSP server.

@@ -12,15 +12,6 @@ object QuarkdownPathDetector {
             ?: detectFromKnownLaunchers()
             ?: detectFromPath()
 
-    fun isValidQuarkdownHome(path: String?): Boolean {
-        if (path.isNullOrEmpty()) return false
-        val home = File(path)
-        if (!home.exists() || !home.isDirectory) return false
-
-        val libDir = File(home, "lib")
-        return libDir.isDirectory && libDir.listFiles { f -> f.name.endsWith(".jar") }?.isNotEmpty() == true || hasQuarkdownBinary(home)
-    }
-
     /**
      * Resolves a configured path — a home directory, a `bin/` folder, or a launcher file
      * itself — to the actual Quarkdown installation home: the directory whose `lib`
@@ -59,21 +50,7 @@ object QuarkdownPathDetector {
     }
 
     /** Finds the platform-specific `quarkdown` launcher inside [dir] (or its `bin/` sub-directory). */
-    private fun findLauncherIn(dir: File): File? {
-        for (name in QuarkdownCli.LAUNCHER_NAMES) {
-            File(File(dir, "bin"), name).takeIf { it.isFile }?.let { return it }
-        }
-        for (name in QuarkdownCli.LAUNCHER_NAMES) {
-            File(dir, name).takeIf { it.isFile }?.let { return it }
-        }
-        return null
-    }
-
-    private fun hasQuarkdownBinary(dir: File): Boolean {
-        val binDir = File(dir, "bin")
-        return QuarkdownCli.LAUNCHER_NAMES.any { File(dir, it).exists() } ||
-                (binDir.isDirectory && QuarkdownCli.LAUNCHER_NAMES.any { File(binDir, it).exists() })
-    }
+    private fun findLauncherIn(dir: File): File? = QuarkdownCli.findLauncherIn(dir)
 
     /**
      * Well-known installation directories for the current OS.
@@ -196,7 +173,11 @@ object QuarkdownPathDetector {
         return null
     }
 
-    private fun hasStdlibJars(dir: File): Boolean {
+    /**
+     * True when [dir] is a directory whose `lib` folder contains at least one `.jar`
+     * (the Quarkdown stdlib / LSP classpath).
+     */
+    fun hasStdlibJars(dir: File): Boolean {
         val libDir = File(dir, "lib")
         if (!libDir.isDirectory) return false
         return libDir.listFiles { f -> f.name.endsWith(".jar") }?.isNotEmpty() == true

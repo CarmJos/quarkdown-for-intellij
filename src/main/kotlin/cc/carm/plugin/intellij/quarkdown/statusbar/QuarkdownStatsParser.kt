@@ -32,7 +32,7 @@ object QuarkdownStatsParser {
     private val tableSeparatorPattern = Regex("^\\|?\\s*:?-{3,}:?\\s*(?:\\|\\s*:?-{3,}:?\\s*)*\\|?$")
 
     /** Counting result for one document. */
-    data class QuarkdownStats(
+    data class Stats(
         val wordCount: Int,
         val paragraphCount: Int,
         /** Number of CJK ideograph characters (counted individually as words). */
@@ -40,7 +40,7 @@ object QuarkdownStatsParser {
     )
 
     /** Computes the word & paragraph counts of a Quarkdown document. */
-    fun computeStats(text: String): QuarkdownStats {
+    fun computeStats(text: String): Stats {
         val cleaned = maskFunctionCalls(text)
         return countLines(cleaned)
     }
@@ -175,7 +175,7 @@ object QuarkdownStatsParser {
     // Line-based counting
     // ------------------------------------------------------------------
 
-    private fun countLines(text: String): QuarkdownStats {
+    private fun countLines(text: String): Stats {
         var wordCount = 0
         var paragraphCount = 0
         var cjkCharCount = 0
@@ -231,7 +231,7 @@ object QuarkdownStatsParser {
         }
         if (inParagraph) paragraphCount++
 
-        return QuarkdownStats(wordCount, paragraphCount, cjkCharCount)
+        return Stats(wordCount, paragraphCount, cjkCharCount)
     }
 
     /**

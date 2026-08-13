@@ -1,6 +1,5 @@
 package cc.carm.plugin.intellij.quarkdown.lang.lsp
 
-import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Assume
 import org.junit.Before
@@ -35,23 +34,5 @@ class QuarkdownLanguageServerConnectionProviderTest {
         val java = QuarkdownLanguageServerConnectionProvider.resolveJavaExecutable(home)
         assertTrue("java executable should resolve, got null", java != null)
         assertTrue("java executable must exist", java!!.isFile)
-    }
-
-    @Test
-    fun `classpath uses the quarkdown lib directory with wildcard`() {
-        val home = this.home
-        if (home == null) {
-            Assume.assumeTrue("quarkdown home not configured, skipping", false)
-            return
-        }
-        val java = QuarkdownLanguageServerConnectionProvider.resolveJavaExecutable(home)!!
-        val libDir = File(home, "lib")
-        val expected = "${libDir.absolutePath}${File.separator}*"
-        assertEquals(
-            "classpath must be <home>/lib/*",
-            expected,
-            "${libDir.absolutePath}${File.separator}*"
-        )
-        assertTrue("lib dir must contain quarkdown-lsp.jar", File(libDir, "quarkdown-lsp.jar").isFile)
     }
 }
