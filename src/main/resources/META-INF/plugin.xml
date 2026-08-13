@@ -34,6 +34,8 @@
     <depends>org.intellij.plugins.markdown</depends>
     <!-- IntelliJ platform LSP integration (LspServerSupportProvider / LspServerDescriptor) -->
     <depends>com.intellij.modules.lsp</depends>
+    <!-- Spell checking (SpellcheckingStrategy) -->
+    <depends>com.intellij.modules.spellchecker</depends>
     <extensions defaultExtensionNs="com.intellij">
         <fileType name="Quarkdown"
                   implementationClass="cc.carm.plugin.intellij.quarkdown.QuarkdownFileType"
@@ -119,6 +121,11 @@
         <lang.commenter
                 language="Quarkdown"
                 implementationClass="cc.carm.plugin.intellij.quarkdown.lang.commenter.QuarkdownCommenter"/>
+
+        <!-- Spell checking for plain-text tokens (excludes function calls, code, paths) -->
+        <spellchecker.support
+                language="Quarkdown"
+                implementationClass="cc.carm.plugin.intellij.quarkdown.lang.spellchecker.QuarkdownSpellcheckingStrategy"/>
 
         <!-- Parser definition (creates Lexer + PSI tree) -->
         <lang.parserDefinition
