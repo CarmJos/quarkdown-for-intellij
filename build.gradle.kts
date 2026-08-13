@@ -376,18 +376,29 @@ fun quarkdownTestHome(): File = localQuarkdownHome ?: quarkdownSdkCacheDir
 val quarkdownSdkForce: Boolean =
     providers.gradleProperty("quarkdown.sdk.force").map { it.toBoolean() }.orElse(false).get()
 
+// `-Pquarkdown.test.offline=true` disables the Quarkdown SDK download. The LSP
+// integration tests skip themselves when no local installation is available, so the
+// rest of the suite can still run without network access.
+val quarkdownTestOffline: Boolean =
+    providers.gradleProperty("quarkdown.test.offline").map { it.toBoolean() }.orElse(false).get()
+
 val downloadQuarkdownSdk by tasks.registering(DownloadQuarkdownSdkTask::class) {
     group = "quarkdown"
     description = "Downloads and extracts the Quarkdown SDK used by the tests"
     assetName.set(quarkdownSdkPlatformAsset())
     forceRefresh.set(quarkdownSdkForce)
-    skipDownload.set(!quarkdownSdkForce && localQuarkdownHome != null)
+    skipDownload.set(!quarkdownSdkForce && (localQuarkdownHome != null || quarkdownTestOffline))
     outputDir.set(quarkdownSdkCacheDir)
 }
 
 tasks.named<Test>("test") {
-    dependsOn(downloadQuarkdownSdk)
+    // Offline mode: when no local Quarkdown is present the download would fail (or
+    // waste time); instead let the LSP tests skip and run everything else normally.
+    if (!quarkdownTestOffline || localQuarkdownHome != null) {
+        dependsOn(downloadQuarkdownSdk)
+    }
     systemProperty("quarkdown.test.home", quarkdownTestHome().absolutePath)
+    systemProperty("quarkdown.test.offline", quarkdownTestOffline.toString())
 }
 
 dependencies {
