@@ -1,6 +1,7 @@
 package cc.carm.plugin.intellij.quarkdown.settings
 
 import cc.carm.plugin.intellij.quarkdown.QuarkdownBundle
+import cc.carm.plugin.intellij.quarkdown.lang.lsp.QuarkdownLspServerManager
 import cc.carm.plugin.intellij.quarkdown.lang.preview.QuarkdownCli
 import com.intellij.icons.AllIcons
 import com.intellij.ide.BrowserUtil
@@ -29,6 +30,32 @@ class QuarkdownSettingsConfigurable(private val project: Project) :
 
     val settings: QuarkdownSettings
         get() = QuarkdownSettings.getInstance(project)
+
+    /** The Quarkdown home path when the settings dialog was (last) opened/reset. */
+    private var pathAtOpen: String? = null
+
+    /** Captures the baseline path whenever the dialog is (re)opened or reset. */
+    override fun reset() {
+        super.reset()
+        pathAtOpen = settings.state.quarkdownPath
+    }
+
+    /**
+     * Restarts the LSP server whenever the Quarkdown home path was changed, so the new
+     * installation is picked up without reopening the project or restarting the IDE.
+     *
+     * The comparison is done against the baseline captured in [reset], because the
+     * "Download &amp; Install" flow also mutates the stored path directly while the
+     * dialog is open — a plain before/after `apply()` comparison would miss it.
+     */
+    override fun apply() {
+        super.apply()
+        val newPath = settings.state.quarkdownPath
+        if (pathAtOpen != newPath) {
+            pathAtOpen = newPath
+            QuarkdownLspServerManager.getInstance(project).restart()
+        }
+    }
 
     private var checkButton: JButton? = null
     private var checkResultLabel: JLabel? = null

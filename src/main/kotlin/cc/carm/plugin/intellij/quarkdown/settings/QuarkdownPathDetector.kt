@@ -21,6 +21,54 @@ object QuarkdownPathDetector {
         return libDir.isDirectory && libDir.listFiles { f -> f.name.endsWith(".jar") }?.isNotEmpty() == true || hasQuarkdownBinary(home)
     }
 
+    /**
+     * Resolves a configured path — a home directory, a `bin/` folder, or a launcher file
+     * itself — to the actual Quarkdown installation home: the directory whose `lib`
+     * folder holds the `*.jar` files required to launch the LSP server.
+     *
+     * This handles the common mistake of pointing the setting at the *launcher*
+     * location (e.g. `/opt/homebrew/bin`, where the `quarkdown` symlink lives) instead
+     * of the installation home. Without this the LSP server would be launched with a
+     * broken classpath (`<launcher-dir>/lib/asterisk`) and die with
+     * `ClassNotFoundException: com.quarkdown.cli.QuarkdownCliKt`.
+     *
+     * @return the resolved installation home, or `null` when [configuredPath] is blank
+     * or does not point at anything that resembles a Quarkdown installation.
+     */
+    fun resolveHome(configuredPath: String?): String? {
+        if (configuredPath.isNullOrBlank()) return null
+        val file = File(configuredPath.trim())
+        if (!file.exists()) return null
+        return when {
+            // The configured path is the launcher file itself (e.g. .../bin/quarkdown).
+            file.isFile -> resolveHomeFromLauncher(file)?.absolutePath ?: file.parentFile?.absolutePath
+
+            // Already a proper home (`lib/*.jar` present).
+            hasStdlibJars(file) -> file.absolutePath
+
+            else -> {
+                // A `bin/` folder (or a plain directory) that contains the launcher.
+                val launcher = findLauncherIn(file)
+                if (launcher != null) {
+                    resolveHomeFromLauncher(launcher)?.absolutePath ?: file.absolutePath
+                } else {
+                    null
+                }
+            }
+        }
+    }
+
+    /** Finds the platform-specific `quarkdown` launcher inside [dir] (or its `bin/` sub-directory). */
+    private fun findLauncherIn(dir: File): File? {
+        for (name in QuarkdownCli.LAUNCHER_NAMES) {
+            File(File(dir, "bin"), name).takeIf { it.isFile }?.let { return it }
+        }
+        for (name in QuarkdownCli.LAUNCHER_NAMES) {
+            File(dir, name).takeIf { it.isFile }?.let { return it }
+        }
+        return null
+    }
+
     private fun hasQuarkdownBinary(dir: File): Boolean {
         val binDir = File(dir, "bin")
         return QuarkdownCli.LAUNCHER_NAMES.any { File(dir, it).exists() } ||

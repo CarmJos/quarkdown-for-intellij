@@ -17,6 +17,7 @@
 ### Fixes
 
 - **Structure view keeps heading order** — the alphabetical sorter was removed so the outline follows the document order of sections (e.g. "Chapter 10" no longer sorts before "Chapter 2").
+- **Resilient LSP server startup** — the Quarkdown home path is now resolved back to the real installation, fixing `ClassNotFoundException: com.quarkdown.cli.QuarkdownCliKt` when the setting pointed at a launcher folder (e.g. `/opt/homebrew/bin`). The language server is also automatically retried after an unexpected crash, an alarm balloon with an "Open Settings" action appears when it cannot start, and changing the Quarkdown home in Settings now restarts the LSP server against the new path immediately.
 
 ### Performance Improvements
 

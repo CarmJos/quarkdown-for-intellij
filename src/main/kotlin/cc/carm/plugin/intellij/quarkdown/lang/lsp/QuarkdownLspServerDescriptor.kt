@@ -3,7 +3,9 @@ package cc.carm.plugin.intellij.quarkdown.lang.lsp
 import cc.carm.plugin.intellij.quarkdown.QuarkdownFileType
 import cc.carm.plugin.intellij.quarkdown.settings.QuarkdownPathDetector
 import cc.carm.plugin.intellij.quarkdown.settings.QuarkdownSettings
+import com.intellij.execution.ExecutionException
 import com.intellij.execution.configurations.GeneralCommandLine
+import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.SystemInfo
 import com.intellij.openapi.vfs.VirtualFile
@@ -34,10 +36,22 @@ class QuarkdownLspServerDescriptor(
 
     override fun createCommandLine(): GeneralCommandLine {
         val home = resolveQuarkdownHome(project)
-            ?: throw IllegalStateException("Quarkdown installation not found")
+            ?: throw ExecutionException(
+                "Quarkdown installation not found. Configure the Quarkdown home in " +
+                    "Settings → Languages & Frameworks → Quarkdown."
+            )
 
         val java = resolveJavaExecutable(home)
-            ?: throw IllegalStateException("No Java executable found for Quarkdown LSP")
+            ?: throw ExecutionException(
+                "No Java executable found for the Quarkdown LSP server (home: $home)."
+            )
+
+        if (!hasLspLibraries(home)) {
+            throw ExecutionException(
+                "The Quarkdown installation at '$home' does not contain the LSP " +
+                    "libraries (lib/*.jar). Please check the Quarkdown home path in Settings."
+            )
+        }
 
         val libDir = File(home, "lib")
         val classpath = "${libDir.absolutePath}${File.separator}*"
@@ -68,15 +82,39 @@ class QuarkdownLspServerDescriptor(
         QuarkdownLspCompletionSupport()
 
     companion object {
+        private val LOG = Logger.getInstance(QuarkdownLspServerDescriptor::class.java)
+
         private const val MAIN_CLASS = "com.quarkdown.cli.QuarkdownCliKt"
 
-        /** Resolves the Quarkdown installation home from settings, or auto-detects it. */
+        /**
+         * Resolves the Quarkdown installation home from settings, or auto-detects it.
+         *
+         * The configured path may point at the *launcher* location (`bin/`, the Homebrew
+         * keg wrapper, …) instead of the real installation home. It is resolved back to
+         * the home whose `lib` folder holds the `*.jar` files (see
+         * [QuarkdownPathDetector.resolveHome]); otherwise the LSP is launched with a
+         * broken classpath and dies with `ClassNotFoundException`.
+         */
         fun resolveQuarkdownHome(project: Project): String? {
             val configured = QuarkdownSettings.getInstance(project).state.quarkdownPath
-            if (!configured.isNullOrBlank() && QuarkdownPathDetector.isValidQuarkdownHome(configured)) {
-                return File(configured.trim()).absolutePath
+            if (!configured.isNullOrBlank()) {
+                val resolved = QuarkdownPathDetector.resolveHome(configured)
+                if (resolved != null) {
+                    if (resolved != File(configured.trim()).absolutePath) {
+                        LOG.info("Resolved Quarkdown home '$configured' -> '$resolved'")
+                    }
+                    return resolved
+                }
+                LOG.warn("Configured Quarkdown path '$configured' is not a valid installation; falling back to auto-detection")
             }
             return QuarkdownPathDetector.detect()
+        }
+
+        /** True when `<home>/lib` exists and contains at least one `.jar` (the LSP classpath). */
+        fun hasLspLibraries(home: String): Boolean {
+            val libDir = File(File(home), "lib")
+            if (!libDir.isDirectory) return false
+            return libDir.listFiles { f -> f.name.endsWith(".jar") }?.isNotEmpty() == true
         }
 
         /** Returns the running LSP server for this plugin, or `null` when none is active. */

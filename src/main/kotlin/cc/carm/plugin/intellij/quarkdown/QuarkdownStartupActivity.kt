@@ -1,6 +1,7 @@
 package cc.carm.plugin.intellij.quarkdown
 
 import cc.carm.plugin.intellij.quarkdown.action.image.ImagePasteHandler
+import cc.carm.plugin.intellij.quarkdown.lang.lsp.QuarkdownLspServerManager
 import cc.carm.plugin.intellij.quarkdown.settings.QuarkdownPathDetector
 import cc.carm.plugin.intellij.quarkdown.settings.QuarkdownSettings
 import cc.carm.plugin.intellij.quarkdown.ui.floating.FloatingToolbarCustomizer
@@ -42,9 +43,24 @@ class QuarkdownStartupActivity : ProjectActivity {
                 logger.info("Auto-detected Quarkdown at: $detected")
                 settings.state.quarkdownPath = detected
             }
+        } else if (QuarkdownPathDetector.resolveHome(path) == null) {
+            // The stored path does not point at a valid installation (e.g. it was moved
+            // or uninstalled). Replace it with an auto-detected home so the LSP server
+            // does not fail to start on the next IDE launch.
+            val detected = QuarkdownPathDetector.detect()
+            if (detected != null) {
+                logger.warn("Replacing invalid Quarkdown path '$path' with auto-detected home: $detected")
+                settings.state.quarkdownPath = detected
+            } else {
+                logger.warn("Configured Quarkdown path '$path' is invalid and no installation could be auto-detected")
+            }
         } else {
             logger.info("Using existing Quarkdown path: $path")
         }
+
+        // Activate the LSP lifecycle watcher: it retries a crashed/failed language server
+        // and restarts it whenever the Quarkdown home path changes.
+        QuarkdownLspServerManager.getInstance(project)
     }
 
     /**
