@@ -68,11 +68,17 @@ jobs:
           path: ./build/distributions/
           if-no-files-found: error
 
-  # Run tests and upload test reports on failure
+  # Run tests and upload test reports on failure.
+  # The plugin contains platform-specific logic (Windows .bat/.cmd launchers, macOS
+  # Homebrew paths, `taskkill` for process termination), so tests run on all three OSes.
   test:
-    name: Test
+    name: Test (${{ matrix.os }})
     needs: [ build ]
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest, windows-latest, macos-latest ]
     steps:
 
       # Check out the current repository
@@ -94,6 +100,7 @@ jobs:
 
       # Run tests
       - name: Run Tests
+        shell: bash
         run: ./gradlew check
 
       # Collect Tests Result of failed tests
@@ -101,7 +108,7 @@ jobs:
         if: ${{ failure() }}
         uses: actions/upload-artifact@v7
         with:
-          name: tests-result
+          name: tests-result-${{ matrix.os }}
           path: ${{ github.workspace }}/build/reports/tests
 
   # Run plugin structure verification along with IntelliJ Plugin Verifier
