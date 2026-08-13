@@ -2,6 +2,7 @@ package cc.carm.plugin.intellij.quarkdown.lang.structure
 
 import cc.carm.plugin.intellij.quarkdown.QuarkdownFileType
 import cc.carm.plugin.intellij.quarkdown.QuarkdownIcons
+import cc.carm.plugin.intellij.quarkdown.lang.heading.QuarkdownHeadingSyntax
 import cc.carm.plugin.intellij.quarkdown.lang.psi.QuarkdownHeading
 import com.intellij.ide.util.PsiNavigationSupport
 import com.intellij.navigation.ChooseByNameContributorEx
@@ -21,11 +22,19 @@ import javax.swing.Icon
  * Registers Quarkdown headings (and `{#id}` element IDs) as searchable symbols,
  * so `Ctrl+Alt+Shift+O` (Search Everywhere → Symbols) can find them project-wide.
  *
- * Headings are collected from every `.qd` file in the project scope by walking the
- * PSI tree for [QuarkdownHeading] nodes. `{#id}` tags are located by scanning the raw
- * file text with a regular expression and resolving the PSI leaf at the matched offset
- * (the PSI `children` walk cannot see leaf tokens — [com.intellij.extapi.psi.ASTDelegatePsiElement]
- * only returns composite children).
+ * Symbol naming rules (to avoid duplicates and ugly names):
+ *  - A **heading** contributes its text with the trailing `{#id}` stripped
+ *    (e.g. `# Chapter One {#chapter-one}` → `Chapter One`).
+ *  - An **id tag on a heading** is folded into the heading itself (it is not a separate
+ *    symbol name), so searching the heading text finds the heading — no double entries.
+ *  - An **id tag on an image / code block / equation / standalone label** is a symbol
+ *    name on its own, because those elements have no text of their own.
+ *
+ * Display names are formatted for recognizability:
+ *  - Heading → `Heading: Chapter One`
+ *  - Image id → `Image: logo.png`
+ *  - Code-block id → `Code block`
+ *  - Equation id → `Equation`
  */
 class QuarkdownGoToSymbolContributor : ChooseByNameContributorEx {
 
@@ -47,7 +56,7 @@ class QuarkdownGoToSymbolContributor : ChooseByNameContributorEx {
         val scope = parameters.searchScope
         for (file in allQuarkdownFiles(scope)) {
             for (element in findSymbolsByName(file, name)) {
-                processor.process(SymbolNavigationItem(element, name))
+                processor.process(SymbolNavigationItem(element, formatDisplayName(file, element)))
             }
         }
     }
@@ -59,15 +68,23 @@ class QuarkdownGoToSymbolContributor : ChooseByNameContributorEx {
             .mapNotNull { psiManager.findFile(it) }
     }
 
-    /** Returns the symbol names (heading text and `{#id}` values) declared in [file]. */
+    /**
+     * Returns the symbol names declared in [file]:
+     * heading texts (with `{#id}` stripped) and non-heading `{#id}` values.
+     */
     private fun collectSymbolNames(file: PsiFile): Set<String> {
         val names = LinkedHashSet<String>()
         collectHeadings(file).forEach { heading ->
-            heading.headingText.takeIf { it.isNotBlank() }?.let { names.add(it) }
+            headingTextOf(heading).takeIf { it.isNotBlank() }?.let { names.add(it) }
         }
         file.text.run {
-            ID_TAG_REGEX.findAll(this).forEach { match ->
-                names.add(match.groupValues[1])
+            for (match in ID_TAG_REGEX.findAll(this)) {
+                val offset = match.groups[1]!!.range.first
+                // An id tag on a heading line is folded into the heading symbol;
+                // standalone ids (image/code/equation/label) are their own symbol.
+                if (!isHeadingLineAt(this, offset)) {
+                    names.add(match.groupValues[1])
+                }
             }
         }
         return names
@@ -75,23 +92,89 @@ class QuarkdownGoToSymbolContributor : ChooseByNameContributorEx {
 
     /**
      * Returns the PSI elements in [file] that declare the given [name]: either a
-     * [QuarkdownHeading] whose text matches, or the leaf at every `{#id}` occurrence.
+     * [QuarkdownHeading] whose text matches, or the leaf at every `{#name}` occurrence.
+     * Results are deduplicated by element so the same location is never reported twice.
      */
     private fun findSymbolsByName(file: PsiFile, name: String): List<PsiElement> {
-        val result = mutableListOf<PsiElement>()
+        val result = LinkedHashSet<PsiElement>()
         collectHeadings(file).forEach { heading ->
-            if (heading.headingText == name) result.add(heading)
+            if (headingTextOf(heading) == name) result.add(heading)
         }
-        // Resolve the PSI leaf at each `{#name}` occurrence. The leaf is the ID_TAG
-        // token (a PsiNamedElement), found directly at the offset — do not traverse
-        // `psi.children` here, because it skips leaf tokens.
+        // Resolve each `{#name}` occurrence. The leaf is found directly at the offset
+        // (do not traverse `psi.children` — it skips leaf tokens). An id on a heading
+        // line is folded into the heading element itself.
         val escaped = Regex.escape(name)
         val occurrencePattern = Regex("""\{#\s*($escaped)\s*}""")
         for (match in occurrencePattern.findAll(file.text)) {
             val idStart = match.groups[1]!!.range.first
-            file.findElementAt(idStart)?.let { result.add(it) }
+            val element = if (isHeadingLineAt(file.text, idStart)) {
+                headingAtLineStart(file, lineStartOf(file.text, idStart))
+            } else {
+                file.findElementAt(idStart)
+            }
+            element?.let { result.add(it) }
         }
-        return result
+        return result.toList()
+    }
+
+    /** Strips the trailing `{#id}` from a heading's raw text and trims it. */
+    private fun headingTextOf(heading: QuarkdownHeading): String =
+        heading.headingText.replace(Regex("""\s*\{#[^}]*\}\s*$"""), "").trim()
+
+    /** True when the line containing [offset] is a Quarkdown heading line. */
+    private fun isHeadingLineAt(text: String, offset: Int): Boolean {
+        val lineStart = lineStartOf(text, offset)
+        val lineEnd = lineEndOf(text, lineStart)
+        return QuarkdownHeadingSyntax.parseHeadingLine(text.substring(lineStart, lineEnd)) != null
+    }
+
+    /** Returns the heading element whose line starts at [lineStart], or `null`. */
+    private fun headingAtLineStart(file: PsiFile, lineStart: Int): QuarkdownHeading? {
+        val leaf = file.findElementAt(lineStart) ?: return null
+        var parent: PsiElement? = leaf.parent
+        while (parent != null && parent !is QuarkdownHeading) parent = parent.parent
+        return parent as? QuarkdownHeading
+    }
+
+    private fun lineStartOf(text: String, offset: Int): Int {
+        var i = offset.coerceAtMost(text.length)
+        while (i > 0 && text[i - 1] != '\n') i--
+        return i
+    }
+
+    private fun lineEndOf(text: String, offset: Int): Int {
+        var i = offset
+        while (i < text.length && text[i] != '\n') i++
+        return i
+    }
+
+    /**
+     * Builds a human-readable display name for [element].
+     *
+     * @return e.g. `Heading: Chapter One`, `Image: logo.png`, `Code block`, `Equation`,
+     *         or the element text when the context is unknown.
+     */
+    private fun formatDisplayName(file: PsiFile, element: PsiElement): String {
+        if (element is QuarkdownHeading) {
+            return "Heading: ${headingTextOf(element)}"
+        }
+        val offset = element.textOffset
+        val text = file.text
+        val lineStart = lineStartOf(text, offset)
+        val lineEnd = lineEndOf(text, lineStart)
+        val line = text.substring(lineStart, lineEnd)
+
+        return when {
+            IMAGE_LINE_REGEX.containsMatchIn(line) ->
+                "Image: ${IMAGE_LINE_REGEX.find(line)?.groupValues?.get(1)?.substringAfterLast('/') ?: "?"}"
+
+            line.trimStart().startsWith("```") || line.trimStart().startsWith("~~~") ->
+                "Code block"
+
+            line.contains('$') -> "Equation"
+
+            else -> element.text
+        }
     }
 
     private fun collectHeadings(file: PsiFile): List<QuarkdownHeading> {
@@ -109,6 +192,9 @@ class QuarkdownGoToSymbolContributor : ChooseByNameContributorEx {
     private companion object {
         /** Matches `{#id}` element ID tags. */
         val ID_TAG_REGEX = Regex("""\{#([a-zA-Z0-9_\-]+)\}""")
+
+        /** Matches an image line, capturing the path. */
+        val IMAGE_LINE_REGEX = Regex("""!\s*(?:\([^)]*\)\s*)?\[[^\]]*]\s*\(([^)\s]+)""")
     }
 }
 
@@ -124,18 +210,18 @@ class QuarkdownGoToSymbolContributor : ChooseByNameContributorEx {
  */
 private class SymbolNavigationItem(
     private val element: PsiElement,
-    private val name: String,
+    private val displayName: String,
 ) : NavigationItem {
 
     private val presentation = object : ItemPresentation {
-        override fun getPresentableText(): String = name
+        override fun getPresentableText(): String = displayName
 
         override fun getLocationString(): String? = element.containingFile?.name
 
         override fun getIcon(unused: Boolean): Icon? = QuarkdownIcons.FILE
     }
 
-    override fun getName(): String = name
+    override fun getName(): String = displayName
 
     override fun getPresentation(): ItemPresentation = presentation
 
