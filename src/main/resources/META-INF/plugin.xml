@@ -280,6 +280,10 @@
 
         <notificationGroup id="Quarkdown" displayType="BALLOON" bundle="messages.QuarkdownBundle"
                            key="notification.group.quarkdown"/>
+
+        <!-- File-based index of reference ids → file offsets (speeds up Go-to-declaration
+             and Find Usages instead of scanning every .qd file) -->
+        <fileBasedIndex implementation="cc.carm.plugin.intellij.quarkdown.lang.reference.QuarkdownReferenceIndex"/>
     </extensions>
 
     <actions>

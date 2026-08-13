@@ -146,7 +146,7 @@ class QuarkdownReference(
         if (id.isEmpty()) return emptyList()
         val pattern = Regex("""\.ref\s*\{\s*([^}]+?)\s*\}""", RegexOption.IGNORE_CASE)
         val result = mutableListOf<PsiElement>()
-        val qdFiles = QuarkdownReferenceFiles.collect(project, element.containingFile)
+        val qdFiles = QuarkdownReferenceFiles.collect(project, element.containingFile, anchorId = id)
         for (psiFile in qdFiles) {
             for (match in pattern.findAll(psiFile.text)) {
                 if (match.groupValues[1].trim().lowercase() != id) continue
@@ -163,7 +163,7 @@ class QuarkdownReference(
         val id = referenceText.trim().lowercase()
         if (id.isEmpty()) return null
         val pattern = Regex("""\.ref\s*\{\s*([^}]+?)\s*\}""", RegexOption.IGNORE_CASE)
-        return findElementInQdFiles(project, pattern) { match ->
+        return findElementInQdFiles(project, pattern, id) { match ->
             match.groupValues[1].trim().lowercase() == id
         }
     }
@@ -173,7 +173,7 @@ class QuarkdownReference(
         val name = referenceText.trim().lowercase()
         if (name.isEmpty()) return null
         val pattern = Regex("""\.([a-zA-Z][a-zA-Z0-9]*)\b""")
-        return findElementInQdFiles(project, pattern) { match ->
+        return findElementInQdFiles(project, pattern, name) { match ->
             match.groupValues[1].lowercase() == name
         }
     }
@@ -184,7 +184,7 @@ class QuarkdownReference(
         if (name.isEmpty()) return emptyList()
         val pattern = Regex("""\.([a-zA-Z][a-zA-Z0-9]*)\b""")
         val result = mutableListOf<PsiElement>()
-        val qdFiles = QuarkdownReferenceFiles.collect(project, element.containingFile)
+        val qdFiles = QuarkdownReferenceFiles.collect(project, element.containingFile, anchorId = name)
         for (psiFile in qdFiles) {
             for (match in pattern.findAll(psiFile.text)) {
                 if (match.groupValues[1].lowercase() != name) continue
@@ -200,25 +200,30 @@ class QuarkdownReference(
         val name = referenceText.trim().lowercase()
         if (name.isEmpty()) return null
         val pattern = Regex("""\.var\s*\{\s*([a-zA-Z][a-zA-Z0-9]*)\s*\}""", RegexOption.IGNORE_CASE)
-        return findElementInQdFiles(project, pattern) { match ->
+        return findElementInQdFiles(project, pattern, name) { match ->
             match.groupValues[1].lowercase() == name
         }
     }
 
     /**
-     * Scans all Quarkdown files in the project for [pattern]; for the first match that
-     * satisfies [predicate], returns the PSI element at the captured group's position.
+     * Scans Quarkdown files for [pattern]; for the first match that satisfies [predicate],
+     * returns the PSI element at the captured group's position.
      *
-     * The file that contains this reference's element is always scanned first — even if
-     * it is a brand-new (unsaved) file not yet visible through [FileTypeIndex] — so
-     * `.ref {id}` / `{#id}` declared in the same buffer resolve correctly.
+     * [anchorId], when non-null, narrows the candidate files to those that declare an
+     * anchor with the same id (via [QuarkdownReferenceFiles.collect]), so the scan avoids
+     * re-reading every `.qd` file on each query. It must be null when the target id may
+     * be derived from text that is not indexed (e.g. heading slug fallbacks). The file
+     * that contains this reference's element is always scanned first — even if it is a
+     * brand-new (unsaved) file not yet visible through [FileTypeIndex] — so `.ref {id}` /
+     * `{#id}` declared in the same buffer resolve correctly.
      */
     private fun findElementInQdFiles(
         project: Project,
         pattern: Regex,
+        anchorId: String?,
         predicate: (MatchResult) -> Boolean
     ): PsiElement? {
-        val orderedFiles = QuarkdownReferenceFiles.collect(project, element.containingFile)
+        val orderedFiles = QuarkdownReferenceFiles.collect(project, element.containingFile, anchorId = anchorId)
 
         for (psiFile in orderedFiles) {
             for (match in pattern.findAll(psiFile.text)) {
@@ -327,13 +332,15 @@ class QuarkdownReference(
 
         // 1) Look for `{#id}` label declaration (case-insensitive id).
         val labelPattern = Regex("""\{#\s*$escapedId\s*}""", RegexOption.IGNORE_CASE)
-        findElementInQdFiles(project, labelPattern) { true }
+        findElementInQdFiles(project, labelPattern, id) { true }
             ?.let { return it }
 
         // 2) Look for a heading whose text or trailing `{#id}` matches the id.
+        // NOTE: heading slugs are not indexed (only explicit anchors are), so this scan
+        // must consider every project file rather than narrowing via the reference index.
         val headingPattern = Regex("""#{1,6}\s+(.+?)(?:\s*#+\s*)?$""", RegexOption.MULTILINE)
         val slugTarget = id.replace(Regex("""[^a-z0-9]+"""), "-").trim('-')
-        return findElementInQdFiles(project, headingPattern) { hMatch ->
+        return findElementInQdFiles(project, headingPattern, null) { hMatch ->
             val headingText = hMatch.groupValues[1].trim()
             // explicit label on the heading: `# Heading {#id}`, or slug fallback
             Regex("""\{#\s*$escapedId\s*}""", RegexOption.IGNORE_CASE).find(headingText) != null ||
