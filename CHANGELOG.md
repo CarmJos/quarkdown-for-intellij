@@ -2,8 +2,11 @@
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-08-13
+
 ### Added
 
+- Integrate official Quarkdown Language Server for enhanced semantic features.
 - **Completion support for variables declared via `.var`** — declared variables are now offered as completion suggestions when typing a `.name` reference, using a dedicated variable icon so they are visually distinct from function completions.
 - **Variable-reference preview folds (CustomFold)** — references to `.var`-declared variables (e.g. `.status`) can be folded to display the variable's assigned value as the fold placeholder. Hovering over the fold shows the original raw reference and clicking expands it. The folds are collapsed by default and each reference folds independently.
 - **Cross-reference preview folds (CustomFold)** — `.ref {id}` references can be folded to preview their target: when the target element has a caption (a heading, figure, table, code block or equation), the fold shows its type + caption (e.g. `Table Beverage preferences`); otherwise it falls back to `Reference(id)`. Exact numbering (e.g. `Table 1.1: …`) and localization are not replicated.
@@ -88,8 +91,9 @@ After two rounds of pre-release iterations, this version brings a mature, battle
 - Initial release
 - Quarkdown syntax support for IntelliJ IDEA
 
-[Unreleased]: https://github.com/CarmJos/quarkdown-for-intellij/compare/1.0.1...HEAD
-[1.0.1]: https://github.com/CarmJos/quarkdown-for-intellij/compare/1.0.0...1.0.1
-[1.0.0]: https://github.com/CarmJos/quarkdown-for-intellij/compare/0.1.1...1.0.0
-[0.1.1]: https://github.com/CarmJos/quarkdown-for-intellij/compare/0.1.0...0.1.1
-[0.1.0]: https://github.com/CarmJos/quarkdown-for-intellij/commits/0.1.0
+[Unreleased]: https://github.com/CarmJos/quarkdown-for-intellij/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/CarmJos/quarkdown-for-intellij/compare/v1.0.1...v1.1.0
+[1.0.1]: https://github.com/CarmJos/quarkdown-for-intellij/compare/v1.0.0...v1.0.1
+[1.0.0]: https://github.com/CarmJos/quarkdown-for-intellij/compare/v0.1.1...v1.0.0
+[0.1.1]: https://github.com/CarmJos/quarkdown-for-intellij/compare/v0.1.0...v0.1.1
+[0.1.0]: https://github.com/CarmJos/quarkdown-for-intellij/commits/v0.1.0
