@@ -52,6 +52,9 @@ class QuarkdownSyntaxHighlighter : SyntaxHighlighterBase() {
         val FENCED_CODE_END = TextAttributesKey.createTextAttributesKey(
             "QUARKDOWN_FENCED_CODE_END", DefaultLanguageHighlighterColors.BLOCK_COMMENT
         )
+        val FENCED_CODE_CAPTION = TextAttributesKey.createTextAttributesKey(
+            "QUARKDOWN_FENCED_CODE_CAPTION", DefaultLanguageHighlighterColors.STRING
+        )
 
         // ---- Blockquote ----
         val BLOCKQUOTE = TextAttributesKey.createTextAttributesKey(
@@ -204,6 +207,7 @@ class QuarkdownSyntaxHighlighter : SyntaxHighlighterBase() {
             QuarkdownTokenTypes.FENCED_CODE_LANGUAGE to FENCED_CODE_LANGUAGE,
             QuarkdownTokenTypes.FENCED_CODE_CONTENT to FENCED_CODE_CONTENT,
             QuarkdownTokenTypes.FENCED_CODE_END to FENCED_CODE_END,
+            QuarkdownTokenTypes.CAPTION to FENCED_CODE_CAPTION,
 
             // Blockquote & lists
             QuarkdownTokenTypes.BLOCKQUOTE_MARKER to BLOCKQUOTE,

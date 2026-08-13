@@ -2,6 +2,7 @@ package cc.carm.plugin.intellij.quarkdown.lang.lexer
 
 import com.intellij.lexer.Lexer
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
@@ -176,14 +177,19 @@ class QuarkdownLexerTest {
     }
 
     @Test
-    fun `fence with caption still only lexes the language identifier`() {
+    fun `fenced code caption and id are lexed as their own tokens`() {
         val text = "```python \"Fibonacci\" {#fib}\nprint(1)\n```"
         val tokens = tokenize(text)
         assertEquals(
             listOf(
                 "FENCED_CODE_START",
                 "FENCED_CODE_LANGUAGE",
-                "FENCED_CODE_CONTENT",
+                "TEXT",
+                "CAPTION",
+                "TEXT",
+                "ID_TAG_MARKER",
+                "ID_TAG",
+                "BRACE_CLOSE",
                 "NEWLINE",
                 "FENCED_CODE_CONTENT",
                 "NEWLINE",
@@ -192,6 +198,57 @@ class QuarkdownLexerTest {
             tokens.map { it.first }
         )
         assertEquals("python", tokens[1].second)
-        assertEquals("print(1)", tokens[4].second)
+        assertEquals("Fibonacci", tokens[3].second.removeSurrounding("\""))
+        assertEquals("fib", tokens[6].second)
+        assertEquals("print(1)", tokens[9].second)
+    }
+
+    @Test
+    fun `fenced code with only id has no caption token`() {
+        val text = "```python {#fib}\nprint(1)\n```"
+        val tokens = tokenize(text)
+        assertEquals(
+            listOf(
+                "FENCED_CODE_START",
+                "FENCED_CODE_LANGUAGE",
+                "TEXT",
+                "ID_TAG_MARKER",
+                "ID_TAG",
+                "BRACE_CLOSE",
+                "NEWLINE",
+                "FENCED_CODE_CONTENT",
+                "NEWLINE",
+                "FENCED_CODE_END",
+            ),
+            tokens.map { it.first }
+        )
+        assertEquals("fib", tokens[4].second)
+    }
+
+    @Test
+    fun `table caption line is lexed as caption and id tag`() {
+        val text = "\"Some Values\" {#table}\n"
+        val tokens = tokenize(text)
+        assertEquals(
+            listOf(
+                "CAPTION",
+                "TEXT",
+                "ID_TAG_MARKER",
+                "ID_TAG",
+                "BRACE_CLOSE",
+                "NEWLINE",
+            ),
+            tokens.map { it.first }
+        )
+        assertEquals("Some Values", tokens[0].second.removeSurrounding("\""))
+        assertEquals("table", tokens[3].second)
+    }
+
+    @Test
+    fun `plain quoted line is not a caption`() {
+        // A quoted string followed by more prose is not a table caption line.
+        val text = "\"Some Values\" and more text\n"
+        val tokens = tokenize(text)
+        assertTrue("must not contain CAPTION", tokens.none { it.first == "CAPTION" })
     }
 }

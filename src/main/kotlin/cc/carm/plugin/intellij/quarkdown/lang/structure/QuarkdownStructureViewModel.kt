@@ -22,12 +22,12 @@ class QuarkdownStructureViewModel(psiFile: PsiFile, editor: Editor?) :
     StructureViewModel.ElementInfoProvider {
 
     override fun isAlwaysShowsPlus(structureViewTreeElement: StructureViewTreeElement): Boolean =
-        // Show "+" expand icon when there are nested headings
-        (structureViewTreeElement as? QuarkdownStructureTreeElement)?.hasNestedHeadings() ?: false
+        // Show "+" expand icon when there are nested headings or content blocks
+        (structureViewTreeElement as? QuarkdownStructureTreeElement)?.hasChildren() ?: false
 
     override fun isAlwaysLeaf(structureViewTreeElement: StructureViewTreeElement): Boolean =
-        // A leaf has no child headings
-        (structureViewTreeElement as? QuarkdownStructureTreeElement)?.hasNestedHeadings() == false
+        // A leaf has no child headings or content blocks
+        (structureViewTreeElement as? QuarkdownStructureTreeElement)?.hasChildren() == false
 
     override fun getSorters(): Array<Sorter> = emptyArray()
 }

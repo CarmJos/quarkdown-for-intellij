@@ -316,6 +316,7 @@ class FormattingFloatingToolbar(
             cc.carm.plugin.intellij.quarkdown.lang.lexer.QuarkdownTokenTypes.FENCED_CODE_END,
             cc.carm.plugin.intellij.quarkdown.lang.lexer.QuarkdownTokenTypes.FENCED_CODE_LANGUAGE,
             cc.carm.plugin.intellij.quarkdown.lang.lexer.QuarkdownTokenTypes.FENCED_CODE_CONTENT,
+            cc.carm.plugin.intellij.quarkdown.lang.lexer.QuarkdownTokenTypes.CAPTION,
             cc.carm.plugin.intellij.quarkdown.lang.lexer.QuarkdownTokenTypes.CODE_MARKER,
             cc.carm.plugin.intellij.quarkdown.lang.lexer.QuarkdownTokenTypes.CODE_CONTENT,
             cc.carm.plugin.intellij.quarkdown.lang.lexer.QuarkdownTokenTypes.IMAGE_PREFIX,

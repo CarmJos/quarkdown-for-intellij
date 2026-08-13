@@ -117,9 +117,8 @@ class QuarkdownGoToSymbolContributor : ChooseByNameContributorEx {
         return result.toList()
     }
 
-    /** Strips the trailing `{#id}` from a heading's raw text and trims it. */
-    private fun headingTextOf(heading: QuarkdownHeading): String =
-        heading.headingText.replace(Regex("""\s*\{#[^}]*\}\s*$"""), "").trim()
+    /** The heading's display text ([QuarkdownHeading.headingText] already strips `{#id}`). */
+    private fun headingTextOf(heading: QuarkdownHeading): String = heading.headingText
 
     /** True when the line containing [offset] is a Quarkdown heading line. */
     private fun isHeadingLineAt(text: String, offset: Int): Boolean {

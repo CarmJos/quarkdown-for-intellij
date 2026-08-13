@@ -38,6 +38,7 @@ class QuarkdownColorSettingsPage : ColorSettingsPage {
             attr("quarkdown.color.attr.fenced.code.language", QuarkdownSyntaxHighlighter.FENCED_CODE_LANGUAGE),
             attr("quarkdown.color.attr.fenced.code.content", QuarkdownSyntaxHighlighter.FENCED_CODE_CONTENT),
             attr("quarkdown.color.attr.fenced.code.end.delimiter", QuarkdownSyntaxHighlighter.FENCED_CODE_END),
+            attr("quarkdown.color.attr.fenced.code.caption", QuarkdownSyntaxHighlighter.FENCED_CODE_CAPTION),
 
             attr("quarkdown.color.attr.blockquote.marker", QuarkdownSyntaxHighlighter.BLOCKQUOTE),
             attr("quarkdown.color.attr.list.marker", QuarkdownSyntaxHighlighter.LIST_MARKER),

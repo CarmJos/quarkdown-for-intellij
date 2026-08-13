@@ -33,6 +33,15 @@ class QuarkdownLexer : LexerBase() {
     private var inFencedCode = false
 
     /**
+     * True while lexing the rest of a fenced code block's *opening* line (after the
+     * language identifier). The caption (`"Super Code"`) and `{#id}` on that line are
+     * lexed as normal [QuarkdownTokenTypes.CAPTION] / [QuarkdownTokenTypes.ID_TAG] tokens
+     * (so they are colored / clickable) instead of being swallowed into
+     * [QuarkdownTokenTypes.FENCED_CODE_CONTENT]. Cleared when the line ends.
+     */
+    private var inFenceOpeningLine = false
+
+    /**
      * Lexer state for Quarkdown function calls (e.g. `.pageformat size:{a4}`).
      *
      * Both flags are persisted via [getState] / [initialState] so the platform can
@@ -60,6 +69,7 @@ class QuarkdownLexer : LexerBase() {
         this.atFunctionName = initialState and STATE_AT_FUNCTION_NAME != 0
         this.inFunctionCall = initialState and STATE_IN_FUNCTION_CALL != 0
         this.inFencedCode = initialState and STATE_IN_FENCED_CODE != 0
+        this.inFenceOpeningLine = initialState and STATE_IN_FENCE_OPENING_LINE != 0
         // CRITICAL: Must advance to first token so getTokenType() returns valid value.
         // The editor framework calls getTokenType() directly after start() without advance().
         advance()
@@ -85,7 +95,8 @@ class QuarkdownLexer : LexerBase() {
     private fun currentState(): Int =
         (if (atFunctionName) STATE_AT_FUNCTION_NAME else 0) or
                 (if (inFunctionCall) STATE_IN_FUNCTION_CALL else 0) or
-                if (inFencedCode) STATE_IN_FENCED_CODE else 0
+                (if (inFencedCode) STATE_IN_FENCED_CODE else 0) or
+                if (inFenceOpeningLine) STATE_IN_FENCE_OPENING_LINE else 0
 
     // --------------------------------------------------------------------
     // Helpers
@@ -144,7 +155,9 @@ class QuarkdownLexer : LexerBase() {
         val c = ch(start)
 
         // -------- Inside a fenced code block (content / closing fence) --------
-        if (inFencedCode) {
+        // While lexing the opening line (language + caption + id-tag), fall through to
+        // the normal tokenizer so the caption and `{#id}` become their own tokens.
+        if (inFencedCode && !inFenceOpeningLine) {
             lexInsideFencedCode(start, c)?.let { return it }
             // A newline falls through to the NEWLINE handling below.
         }
@@ -205,6 +218,7 @@ class QuarkdownLexer : LexerBase() {
     private fun lexNewline(start: Int, c: Char): IElementType? {
         if (c != '\n' && c != '\r') return null
         inImageSyntax = false
+        inFenceOpeningLine = false
         val len = if (c == '\r' && ch(start + 1) == '\n') 2 else 1
         return emit(QuarkdownTokenTypes.NEWLINE, len)
     }
@@ -225,6 +239,13 @@ class QuarkdownLexer : LexerBase() {
 
     /** Lexes inline formatting, delimiters and the plain-text fallback. */
     private fun lexInlineOrFallback(start: Int, c: Char): IElementType {
+        // Caption on a fenced-code opening line: ````lang "Super Code" {#id}`.
+        // Lexed as a dedicated CAPTION token so it is colored like an image label.
+        if (inFenceOpeningLine && (c == '"' || c == '\'' || c == '(')) {
+            val capLen = scanCaption(start, c)
+            if (capLen > 0) return emit(QuarkdownTokenTypes.CAPTION, capLen)
+        }
+
         lexInlineFormatting(start, c)?.let { return it }
         lexBracket(start, c)?.let { return it }
 
@@ -345,6 +366,9 @@ class QuarkdownLexer : LexerBase() {
         // -------- Fenced code block start (``` or ~~~) --------
         lexFenceStart(start, contentPos)?.let { return it }
 
+        // -------- Table / figure caption line: "caption" {#id} / 'caption' {#id} --------
+        lexTableCaptionLine(start, contentPos)?.let { return it }
+
         // Separator (---, ***, ___)
         lexSeparator(start, contentPos)?.let { return it }
 
@@ -376,6 +400,7 @@ class QuarkdownLexer : LexerBase() {
         val fenceLen = scanFenceOpen(contentPos, fc) ?: return null
 
         inFencedCode = true
+        inFenceOpeningLine = true
         val totalLen = contentPos + fenceLen - start
         // Queue the language identifier (the rest of the opening line up to
         // the first whitespace / quote / brace) so it is emitted right after
@@ -393,6 +418,39 @@ class QuarkdownLexer : LexerBase() {
             pendingTokens.addLast(QuarkdownTokenTypes.FENCED_CODE_LANGUAGE to langLen)
         }
         return emit(QuarkdownTokenTypes.FENCED_CODE_START, totalLen)
+    }
+
+    /**
+     * Lexes a table / figure caption line: `"caption" {#id}` or `'caption' {#id}` (with
+     * optional leading indentation). The quoted caption is emitted as a [QuarkdownTokenTypes.CAPTION]
+     * token so it is colored like an image label; the trailing `{#id}` is lexed as normal
+     * ID_TAG tokens. Returns `null` when the line is not a caption line.
+     */
+    private fun lexTableCaptionLine(start: Int, contentPos: Int): IElementType? {
+        val open = ch(contentPos)
+        if (open != '"' && open != '\'') return null
+        val capLen = scanCaption(contentPos, open)
+        if (capLen <= 0) return null
+        // After the caption there must be whitespace then a `{#id}` at end of line,
+        // or just whitespace to end of line (caption without an id is still a caption).
+        var after = contentPos + capLen
+        while (after < endOffset && (ch(after) == ' ' || ch(after) == '\t')) after++
+        if (after < endOffset && ch(after) != '{') {
+            // Not followed by `{#...}` and not end of line → not a caption line.
+            return null
+        }
+        if (after < endOffset && ch(after) == '{') {
+            if (ch(after + 1) != '#') return null
+            // Must end with `}` and then end of line.
+            var braceEnd = after + 1
+            while (braceEnd < endOffset && ch(braceEnd) != '}') braceEnd++
+            if (braceEnd >= endOffset || ch(braceEnd) != '}') return null
+            var tail = braceEnd + 1
+            while (tail < endOffset && (ch(tail) == ' ' || ch(tail) == '\t')) tail++
+            if (tail < endOffset && ch(tail) != '\n' && ch(tail) != '\r') return null
+        }
+        // Emit the caption (including leading indentation) as one CAPTION token.
+        return emit(QuarkdownTokenTypes.CAPTION, contentPos + capLen - start)
     }
 
     /** Lexes a separator line (`---`, `***`, `___`); returns `null` when not one. */
@@ -533,6 +591,32 @@ class QuarkdownLexer : LexerBase() {
             if (ch(start + i) == '\\' && start + i + 1 < endOffset) i += 2 else i++
         }
         return if (start + i < endOffset) i + 1 else i
+    }
+
+    /**
+     * Scans a caption starting at [start] with the given opening delimiter
+     * (`"`, `'` or `(`), returning its length including the delimiters, or 0 when the
+     * caption is unterminated. Handles backslash escapes inside the caption.
+     */
+    private fun scanCaption(start: Int, open: Char): Int {
+        val close = when (open) {
+            '"' -> '"'
+            '\'' -> '\''
+            '(' -> ')'
+            else -> return 0
+        }
+        var i = 1
+        while (start + i < endOffset) {
+            val c = ch(start + i)
+            if (c == '\\' && start + i + 1 < endOffset) {
+                i += 2
+                continue
+            }
+            if (c == close) return i + 1
+            if (open == '(' && (c == '\n' || c == '\r')) return 0
+            i++
+        }
+        return 0
     }
 
     // ---------------------------------------------------------------
@@ -677,5 +761,6 @@ class QuarkdownLexer : LexerBase() {
         private const val STATE_AT_FUNCTION_NAME = 1
         private const val STATE_IN_FUNCTION_CALL = 2
         private const val STATE_IN_FENCED_CODE = 4
+        private const val STATE_IN_FENCE_OPENING_LINE = 8
     }
 }

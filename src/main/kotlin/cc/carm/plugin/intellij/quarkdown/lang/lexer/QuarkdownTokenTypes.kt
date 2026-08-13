@@ -37,6 +37,11 @@ object QuarkdownTokenTypes {
     val FENCED_CODE_CONTENT = createToken("FENCED_CODE_CONTENT")
 
     // -------------------------------------------------------------------------
+    // Captions (fenced code `"caption"`, table `"caption" {#id}` lines)
+    // -------------------------------------------------------------------------
+    val CAPTION = createToken("CAPTION")
+
+    // -------------------------------------------------------------------------
     // Block quotes & lists
     // -------------------------------------------------------------------------
     val BLOCKQUOTE_MARKER = createToken("BLOCKQUOTE_MARKER")       // >
