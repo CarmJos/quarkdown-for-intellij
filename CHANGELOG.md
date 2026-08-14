@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-08-14
+
 ### Changed
 
 - **LSP integration migrated to LSP4IJ for full product compatibility** — the language server is now integrated through the [LSP4IJ](https://github.com/redhat-developer/lsp4ij) client instead of the platform LSP module (`com.intellij.modules.lsp`). This makes the Quarkdown language server (diagnostics, completion, hover, semantic highlighting) available in **every** IntelliJ-based product — including IntelliJ IDEA Community, Android Studio, DataSpell, JetBrains Gateway, JetBrains Client and Code With Me Guest — instead of only the commercial IDEs.
@@ -145,7 +147,8 @@ After two rounds of pre-release iterations, this version brings a mature, battle
 - Initial release
 - Quarkdown syntax support for IntelliJ IDEA
 
-[Unreleased]: https://github.com/CarmJos/quarkdown-for-intellij/compare/v1.1.1...HEAD
+[Unreleased]: https://github.com/CarmJos/quarkdown-for-intellij/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/CarmJos/quarkdown-for-intellij/compare/v1.1.1...v1.2.0
 [1.1.1]: https://github.com/CarmJos/quarkdown-for-intellij/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/CarmJos/quarkdown-for-intellij/compare/v1.0.1...v1.1.0
 [1.0.1]: https://github.com/CarmJos/quarkdown-for-intellij/compare/v1.0.0...v1.0.1
