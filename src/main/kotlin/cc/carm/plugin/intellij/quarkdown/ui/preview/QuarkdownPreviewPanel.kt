@@ -20,7 +20,6 @@ import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBTextField
-import com.intellij.ui.jcef.JBCefApp
 import com.intellij.ui.jcef.JBCefBrowser
 import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
@@ -63,7 +62,10 @@ class QuarkdownPreviewPanel(private val project: Project) : Disposable {
 
     private val root = JPanel(BorderLayout())
 
-    private val browser: JBCefBrowser? = if (JBCefApp.isSupported()) JBCefBrowser() else null
+    // Probed through JcefSupport: the JCEF classes may be missing from the classpath entirely
+    // (since 2026.2 they live in the optional "Web Browser (JCEF)" module), and touching them
+    // directly here would throw NoClassDefFoundError while this class is being linked.
+    private val browser: JBCefBrowser? = JcefSupport.createBrowser()
 
     private val progressBar = JProgressBar().apply {
         isIndeterminate = true

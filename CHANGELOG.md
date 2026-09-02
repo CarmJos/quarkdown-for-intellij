@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [1.2.1] - 2026-09-02
+
+### Fixes
+
+- **Live preview loads on IntelliJ 2026.2+ (JCEF `NoClassDefFoundError`)** — starting with 2026.2 the embedded browser was extracted from the platform core into the bundled *Web Browser (JCEF)* plugin (`com.intellij.modules.jcef`). The plugin now declares an optional dependency on that module so `com.intellij.ui.jcef.*` / `org.cef.*` resolve on the plugin's classloader. As a safety net the preview creation is routed through a guarded probe, so if JCEF is genuinely unavailable (e.g. the *Web Browser (JCEF)* plugin is disabled) the panel degrades to the "JCEF is not available" message instead of failing to load. This is the same root cause that broke other JCEF-based plugins (e.g. AsciiDoc, SonarLint) on 2026.2.
+
 ## [1.2.0] - 2026-08-14
 
 ### Changed

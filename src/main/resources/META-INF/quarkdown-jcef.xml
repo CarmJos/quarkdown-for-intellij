@@ -1,0 +1,7 @@
+<idea-plugin>
+    <!-- Loaded only when the "Web Browser (JCEF)" module (com.intellij.modules.jcef) is
+         present, i.e. on 2026.2 and later. The dependency itself is what exposes the JCEF
+         classes to this plugin's classloader; the live-preview tool window stays registered
+         in plugin.xml because JCEF also works on older builds, where it is part of the
+         platform core. Nothing to contribute here yet. -->
+</idea-plugin>

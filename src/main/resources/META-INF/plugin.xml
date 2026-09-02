@@ -26,6 +26,11 @@
             <li><a href="https://plugins.jetbrains.com/plugin/23257-lsp4ij">LSP4IJ</a> (installed automatically by the JetBrains Marketplace).</li>
         </ul>
 
+        <h3>Notes</h3>
+        <ul>
+            <li>The built-in live preview uses the IDE's embedded browser (JCEF). On 2026.2 and later this is provided by the bundled <em>Web Browser (JCEF)</em> plugin; if it is disabled, the preview falls back to <em>Open in Browser</em>.</li>
+        </ul>
+
         <h3>Support</h3>
         <p>If you appreciate this plugin, consider supporting the project with a donation via <a href="https://github.com/sponsors/CarmJos">GitHub Sponsors</a> or <a href="https://www.ifdian.net/a/carmjos/plan">爱发电</a>. Thank you for supporting open-source projects!</p>
     ]]></description>
@@ -38,6 +43,15 @@
     <!-- Spell checking (SpellcheckingStrategy) is optional: the spell checker plugin
          is not available in every product (e.g. Android Studio, Code With Me Guest). -->
     <depends optional="true" config-file="quarkdown-spellchecker.xml">com.intellij.modules.spellchecker</depends>
+    <!-- JCEF is optional: starting with 2026.2 the embedded browser was extracted from the
+         platform core into the bundled "Web Browser (JCEF)" plugin (id
+         com.intellij.modules.jcef). Declaring the dependency is what puts
+         `com.intellij.ui.jcef.*` / `org.cef.*` on this plugin's classloader there; without it
+         the preview panel throws NoClassDefFoundError: com/intellij/ui/jcef/JBCefApp.
+         It stays optional because 2025.2 (the minimum supported build) still ships JCEF inside
+         the platform core, where the module id does not exist. -->
+    <depends optional="true" config-file="quarkdown-jcef.xml">com.intellij.modules.jcef</depends>
+
     <extensions defaultExtensionNs="com.intellij">
         <fileType name="Quarkdown"
                   implementationClass="cc.carm.plugin.intellij.quarkdown.QuarkdownFileType"
