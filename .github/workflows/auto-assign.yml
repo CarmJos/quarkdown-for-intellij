@@ -1,0 +1,30 @@
+# Assigns every issue to the maintainer (@CarmJos) so they get a heads-up to handle it.
+# Only issues are affected (the `issues` event never fires for pull requests).
+# Skips the assignment silently when the issue has not been opened yet (e.g. transferred in),
+# since `gh issue edit` needs an open, existing issue.
+
+name: Auto Assign Issues
+
+on:
+  issues:
+    types: [ opened, reopened, transferred ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.issue.number }}
+  cancel-in-progress: false
+
+jobs:
+
+  assign:
+    name: Assign to @CarmJos
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Assign issue to @CarmJos
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          gh issue edit "$ISSUE_NUMBER" \
+            --add-assignee "CarmJos"

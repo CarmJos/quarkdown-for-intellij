@@ -6,8 +6,9 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for reporting a bug! Just describe the problem below — tell us whatever you know,
-        no need to fill in every detail.
+        Thanks for reporting a bug! Please describe the problem below. The environment details
+        are required — the IDE, plugin, Quarkdown and system versions are the first thing we
+        need to reproduce the issue. Feel free to leave optional extras blank.
 
   - type: checkboxes
     id: checklist
@@ -29,13 +30,45 @@ body:
     validations:
       required: true
 
-  - type: textarea
-    id: environment
+  - type: input
+    id: idea-version
     attributes:
-      label: Environment (optional)
-      description: Fill in whatever you know — this helps us reproduce the issue faster.
+      label: IntelliJ IDEA version
+      description: Exact IDE version from **Help ▸ About**, e.g. `2026.2.2` (`IU-262.10315.69`).
+    validations:
+      required: true
+
+  - type: input
+    id: plugin-version
+    attributes:
+      label: Plugin version
+      description: Version of the Quarkdown plugin as shown in **Settings ▸ Plugins**, e.g. `1.2.3`.
+    validations:
+      required: true
+
+  - type: input
+    id: quarkdown-version
+    attributes:
+      label: Quarkdown version
+      description: Version of the Quarkdown CLI / SDK you use, e.g. `1.0.0` (see plugin Settings or `quarkdown --version`).
+    validations:
+      required: true
+
+  - type: input
+    id: os-version
+    attributes:
+      label: Operating system
+      description: e.g. `Windows 11 24H2` / `macOS 15.5` / `Ubuntu 24.04` — include architecture (x64 / arm64) if relevant.
+    validations:
+      required: true
+
+  - type: textarea
+    id: extra-info
+    attributes:
+      label: Extra information
+      description: Anything else that may help — logs, screenshots, Quarkdown home path, JCEF availability, headless environment, etc.
       placeholder: |
-        - IntelliJ IDEA version: e.g. 2025.2
-        - Plugin version: e.g. 0.1.0
-        - Quarkdown version: e.g. 0.1.0
-        - Operating system: e.g. Windows 11 / macOS 15 / Ubuntu 24.04
+        - Quarkdown home: ...
+        - Repro steps with minimal `.qd` source: ...
+        - Relevant log snippets or stack traces: ...
+        - Anything else: ...
