@@ -322,6 +322,25 @@ class SelectCurrentColumnAction : ColumnBasedTableAction(
     }
 }
 
+/** Removes the clicked column (the last remaining column is kept). */
+class RemoveCurrentColumnAction : ColumnBasedTableAction(
+    QuarkdownBundle.message("quarkdown.table.remove.column"),
+    QuarkdownBundle.message("quarkdown.table.remove.column.description")
+) {
+    override fun performAction(
+        editor: Editor,
+        file: PsiFile,
+        block: QuarkdownTableModificationUtils.TableBlock,
+        columnIndex: Int
+    ) {
+        runWriteAction {
+            executeCommand(editor.project) {
+                QuarkdownTableModificationUtils.deleteColumn(editor.project, editor.document, block, columnIndex)
+            }
+        }
+    }
+}
+
 /** Sets the clicked column's alignment. */
 abstract class SetColumnAlignmentAction(
     private val alignment: QuarkdownTableParser.Alignment,

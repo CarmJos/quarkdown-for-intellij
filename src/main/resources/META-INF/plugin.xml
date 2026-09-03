@@ -407,6 +407,10 @@
                         class="cc.carm.plugin.intellij.quarkdown.action.table.SelectCurrentColumnAction"
                         icon="cc.carm.plugin.intellij.quarkdown.QuarkdownIcons.TABLE_SELECT"/>
                 <separator/>
+                <action id="Quarkdown.Table.RemoveCurrentColumn"
+                        class="cc.carm.plugin.intellij.quarkdown.action.table.RemoveCurrentColumnAction"
+                        icon="cc.carm.plugin.intellij.quarkdown.QuarkdownIcons.TABLE_REMOVE"/>
+                <separator/>
                 <group id="Quarkdown.Table.ColumnAlignmentActions"
                        compact="true"
                        class="cc.carm.plugin.intellij.quarkdown.action.table.TableColumnAlignmentActionsGroup">

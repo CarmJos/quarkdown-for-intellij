@@ -1,5 +1,6 @@
 package cc.carm.plugin.intellij.quarkdown.ui.floating
 
+import cc.carm.plugin.intellij.quarkdown.action.table.RemoveCurrentColumnAction
 import cc.carm.plugin.intellij.quarkdown.action.table.TableActionKeys
 import cc.carm.plugin.intellij.quarkdown.lang.table.QuarkdownTableModificationUtils
 import cc.carm.plugin.intellij.quarkdown.ui.QuarkdownActionToolbarUtils
@@ -81,6 +82,40 @@ class QuarkdownToolbarPopulationTest : BasePlatformTestCase() {
 
         val ready = awaitPopulate(toolbar)
         assertNotNull("population callback must fire for the table column toolbar", ready)
+    }
+
+    fun `test remove column action is registered in the column toolbar`() {
+        val action = ActionManager.getInstance().getAction("Quarkdown.Table.RemoveCurrentColumn")
+        assertNotNull("Quarkdown.Table.RemoveCurrentColumn must be registered", action)
+        assertTrue(
+            "the registered action must be RemoveCurrentColumnAction",
+            action is RemoveCurrentColumnAction
+        )
+
+        val group = ActionManager.getInstance().getAction("Quarkdown.TableColumnActions") as ActionGroup
+        val children = group.getChildren(null)
+        assertTrue(
+            "the column toolbar group must include the remove-column action",
+            children.any { it is RemoveCurrentColumnAction }
+        )
+    }
+
+    fun `test delete column removes the column from the document`() {
+        // In-memory document: avoids the OS file-indexer/antivirus temp-dir lock that a
+        // file-backed fixture write can trigger on teardown (same rationale as the
+        // table-editor live-write tests).
+        val document = com.intellij.openapi.editor.impl.DocumentImpl("| A | B | C |\n|---|---|---|\n| 1 | 2 | 3 |\n")
+        val block = QuarkdownTableModificationUtils.findTableBlocks(document.immutableCharSequence).first()
+
+        QuarkdownTableModificationUtils.deleteColumn(project, document, block, 1)
+
+        val text = document.text
+        assertFalse("column B must be gone, got: $text", text.contains("B"))
+        assertFalse("column B's cell must be gone, got: $text", text.contains("2"))
+        assertTrue("column A must remain, got: $text", text.contains("A"))
+        assertTrue("column C must remain, got: $text", text.contains("C"))
+        assertTrue("cell 1 must remain, got: $text", text.contains("1"))
+        assertTrue("cell 3 must remain, got: $text", text.contains("3"))
     }
 
     fun `test target component exposes editor data`() {
