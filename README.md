@@ -81,7 +81,7 @@ enabling developers to write and edit Quarkdown documents with full IDE assistan
 
 ### Smart Editing
 
-- **Visual Table Editing** — Insert, remove, move, select, and align table rows and columns from floating handles and a toolbar, without ever touching the raw table syntax.
+- **Visual Table Editing** — Insert, remove, move, select, and align table rows and columns from floating handles and a toolbar, and edit any table in a spreadsheet-style dialog that converts between Markdown pipe tables and `.tablebyrows` calls — without ever touching the raw table syntax.
 - **Convenient Image Handling** — Drag and drop or paste images directly into the document; the correct syntax is generated for you, image sizes can be adjusted visually, and invalid paths are called out.
 
   <details>

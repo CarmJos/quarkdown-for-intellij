@@ -12,7 +12,7 @@
             <li><b>Real-time Error Detection</b> — Unknown functions, invalid parameters, missing arguments, and undefined references are flagged in the editor the moment they appear.</li>
             <li><b>Effortless Navigation</b> — Jump from a reference to its definition, find every usage of a label, rename it everywhere at once, and navigate into included files with a single click.</li>
             <li><b>Document Overview</b> — Structure view, breadcrumbs, and code folding keep long documents organized and easy to navigate.</li>
-            <li><b>Visual Table Editing</b> — Insert, remove, move, select, and align table rows and columns from floating handles and a toolbar, without touching the raw syntax.</li>
+            <li><b>Visual Table Editing</b> — Insert, remove, move, select, and align table rows and columns from floating handles and a toolbar, and edit any table in a spreadsheet-style dialog that converts between Markdown pipe tables and <code>.tablebyrows</code> calls.</li>
             <li><b>Convenient Image Handling</b> — Drag-and-drop or paste images into the document; the correct syntax is generated for you and invalid paths are called out.</li>
             <li><b>Effortless Editing</b> — Comment lines quickly, enjoy auto-closing of paired symbols, and use handy formatting shortcuts.</li>
             <li><b>Quick Preview &amp; Build</b> — A live preview panel inside the IDE that auto-refreshes on save, external browser preview, and one-click PDF export through a dedicated run configuration.</li>
