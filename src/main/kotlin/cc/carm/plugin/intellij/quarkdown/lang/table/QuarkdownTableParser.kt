@@ -58,6 +58,9 @@ object QuarkdownTableParser {
      * Parses the given table lines (typically the consecutive `|`-containing lines of
      * a document). Returns `null` when [lines] does not form a valid table
      * (missing header or separator).
+     *
+     * Every cell is preserved: when a data row is wider than the header, the header is
+     * widened with blank names instead of the extra cells being dropped.
      */
     fun parse(lines: List<String>): Table? {
         val cleaned = lines.map { it.trim() }.filter { it.isNotEmpty() }
@@ -77,13 +80,17 @@ object QuarkdownTableParser {
         // Remaining lines are data rows; skip any table separators just in case.
         val dataRows = cleaned.drop(2).filter { !separatorRegex.matches(it) }
             .map { splitCells(it).toMutableList() }
-        // Pad rows to the header width.
+        // Unify the table width: every row must fit, so the header is *widened* rather
+        // than longer rows being truncated — dropping cells beyond the header count
+        // would silently lose content when the table is edited or converted.
+        val width = maxOf(headers.size, dataRows.maxOfOrNull { it.size } ?: 0)
+        val widenedHeaders = headers + List(width - headers.size) { "" }
         for (row in dataRows) {
-            while (row.size < headers.size) row.add("")
+            while (row.size < width) row.add("")
         }
-        val rows = dataRows.map { it.take(headers.size) }
+        val rows = dataRows.map { it.toList() }
 
-        return Table(headers, rows, alignments)
+        return Table(widenedHeaders, rows, alignments)
     }
 
     /** Splits a table row into cells, removing the outer pipes. */

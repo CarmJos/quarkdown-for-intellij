@@ -61,4 +61,36 @@ class QuarkdownTableModificationUtilsTest {
     fun `findTableBlocks returns empty for empty text`() {
         assertTrue(QuarkdownTableModificationUtils.findTableBlocks("").isEmpty())
     }
+
+    @Test
+    fun `blank line inside table does not truncate the block`() {
+        val text = "| H |\n|---|\n| a |\n\n| b |\n| c |"
+        val blocks = QuarkdownTableModificationUtils.findTableBlocks(text)
+        assertEquals(1, blocks.size)
+        // header + separator + a + b + c (the accidental blank line is skipped).
+        assertEquals(5, blocks[0].lines.size)
+        assertEquals("| c |", blocks[0].lines.last())
+    }
+
+    @Test
+    fun `whitespace-only or consecutive blank lines inside table do not truncate`() {
+        val whitespace = "| H |\n|---|\n| a |\n \t \n| b |"
+        val blocks1 = QuarkdownTableModificationUtils.findTableBlocks(whitespace)
+        assertEquals(1, blocks1.size)
+        assertEquals(4, blocks1[0].lines.size)
+
+        val consecutive = "| H |\n|---|\n| a |\n\n\n| b |"
+        val blocks2 = QuarkdownTableModificationUtils.findTableBlocks(consecutive)
+        assertEquals(1, blocks2.size)
+        assertEquals(4, blocks2[0].lines.size)
+    }
+
+    @Test
+    fun `blank line before a new table keeps the blocks separate`() {
+        val text = "| A |\n|---|\n| 1 |\n\n| B |\n|---|\n| 2 |"
+        val blocks = QuarkdownTableModificationUtils.findTableBlocks(text)
+        assertEquals(2, blocks.size)
+        assertEquals(3, blocks[0].lines.size)
+        assertEquals(3, blocks[1].lines.size)
+    }
 }

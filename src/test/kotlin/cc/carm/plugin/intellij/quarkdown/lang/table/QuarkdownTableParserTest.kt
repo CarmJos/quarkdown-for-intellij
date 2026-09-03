@@ -85,6 +85,27 @@ class QuarkdownTableParserTest {
     }
 
     @Test
+    fun `widens header instead of dropping cells of longer rows`() {
+        // Regression: data cells beyond the header column count used to be truncated
+        // (rows.take(headers.size)), silently losing content on edit/conversion.
+        val table = QuarkdownTableParser.parse(
+            listOf(
+                "| A | B |",
+                "|---|---|",
+                "| 1 | 2 | 3 | 4 |"
+            )
+        )
+        assertNotNull(table)
+        assertEquals(4, table!!.columnCount)
+        assertEquals(listOf("A", "B", "", ""), table.headers)
+        assertEquals(listOf("1", "2", "3", "4"), table.rows[0])
+
+        // The rebuilt table keeps every cell.
+        val rebuilt = QuarkdownTableParser.parse(QuarkdownTableParser.build(table))!!
+        assertEquals(listOf("1", "2", "3", "4"), rebuilt.rows[0])
+    }
+
+    @Test
     fun `round-trip build preserves content`() {
         val source = listOf(
             "| Name | Value |",

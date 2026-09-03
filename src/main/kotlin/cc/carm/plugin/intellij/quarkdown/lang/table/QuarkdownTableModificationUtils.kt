@@ -67,10 +67,25 @@ object QuarkdownTableModificationUtils {
                 var k = nextStart
                 while (k < n) {
                     val (lText, lEnd) = readLine(text, k)
-                    if (!lText.contains('|')) break
-                    blockLines += lText
-                    blockStarts += k
-                    k = nextLineStart(lEnd, n)
+                    if (lText.contains('|')) {
+                        blockLines += lText
+                        blockStarts += k
+                        k = nextLineStart(lEnd, n)
+                        continue
+                    }
+                    if (lText.isBlank()) {
+                        // A blank line normally terminates a table, but when the content
+                        // right after it is more table data (not a brand-new table with its
+                        // own header + separator), treat it as an accidental blank and keep
+                        // collecting. Otherwise a stray blank line silently truncates the
+                        // table and only the rows before it get edited/converted.
+                        val continuation = tableContinuationAfterBlank(text, nextLineStart(lEnd, n))
+                        if (continuation >= 0) {
+                            k = continuation
+                            continue
+                        }
+                    }
+                    break
                 }
                 val end = blockStarts.last() + blockLines.last().length
 
@@ -131,6 +146,33 @@ object QuarkdownTableModificationUtils {
             return separatorRegex.matches(sLine.trim())
         }
         return false
+    }
+
+    /**
+     * Decides whether a table continues across a blank line. Returns the offset of the next
+     * table-data line, or `-1` when the blank line genuinely ends the table.
+     *
+     * The table is considered to continue only when the next non-blank line holds table
+     * data (`|` cells) that is **not** itself the header of a brand-new table (a `|` line
+     * followed by a separator row). This keeps two adjacent tables separated by a blank
+     * line as two blocks while letting an accidental blank line inside one table be
+     * skipped instead of truncating it.
+     */
+    private fun tableContinuationAfterBlank(text: CharSequence, from: Int): Int {
+        var p = from
+        val n = text.length
+        while (p < n) {
+            val (pText, pLineEnd) = readLine(text, p)
+            if (pText.isBlank()) {
+                p = nextLineStart(pLineEnd, n)
+                continue
+            }
+            if (!pText.contains('|')) return -1
+            // A new table (header immediately followed by a separator) must not be merged.
+            if (isFollowedBySeparator(text, pLineEnd)) return -1
+            return p
+        }
+        return -1
     }
 
     // ------------------------------------------------------------------
