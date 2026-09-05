@@ -7,6 +7,8 @@
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-09-05
+
 - `feat(table)` spreadsheet-style table editor with Markdown ⇄ `.tablebyrows` conversion (closes #22)
     - The table gutter icon opens a grid dialog to edit cells, insert/delete/move rows, insert/delete columns, and set alignment.
     - Static `.tablebyrows` calls (including `.var` headers) get a gutter icon too; the `.var` reference is kept until the headers change.
@@ -131,7 +133,8 @@ After two rounds of pre-release iterations, this version brings a mature, battle
 
 - `feat` initial release: Quarkdown syntax support for IntelliJ IDEA
 
-[Unreleased]: https://github.com/CarmJos/quarkdown-for-intellij/compare/v1.2.1...HEAD
+[Unreleased]: https://github.com/CarmJos/quarkdown-for-intellij/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/CarmJos/quarkdown-for-intellij/compare/v1.2.1...v1.3.0
 [1.2.1]: https://github.com/CarmJos/quarkdown-for-intellij/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/CarmJos/quarkdown-for-intellij/compare/v1.1.1...v1.2.0
 [1.1.1]: https://github.com/CarmJos/quarkdown-for-intellij/compare/v1.1.0...v1.1.1
