@@ -7,6 +7,10 @@
 
 ## [Unreleased]
 
+- `fix(latex)` show the multi-equation chooser at the gutter icon that was clicked
+    - The chooser was anchored with `showUnderneathOf(event.component)`, but a gutter click is delivered to the **whole** gutter (or editor) component — so it opened underneath the entire editor, at the bottom of the screen, instead of at the icon. It is now anchored at the click itself.
+    - The same chooser opened from the icon's menu carries no mouse event, so it now lets the platform place it at the caret rather than in the middle of the focused window.
+
 - `feat(latex)` the equation editor's TeX input is a real editor with line numbers and TeX coloring
     - The input was a plain text area; it is now an `EditorTextField` on a `QuarkdownLaTeX` language, so it gets line numbers, soft wraps, the IDE's editor font and the **same** colors the document shows for the same formula — both go through `QuarkdownLatexSyntax` / `QuarkdownLatexHighlighting`, so the two can never drift apart.
     - The input and the preview each carry a border, so the two panes read as separate areas.

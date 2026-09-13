@@ -19,11 +19,12 @@ import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.editor.markup.GutterIconRenderer
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.ui.popup.JBPopup
 import com.intellij.openapi.ui.popup.JBPopupFactory
 import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
-import java.awt.Component
+import com.intellij.ui.awt.RelativePoint
 import java.awt.event.MouseEvent
 
 /**
@@ -37,9 +38,8 @@ import java.awt.event.MouseEvent
  * What a click does:
  *
  *  - one editable equation on the line → the [EquationDialog] opens for it;
- *  - **several** equations on one line → a chooser popup lists them, because the icon cannot
- *    know which one was meant;
- *  - nothing editable (e.g. a `.texmacro`, whose name/body are not equations) → the formula is
+ *  - **several** equations on one line → a chooser popup lists them (shown at the click), because
+ *    the icon cannot know which one was meant;
  *  - nothing editable (e.g. a `.texmacro`, whose name/body are not equations) → the formula is
  *    typeset with the KaTeX build that ships in the Quarkdown installation.
  *
@@ -132,7 +132,7 @@ class QuarkdownEquationLineMarkerProvider : LineMarkerProvider {
             val equations = editableEquations(file, lineStart)
             when {
                 equations.size == 1 -> editEquation(file, equations.first())
-                equations.size > 1 -> chooseEquation(file, equations, e.component)
+                equations.size > 1 -> chooseEquation(file, equations) { chooser -> chooser.show(popupAnchorFor(e)) }
                 else -> previewFormula(file, lineStart)
             }
         }
@@ -156,7 +156,12 @@ class QuarkdownEquationLineMarkerProvider : LineMarkerProvider {
                     val equations = editableEquations(file, lineStart)
                     when {
                         equations.size == 1 -> editEquation(file, equations.first())
-                        equations.size > 1 -> chooseEquation(file, equations, null)
+                        equations.size > 1 -> chooseEquation(file, equations) { chooser ->
+                            // No mouse event here: the platform anchors it at the caret (or in the
+                            // focused window when the context carries no editor), never underneath
+                            // the component.
+                            chooser.showInBestPositionFor(e.dataContext)
+                        }
                     }
                 }
 
@@ -184,23 +189,35 @@ class QuarkdownEquationLineMarkerProvider : LineMarkerProvider {
     }
 
     /**
-     * Asks which equation to edit when several share one line. The popup is shown near the
-     * click when [component] is known (gutter click) and otherwise over the editor.
+     * Asks which equation to edit when several share one line, showing the chooser with [show].
+     *
+     * Where the chooser appears is not a detail: a gutter click is delivered to the *whole* gutter
+     * (or editor) component, so `showUnderneathOf(event.component)` — the obvious call — placed the
+     * chooser underneath the entire editor, i.e. at the bottom of the screen instead of at the icon
+     * that was clicked. [popupAnchorFor] anchors it at the click; the icon's menu carries no mouse
+     * event, so it lets the platform pick the position.
      */
     private fun chooseEquation(
         file: PsiFile,
         equations: List<QuarkdownEquationRegions.Region>,
-        component: Component?,
+        show: (JBPopup) -> Unit,
     ) {
         val text = file.text
         val choices = equations.mapIndexed { index, region -> Choice(index + 1, snippet(text, region), region) }
-        val builder = JBPopupFactory.getInstance()
+        val popup = JBPopupFactory.getInstance()
             .createPopupChooserBuilder(choices)
             .setTitle(QuarkdownBundle.message("quarkdown.dialog.equation.choose"))
             .setItemChosenCallback { editEquation(file, it.region) }
-        val popup = builder.createPopup()
-        if (component != null) popup.showUnderneathOf(component) else popup.showInFocusCenter()
+            .createPopup()
+        show(popup)
     }
+
+    /**
+     * Where a popup opened by [event] must appear: **at the click itself**.
+     *
+     * See [chooseEquation] for why the component that received the event cannot serve as the anchor.
+     */
+    internal fun popupAnchorFor(event: MouseEvent): RelativePoint = RelativePoint(event)
 
     /** Opens the equation editor for [region] and writes the result back over its span. */
     private fun editEquation(file: PsiFile, region: QuarkdownEquationRegions.Region) {
