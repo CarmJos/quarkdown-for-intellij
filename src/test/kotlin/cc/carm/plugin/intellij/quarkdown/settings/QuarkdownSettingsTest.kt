@@ -15,6 +15,8 @@ class QuarkdownSettingsTest : BasePlatformTestCase() {
         settings.state.outputDirectory = "quarkdown-output"
         settings.state.watchChanges = true
         settings.state.autoSavePreviewFiles = true
+        settings.state.autoOpenBrowser = false
+        settings.state.disableBuiltinPreview = false
         settings.state.quarkdownPath = ""
         super.tearDown()
     }
@@ -25,6 +27,8 @@ class QuarkdownSettingsTest : BasePlatformTestCase() {
         assertEquals("quarkdown-output", settings.state.outputDirectory)
         assertEquals(true, settings.state.watchChanges)
         assertEquals(true, settings.state.autoSavePreviewFiles)
+        assertEquals(false, settings.state.autoOpenBrowser)
+        assertEquals(false, settings.state.disableBuiltinPreview)
     }
 
     fun `test value round trip`() {
@@ -32,12 +36,16 @@ class QuarkdownSettingsTest : BasePlatformTestCase() {
         settings.state.previewPort = 9000
         settings.state.outputDirectory = "build/out"
         settings.state.watchChanges = false
+        settings.state.autoOpenBrowser = true
+        settings.state.disableBuiltinPreview = true
         settings.state.quarkdownPath = "C:/quarkdown"
 
         val reloaded = QuarkdownSettings.getInstance(project)
         assertEquals(9000, reloaded.state.previewPort)
         assertEquals("build/out", reloaded.state.outputDirectory)
         assertEquals(false, reloaded.state.watchChanges)
+        assertEquals(true, reloaded.state.autoOpenBrowser)
+        assertEquals(true, reloaded.state.disableBuiltinPreview)
         assertEquals("C:/quarkdown", reloaded.state.quarkdownPath)
     }
 }

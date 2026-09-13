@@ -19,6 +19,8 @@ class QuarkdownSettings : SimplePersistentStateComponent<QuarkdownSettings.State
         var previewCliArgs by string()
         var watchChanges by property(true)
         var autoSavePreviewFiles by property(true)
+        var autoOpenBrowser by property(false)
+        var disableBuiltinPreview by property(false)
     }
 
     companion object {

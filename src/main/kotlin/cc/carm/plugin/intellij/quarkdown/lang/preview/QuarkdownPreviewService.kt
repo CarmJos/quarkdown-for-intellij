@@ -67,6 +67,9 @@ class QuarkdownPreviewService(private val project: Project) : Disposable {
         fun onPreviewFileChanged(file: VirtualFile?) {}
         fun onBusyChanged(busy: Boolean) {}
         fun onServerOutput(line: String) {}
+
+        /** Preview-related settings changed (Settings dialog applied); refresh the panel. */
+        fun onPreviewModeChanged() {}
     }
 
     private val logger = Logger.getInstance(QuarkdownPreviewService::class.java)
@@ -109,6 +112,14 @@ class QuarkdownPreviewService(private val project: Project) : Disposable {
         get() = QuarkdownSettings.getInstance(project).state.autoSavePreviewFiles
 
     /**
+     * Whether the built-in (JCEF) preview panel is disabled. When enabled, the panel shows a
+     * prompt pointing at the external browser instead of rendering the preview page
+     * (persisted to the "Do not use the built-in preview browser" setting).
+     */
+    val builtinPreviewDisabled: Boolean
+        get() = QuarkdownSettings.getInstance(project).state.disableBuiltinPreview
+
+    /**
      * Port of the preview web server.
      *
      * Returns the *effective* port (the configured one, or the auto-shifted port when the
@@ -145,6 +156,9 @@ class QuarkdownPreviewService(private val project: Project) : Disposable {
         get() = errorDetail
 
     private var pendingOpenBrowser = false
+
+    /** Set when the server should be auto-opened in the configured browser once it is ready. */
+    private var pendingAutoOpenBrowser = false
 
     /**
      * Debounced auto-save for the previewed `.qd` document.
@@ -218,6 +232,7 @@ class QuarkdownPreviewService(private val project: Project) : Disposable {
     fun stopPreview() {
         serverGeneration++
         pendingOpenBrowser = false
+        pendingAutoOpenBrowser = false
         executeOnPooledThread {
             stopCurrentProcess()
             if (!QuarkdownCli.waitForPortClosed(port, 8)) {
@@ -259,6 +274,29 @@ class QuarkdownPreviewService(private val project: Project) : Disposable {
         if (state != State.STOPPED) {
             restartServer(clean = false)
         }
+    }
+
+    /** Enables/disables the built-in (JCEF) preview panel (persisted to the shared setting). */
+    fun setBuiltinPreviewDisabled(disabled: Boolean) {
+        QuarkdownSettings.getInstance(project).state.disableBuiltinPreview = disabled
+        notifySettingsChanged()
+    }
+
+    /** Notifies listeners that preview-related settings may have changed (Settings dialog applied). */
+    fun notifySettingsChanged() {
+        ApplicationManager.getApplication().invokeLater {
+            listeners.forEach { it.onPreviewModeChanged() }
+        }
+    }
+
+    /**
+     * Whether the preview should be opened in the configured browser automatically as soon as
+     * the server is ready. Requires both the "Auto-open browser" setting and a configured
+     * browser path.
+     */
+    private fun shouldAutoOpenBrowser(): Boolean {
+        val previewSettings = QuarkdownSettings.getInstance(project).state
+        return previewSettings.autoOpenBrowser && !previewSettings.previewBrowser.isNullOrBlank()
     }
 
     /**
@@ -304,12 +342,12 @@ class QuarkdownPreviewService(private val project: Project) : Disposable {
      * it is not running, and opens the URL as soon as it becomes ready.
      */
     fun openInBrowser() {
-        val file = previewFile ?: return
+        if (previewFile == null) return
         if (state == State.RUNNING) {
             openUrlInBrowser()
         } else {
             pendingOpenBrowser = true
-            if (state == State.STOPPED) {
+            if (state == State.STOPPED || state == State.ERROR) {
                 restartServer(clean = false)
             }
         }
@@ -427,8 +465,11 @@ class QuarkdownPreviewService(private val project: Project) : Disposable {
 
     private fun restartServer(clean: Boolean) {
         val file = previewFile ?: return
+        // Auto-open only when the preview is (re)started from a stopped state, so a manual
+        // refresh or a file switch does not spawn a new browser tab every time.
+        val wasStopped = state == State.STOPPED
         val generation = ++serverGeneration
-        pendingOpenBrowser = pendingOpenBrowser && state != State.STOPPED
+        pendingAutoOpenBrowser = wasStopped && shouldAutoOpenBrowser()
         setState(State.STARTING)
         setBusy(true)
         synchronized(recentOutput) { fullLog.clear() } // a new run starts with a fresh log
@@ -609,8 +650,12 @@ class QuarkdownPreviewService(private val project: Project) : Disposable {
             setBusy(false)
             if (ready) {
                 setState(State.RUNNING)
+                val autoOpen = pendingAutoOpenBrowser
+                pendingAutoOpenBrowser = false
                 if (pendingOpenBrowser) {
                     pendingOpenBrowser = false
+                    openUrlInBrowser()
+                } else if (autoOpen) {
                     openUrlInBrowser()
                 }
             } else {

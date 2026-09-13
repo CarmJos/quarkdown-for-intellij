@@ -7,6 +7,11 @@
 
 ## [Unreleased]
 
+- `feat(preview)` auto-open the preview in the configured browser once the server is ready
+    - Controlled by the new "Auto-open in browser" preview setting; only triggers when a browser path is configured.
+- `feat(preview)` optional "do not use the built-in preview browser" mode
+    - The preview panel then shows a "preview in your browser" prompt with "Open Browser Preview" / "Enable Built-in Preview" buttons instead of rendering the page.
+
 ## [1.3.0] - 2026-09-05
 
 - `feat(table)` spreadsheet-style table editor with Markdown ⇄ `.tablebyrows` conversion (closes #22)

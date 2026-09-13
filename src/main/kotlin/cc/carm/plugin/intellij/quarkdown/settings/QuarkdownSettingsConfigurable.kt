@@ -3,6 +3,7 @@ package cc.carm.plugin.intellij.quarkdown.settings
 import cc.carm.plugin.intellij.quarkdown.QuarkdownBundle
 import cc.carm.plugin.intellij.quarkdown.lang.lsp.QuarkdownLspServerManager
 import cc.carm.plugin.intellij.quarkdown.lang.preview.QuarkdownCli
+import cc.carm.plugin.intellij.quarkdown.lang.preview.QuarkdownPreviewService
 import com.intellij.icons.AllIcons
 import com.intellij.ide.BrowserUtil
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
@@ -55,6 +56,9 @@ class QuarkdownSettingsConfigurable(private val project: Project) :
             pathAtOpen = newPath
             QuarkdownLspServerManager.getInstance(project).restart()
         }
+        // Preview-mode toggles (auto-open browser / disable built-in preview) must reach the
+        // preview panel immediately, without waiting for a server state change.
+        QuarkdownPreviewService.getInstance(project).notifySettingsChanged()
     }
 
     private var checkButton: JButton? = null
@@ -176,6 +180,16 @@ class QuarkdownSettingsConfigurable(private val project: Project) :
                         )
                         .align(AlignX.FILL)
                         .comment(QuarkdownBundle.message("quarkdown.settings.preview.browser.hint"))
+                }
+                row {
+                    checkBox(QuarkdownBundle.message("quarkdown.settings.preview.auto.open.browser"))
+                        .bindSelected(settings.state::autoOpenBrowser)
+                        .comment(QuarkdownBundle.message("quarkdown.settings.preview.auto.open.browser.comment"))
+                }
+                row {
+                    checkBox(QuarkdownBundle.message("quarkdown.settings.preview.disable.builtin"))
+                        .bindSelected(settings.state::disableBuiltinPreview)
+                        .comment(QuarkdownBundle.message("quarkdown.settings.preview.disable.builtin.comment"))
                 }
                 row(QuarkdownBundle.message("quarkdown.settings.preview.port")) {
                     intTextField().bindIntText(settings.state::previewPort)

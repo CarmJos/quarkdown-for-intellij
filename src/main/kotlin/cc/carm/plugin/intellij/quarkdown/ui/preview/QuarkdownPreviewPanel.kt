@@ -31,7 +31,10 @@ import java.awt.BorderLayout
 import java.awt.Cursor
 import java.awt.FlowLayout
 import java.awt.Font
+import java.awt.GridBagLayout
 import java.io.File
+import javax.swing.Box
+import javax.swing.BoxLayout
 import javax.swing.Icon
 import javax.swing.JButton
 import javax.swing.JComponent
@@ -97,6 +100,18 @@ class QuarkdownPreviewPanel(private val project: Project) : Disposable {
         foreground = UIUtil.getContextHelpForeground()
     }
 
+    /** Container swapped between the embedded browser and the "preview in a browser" prompt. */
+    private val contentContainer = JPanel(BorderLayout())
+
+    /** Wrapper around the JCEF component (or a JCEF-unavailable placeholder). */
+    private val browserWrapper: JComponent by lazy { createContent() }
+
+    /** Prompt shown while the built-in preview is disabled in Settings. */
+    private val builtinDisabledPanel: JComponent by lazy { createBuiltinDisabledPanel() }
+
+    /** Which component [contentContainer] currently holds; `null` until first populated. */
+    private var contentShowsPrompt: Boolean? = null
+
     private val listener = object : QuarkdownPreviewService.Listener {
         override fun onStateChanged(state: QuarkdownPreviewService.State) {
             updateForState(state)
@@ -109,15 +124,20 @@ class QuarkdownPreviewPanel(private val project: Project) : Disposable {
         override fun onBusyChanged(busy: Boolean) {
             updateProgressBar()
         }
+
+        override fun onPreviewModeChanged() {
+            // Re-render: the built-in preview may have just been enabled/disabled in Settings.
+            updateForState(service.state)
+        }
     }
 
     init {
-        // Toolbar row + progress bar strip on top, browser in the middle, bottom bar at the bottom.
+        // Toolbar row + progress bar strip on top, content in the middle, bottom bar at the bottom.
         val north = JPanel(BorderLayout())
         north.add(createToolbarRow(), BorderLayout.NORTH)
         north.add(progressBar, BorderLayout.SOUTH)
         root.add(north, BorderLayout.NORTH)
-        root.add(createContent(), BorderLayout.CENTER)
+        root.add(contentContainer, BorderLayout.CENTER)
         root.add(createBottomBar(), BorderLayout.SOUTH)
 
         val jcefBrowser = browser
@@ -267,6 +287,61 @@ class QuarkdownPreviewPanel(private val project: Project) : Disposable {
         ).apply {
             border = JBUI.Borders.empty(24)
         }
+    }
+
+    /**
+     * Centered prompt shown when the built-in preview is disabled: a message plus buttons
+     * to open the external browser or re-enable the embedded preview.
+     */
+    private fun createBuiltinDisabledPanel(): JComponent {
+        val message = JBLabel(QuarkdownBundle.message("quarkdown.preview.builtin.disabled.message")).apply {
+            horizontalAlignment = SwingConstants.CENTER
+        }
+
+        val openBrowserButton = JButton(
+            QuarkdownBundle.message("quarkdown.preview.builtin.disabled.open.browser")
+        ).apply {
+            addActionListener { service.openInBrowser() }
+        }
+
+        val enableBuiltinButton = JButton(
+            QuarkdownBundle.message("quarkdown.preview.builtin.disabled.enable")
+        ).apply {
+            addActionListener { service.setBuiltinPreviewDisabled(false) }
+        }
+
+        val buttons = JPanel(FlowLayout(FlowLayout.CENTER, 8, 0)).apply {
+            isOpaque = false
+            add(openBrowserButton)
+            add(enableBuiltinButton)
+        }
+
+        val column = JPanel().apply {
+            layout = BoxLayout(this, BoxLayout.Y_AXIS)
+            isOpaque = false
+            add(message)
+            add(Box.createVerticalStrut(JBUI.scale(12)))
+            add(buttons)
+        }
+
+        return JPanel(GridBagLayout()).apply {
+            isOpaque = false
+            add(column)
+        }
+    }
+
+    /**
+     * Swaps the center content between the embedded JCEF browser and the "preview in a
+     * browser" prompt, based on the "Do not use the built-in preview browser" setting.
+     */
+    private fun updateBuiltinPreviewMode() {
+        val showPrompt = service.builtinPreviewDisabled
+        if (contentShowsPrompt == showPrompt) return
+        contentShowsPrompt = showPrompt
+        contentContainer.removeAll()
+        contentContainer.add(if (showPrompt) builtinDisabledPanel else browserWrapper, BorderLayout.CENTER)
+        contentContainer.revalidate()
+        contentContainer.repaint()
     }
 
     private fun createBottomBar(): JComponent {
@@ -419,12 +494,18 @@ class QuarkdownPreviewPanel(private val project: Project) : Disposable {
         }
         statusLabel.text = text
 
-        val b = browser ?: return
-        when (state) {
-            QuarkdownPreviewService.State.STOPPED -> b.loadHTML(placeholderHtml(text))
-            QuarkdownPreviewService.State.STARTING -> b.loadHTML(startingHtml(service.port))
-            QuarkdownPreviewService.State.RUNNING -> b.loadURL(service.viewUrl())
-            QuarkdownPreviewService.State.ERROR -> b.loadHTML(placeholderHtml(text))
+        updateBuiltinPreviewMode()
+
+        // While the built-in preview is disabled the panel shows the prompt, so there is no
+        // need to load the page into the (hidden) embedded browser.
+        val b = browser
+        if (b != null && !service.builtinPreviewDisabled) {
+            when (state) {
+                QuarkdownPreviewService.State.STOPPED -> b.loadHTML(placeholderHtml(text))
+                QuarkdownPreviewService.State.STARTING -> b.loadHTML(startingHtml(service.port))
+                QuarkdownPreviewService.State.RUNNING -> b.loadURL(service.viewUrl())
+                QuarkdownPreviewService.State.ERROR -> b.loadHTML(placeholderHtml(text))
+            }
         }
         toolbar?.updateActionsAsync()
     }
