@@ -7,6 +7,9 @@
 
 ## [Unreleased]
 
+- `fix(build)` make the plugin verification pass again by dropping Kotlin's generated interface bridges
+    - Kotlin's default JVM-default mode generates a **bridge method** in every implementing class for each member a Kotlin interface implements by default. The platform's `ToolWindowFactory` implements `manage`, `anchor` and `icon` as `@ApiStatus.Internal` (and `isApplicable` / `isDoNotActivateOnStart` as deprecated), so the bridges compiled into the tool window factory were reported as internal API usages and failed the `verify` job — for code the plugin never wrote.
+    - Compiling with `jvmDefault = NO_COMPATIBILITY` emits plain JVM default methods without `DefaultImpls` or bridges, so the verifier now sees only what the plugin actually calls: the report went from "4 deprecated + 6 internal" usages to none, and `verifyPlugin` succeeds.
 - `fix(latex)` show the multi-equation chooser at the gutter icon that was clicked
     - The chooser was anchored with `showUnderneathOf(event.component)`, but a gutter click is delivered to the **whole** gutter (or editor) component — so it opened underneath the entire editor, at the bottom of the screen, instead of at the icon. It is now anchored at the click itself.
     - The same chooser opened from the icon's menu carries no mouse event, so it now lets the platform place it at the caret rather than in the middle of the focused window.

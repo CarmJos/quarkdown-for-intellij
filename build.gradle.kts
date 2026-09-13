@@ -6,6 +6,7 @@ import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
 import org.gradle.api.tasks.testing.Test
 import org.jetbrains.intellij.platform.gradle.TestFrameworkType
+import org.jetbrains.kotlin.gradle.dsl.JvmDefaultMode
 import java.io.File
 import java.net.Proxy
 import java.net.ProxySelector
@@ -18,6 +19,22 @@ plugins {
     id("org.jetbrains.kotlin.jvm")
     id("org.jetbrains.intellij.platform")
     id("org.jetbrains.changelog")
+}
+
+// Kotlin's default JVM-default mode generates a *bridge* method in every implementing class for each
+// member a Kotlin interface implements by default. The platform's `ToolWindowFactory` implements
+// several members that are `@ApiStatus.Internal` (`manage`, `anchor`, `icon`), so the bridges
+// generated for `QuarkdownPreviewToolWindowFactory` made the Plugin Verifier report internal API
+// usages — and fail `verifyPlugin` — for code this plugin never wrote.
+//
+// `no-compatibility` compiles interface members to plain JVM default methods without `DefaultImpls`,
+// so no bridges are generated and the verifier only sees the API the plugin actually calls. Nothing
+// outside this module implements the plugin's interfaces (there is exactly one), so dropping the
+// compatibility bridges has no effect on consumers.
+kotlin {
+    compilerOptions {
+        jvmDefault = JvmDefaultMode.NO_COMPATIBILITY
+    }
 }
 
 // ── Auto-generation of code block languages JSON from highlight.js ──
@@ -487,8 +504,9 @@ intellijPlatform {
     //
     // The failure level uses the plugin verifier's defaults
     // (COMPATIBILITY_PROBLEMS + INTERNAL_API_USAGES + OVERRIDE_ONLY_API_USAGES), which is
-    // exactly what the JetBrains Marketplace enforces on submission. All internal API
-    // usages have been eliminated from the codebase, so these strict levels must pass.
+    // exactly what the JetBrains Marketplace enforces on submission. Internal API usages
+    // must therefore stay at zero: see the `jvmDefault` note at the top of this file, which
+    // is what keeps Kotlin's generated interface bridges out of the report.
     pluginVerification {
         ides {
             current()
