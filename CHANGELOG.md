@@ -7,58 +7,15 @@
 
 ## [Unreleased]
 
-- `fix(latex)` dispose the formula preview with its dialog instead of leaking it
-    - `QuarkdownLatexPreviewView` registers the loopback asset server and the embedded browser as its own children, which puts the view itself into the Disposer tree. Nothing then disposed it *through* the Disposer — both dialogs called `view.dispose()` directly — so the IDE reported `Memory leak detected: … QuarkdownLatexPreviewView … was registered in Disposer as a child of 'ROOT_DISPOSABLE' but wasn't disposed` when it exited.
-    - The view now takes its owner (the dialog's disposable) as a constructor argument and is released with `Disposer.dispose(...)`, so the browser and the asset server go with the dialog. A regression test asserts the view is disposed when the dialog is, and fails without the fix.
-- `fix(build)` make the plugin verification pass again by dropping Kotlin's generated interface bridges
-    - Kotlin's default JVM-default mode generates a **bridge method** in every implementing class for each member a Kotlin interface implements by default. The platform's `ToolWindowFactory` implements `manage`, `anchor` and `icon` as `@ApiStatus.Internal` (and `isApplicable` / `isDoNotActivateOnStart` as deprecated), so the bridges compiled into the tool window factory were reported as internal API usages and failed the `verify` job — for code the plugin never wrote.
-    - Compiling with `jvmDefault = NO_COMPATIBILITY` emits plain JVM default methods without `DefaultImpls` or bridges, so the verifier now sees only what the plugin actually calls: the report went from "4 deprecated + 6 internal" usages to none, and `verifyPlugin` succeeds.
-- `fix(latex)` show the multi-equation chooser at the gutter icon that was clicked
-    - The chooser was anchored with `showUnderneathOf(event.component)`, but a gutter click is delivered to the **whole** gutter (or editor) component — so it opened underneath the entire editor, at the bottom of the screen, instead of at the icon. It is now anchored at the click itself.
-    - The same chooser opened from the icon's menu carries no mouse event, so it now lets the platform place it at the caret rather than in the middle of the focused window.
-
-- `feat(latex)` the equation editor's TeX input is a real editor with line numbers and TeX coloring
-    - The input was a plain text area; it is now an `EditorTextField` on a `QuarkdownLaTeX` language, so it gets line numbers, soft wraps, the IDE's editor font and the **same** colors the document shows for the same formula — both go through `QuarkdownLatexSyntax` / `QuarkdownLatexHighlighting`, so the two can never drift apart.
-    - The input and the preview each carry a border, so the two panes read as separate areas.
-- `feat(latex)` the formula preview follows the IDE theme, zooms with the wheel and pans by dragging
-    - The page typeset the formula in a fixed black on a transparent background, which is unreadable on the dark theme: the text and background colors now come from the running theme and are re-applied on every update, so switching the theme is picked up instead of leaving the formula in the previous color.
-    - The wheel zooms around the pointer (0.2×–8×) and dragging with the left button pans; both are CSS transforms on the formula itself, so they need no re-render and stay smooth.
-
-- `fix(latex)` the equation editor no longer loses its TeX input field
-    - The preview is an embedded browser, whose component requests **800×600**; placed in the dialog without a bound it took the whole 540 px panel and left the input area with a *negative* height, so the input looked missing. The preview now has a bounded height (and the input a minimum), and extra space goes to the input when the dialog is enlarged.
-    - The dialog body is also built once: `DialogWrapper` may ask for the centre panel more than once, and rebuilding it re-adds the same children to the same container.
-    - Covered by layout tests, including one that emulates the browser's 800×600 appetite so the regression is caught even without JCEF; removing the bound makes it fail.
-- `refactor(latex)` format multi-line `.math` conversions with the id on the header line
-    - A multi-line expression now converts to `.math ref:{id}` followed by the body indented six spaces, aligning it under the call's arguments.
-    - The `ref:` keeps no space before its brace: Quarkdown accepts `ref:{id}` but silently renders an **empty** formula for `ref: {id}`, which was verified against the CLI and is pinned by a test.
-- `refactor(latex)` typeset the preview with the KaTeX build from the Quarkdown installation instead of the CLI
-    - The previous preview compiled a throwaway document with the CLI, which took seconds per render (the CLI boots a JVM) and needed process sequencing to avoid piling up runs.
-    - The renderer that Quarkdown itself uses ships inside the installation (`lib/html/lib/katex/`: script, stylesheet and web fonts), so it is served over a loopback port and driven by a single JavaScript call per update — a preview now takes milliseconds, with no CLI and nothing bundled in the plugin.
-    - Because the page, the renderer and its fonts share one HTTP origin, Chromium's `file:` restrictions cannot block the fonts (which would render an unstyled formula).
-    - The page is loaded once per dialog; updates are plain script evaluations, so the editor's live preview is effectively instant.
-    - `.texmacro` declarations are still passed to KaTeX (`macros`), including the block-body form, so custom commands resolve; when the installation has no KaTeX build the view explains what to check instead of failing.
-    - Removed the CLI-based preview classes and their tests (renderer, background service, render scheduler, result dialog, asset-free pane).
-- `fix(latex)` the equation gutter dialog now shows the content and a live preview
-    - The dialog opened with an **empty content field and no preview**; clicking the gutter of a `$ … $` / `$$$` equation still opened the old id-only dialog, which is why such equations looked unrecognized even though the editor highlighting worked (verified through the real daemon pipeline).
-    - The content is pre-filled from the equation and edited in a multi-line editor, with the typeset result shown live above it.
-    - The syntax can be switched between `$ … $` and `.math`, converting the equation without rewriting it by hand (`$$$` is used automatically when the content spans several lines).
-    - The id field is offered where an id is meaningful — always for `.math` (as `ref:{…}`) and for `$ … $` when inserting or when the equation already has one — so an existing id is never silently dropped.
-    - Editing replaces the whole occurrence (delimiters and `{#id}` included), so an inline equation no longer has to sit on a line of its own.
-- `feat(latex)` pick which equation to edit when several share a line, and insert equations with preview, content and id (the `$ … $` form is offered first)
-- `feat(latex)` TeX support also covers `.math` and `.texmacro` content
-    - `.math` content (brace argument or indented block body) and `.texmacro` name/body are highlighted and checked like `$…$` equations.
-    - Fixes control sequences being split: `\begin` was lexed as the Markdown escape `\b` plus plain text `egin`, so it looked like a lone highlighted `\b` and the spell checker reported "egin".
-    - TeX content is now skipped by the spell checker entirely, so `\mathbb` and friends are no longer flagged as misspelled words.
-    - Nested Quarkdown calls inside `.math` content (`.math {f(.n) = 1}`) keep their own highlighting and are excluded from the TeX pass.
-- `feat(latex)` syntax highlighting and structural checks for TeX content in equations
-    - The LaTeX inside `$ … $`, `$$ … $$` and `$$$ … $$$` equations is tokenized and colored (commands, environments, braces, `^`/`_`, `#1` parameters, numbers, operators, `%` comments); the colors are customizable under *Editor | Color Scheme | Quarkdown*.
-    - Structural mistakes are reported while typing: unbalanced braces, `\begin` / `\end` that do not pair up, empty environment names, dangling commands and unclosed equation delimiters.
-    - Delimiter detection follows the Quarkdown wiki exactly — both `$` must touch whitespace — so prose such as `it costs $5 and $10` is never mistaken for math, and code blocks are excluded.
-    - Command names are intentionally not validated: TeX ships thousands of primitives, KaTeX implements a subset, and `.texmacro` can define more, so an "unknown command" check would be mostly false positives.
-- `feat(preview)` auto-open the preview in the configured browser once the server is ready
-    - Controlled by the new "Auto-open in browser" preview setting; only triggers when a browser path is configured.
-- `feat(preview)` optional "do not use the built-in preview browser" mode
-    - The preview panel then shows a "preview in your browser" prompt with "Open Browser Preview" / "Enable Built-in Preview" buttons instead of rendering the page.
+- `feat(latex)` TeX support for equations: highlighting, structural checks, a gutter menu, and an editor with a live typeset preview
+    - LaTeX inside `$ … $`, `$$ … $$`, `$$$ … $$$` and the content of `.math` / `.texmacro` is tokenized and colored — commands, environments, braces, `^` / `_`, `#1` parameters, numbers, operators and `%` comments — and structural mistakes (unbalanced braces, `\begin` / `\end` that do not pair up) are reported while typing. The colors are customizable under *Editor | Color Scheme | Quarkdown*.
+    - The gutter icon opens the equation in an editor: the TeX content is pre-filled into a real editor (line numbers, soft wraps and the same colors the document shows for the same formula), the id is offered where it is meaningful, and the syntax converts between `$ … $` and `.math` without rewriting it by hand. Several equations on one line offer a chooser, and inserting a new equation uses the same dialog with `$ … $` offered first.
+    - The formula is typeset live above the input with the KaTeX build that ships inside the Quarkdown installation, so there is no compile step, no CLI and nothing bundled in the plugin. It follows the IDE theme, and the wheel zooms it while dragging with the left button pans it.
+- `feat(preview)` preview settings for opening the preview outside the IDE
+    - "Auto-open in browser" opens the preview link as soon as the server is ready (only when a browser path is configured).
+    - "Do not use the built-in preview browser" replaces the panel's page with a "preview in your browser" prompt and "Open Browser Preview" / "Enable Built-in Preview" buttons.
+- `fix(build)` keep the plugin verification passing
+    - Kotlin's default JVM-default mode generates a bridge method in every class that implements a Kotlin interface, including the `@ApiStatus.Internal` members of the platform's `ToolWindowFactory`; the verifier read those generated bridges as internal API usages, so the `verify` job failed for code the plugin never wrote. Compiling with `jvmDefault = NO_COMPATIBILITY` drops the bridges, and the report is back to zero deprecated and zero internal usages.
 
 ## [1.3.0] - 2026-09-05
 
