@@ -2,37 +2,47 @@ package cc.carm.plugin.intellij.quarkdown.lang.latex
 
 import cc.carm.plugin.intellij.quarkdown.lang.codeblock.QuarkdownCodeBlockSyntax
 import cc.carm.plugin.intellij.quarkdown.lang.equation.QuarkdownEquationSyntax
+import cc.carm.plugin.intellij.quarkdown.lang.function.QuarkdownCallParser
 
 /**
- * Pure (no IntelliJ dependencies) locator for the TeX/LaTeX content of Quarkdown equations.
+ * Pure (no IntelliJ dependencies) locator for the TeX/LaTeX content of Quarkdown.
  *
- * Implements the delimiter rules documented by Quarkdown (wiki: *TeX formulae*):
+ * Three sources of LaTeX are recognised:
  *
- * ```
- * INLINE      Let $ \overline v = \frac {\Delta x} {\Delta t} $ be the average velocity.
- * BLOCK       $ F(u) = \int^{+\infty}_{-\infty} f(x) e^{-i 2\pi x} dx $
- * MULTILINE   $$$
- *             f(x) = \begin{cases} 0 & \text{if } x = 0 \\ 1 & \text{otherwise} \end{cases}
- *             $$$
- * ```
+ *  1. **Equations** — the delimiter rules documented by Quarkdown (wiki: *TeX formulae*):
+ *     ```
+ *     INLINE      Let $ \overline v = \frac {\Delta x} {\Delta t} $ be the average velocity.
+ *     BLOCK       $ F(u) = \int^{+\infty}_{-\infty} f(x) e^{-i 2\pi x} dx $
+ *     MULTILINE   $$$
+ *                 f(x) = \begin{cases} 0 & \text{if } x = 0 \\ 1 & \text{otherwise} \end{cases}
+ *                 $$$
+ *     ```
+ *     The exact rule is that **both `$` delimiters must be preceded *and* followed by
+ *     whitespace**, or be at the beginning / end of a line. That rule is what makes prose like
+ *     `it costs $5 and $10` stay plain text, so it is implemented literally here instead of the
+ *     laxer "any `$...$`" heuristic. A `$$$` (three or more) run only counts as a delimiter when
+ *     it sits alone on its line, optionally followed by the `{#id}` cross-reference tag.
+ *  2. **`.math`** — the function backing both syntaxes above. Its `content` argument (or its
+ *     indented block body) is a TeX expression.
+ *  3. **`.texmacro`** — its `name` argument is the declared command (e.g. `\gradient`) and its
+ *     `macro` argument (or indented block body) is the TeX code the command expands to.
  *
- * The exact rule is that **both `$` delimiters must be preceded *and* followed by
- * whitespace**, or be at the beginning / end of a line. That rule is what makes prose like
- * `it costs $5 and $10` stay plain text, so it is implemented literally here instead of the
- * laxer "any `$...$`" heuristic. A `$$$` (three or more) run only counts as a delimiter when
- * it sits alone on its line, optionally followed by the `{#id}` cross-reference tag.
+ * Without 2 and 3 the Quarkdown lexer would split a command such as `\begin` into an `ESCAPE`
+ * token (`\b`) plus plain text (`egin`), which both mis-colors it and makes the spell checker
+ * flag `egin` as a misspelled word.
  *
- * Content inside fenced code blocks is never treated as an equation.
+ * Content inside fenced code blocks is never treated as LaTeX.
  *
  * Known limitation: a `$ ... $` pair written *inside an inline code span with spaces around
  * the dollars* (`` ` $ x $ ` ``) is still treated as an equation. The common documentation
  * form — ``two `$` symbols`` — is safe because a backtick is not whitespace.
  *
- * Kept dependency-free so the logic can be unit-tested and reused by the editor annotator.
+ * Kept dependency-free so the logic can be unit-tested and reused by the editor annotator and
+ * the spell-checking strategy.
  */
 object QuarkdownEquationRegions {
 
-    /** Which delimiter form produced a region. */
+    /** Which construct produced a region. */
     enum class Kind {
         /** `$ ... $` sharing its line with other prose. */
         INLINE,
@@ -41,16 +51,54 @@ object QuarkdownEquationRegions {
         BLOCK,
 
         /** `$$$` fenced block, possibly spanning several lines. */
-        MULTILINE
+        MULTILINE,
+
+        /** The TeX expression argument (or block body) of a `.math` call. */
+        MATH_CALL,
+
+        /** A `.texmacro` name or macro body argument (or block body). */
+        TEX_MACRO
     }
 
     /**
-     * The LaTeX content of one equation. [contentStart] points at the first character after
-     * the opening delimiter and [contentEnd] at the delimiter character itself, so
-     * `substring(contentStart, contentEnd)` is exactly the content to analyse.
+     * The LaTeX content of one region. [contentStart] points at the first character of the
+     * content and [contentEnd] just past its last character, so
+     * `substring(contentStart, contentEnd)` is exactly the text to analyse.
+     *
+     * [excluded] holds absolute ranges inside the content that must **not** be analysed as
+     * LaTeX. `.math` content is evaluated as Quarkdown, so it may contain nested function
+     * calls (e.g. `f(.n) = .n::multiply {2}`); those keep their own Quarkdown highlighting and
+     * must not be re-colored or re-checked as TeX.
      */
-    data class Region(val kind: Kind, val contentStart: Int, val contentEnd: Int) {
+    data class Region(
+        val kind: Kind,
+        val contentStart: Int,
+        val contentEnd: Int,
+        val excluded: List<IntRange> = emptyList(),
+    ) {
         val isEmpty: Boolean get() = contentEnd <= contentStart
+
+        /**
+         * The analyzable parts of the content: [contentStart]..[contentEnd] minus [excluded].
+         * Each range is absolute and non-empty.
+         */
+        fun segments(): List<IntRange> {
+            if (isEmpty) return emptyList()
+            val cuts = excluded
+                .filter { it.first < contentEnd && it.last >= contentStart }
+                .map { it.first.coerceAtLeast(contentStart)..it.last.coerceAtMost(contentEnd - 1) }
+                .sortedBy { it.first }
+            if (cuts.isEmpty()) return listOf(contentStart..contentEnd - 1)
+
+            val segments = mutableListOf<IntRange>()
+            var cursor = contentStart
+            for (cut in cuts) {
+                if (cut.first > cursor) segments += cursor..cut.first - 1
+                cursor = maxOf(cursor, cut.last + 1)
+            }
+            if (cursor <= contentEnd - 1) segments += cursor..contentEnd - 1
+            return segments
+        }
     }
 
     /** Result of a [find] pass. */
@@ -61,7 +109,7 @@ object QuarkdownEquationRegions {
         val unclosedDelimiters: List<IntRange>
     )
 
-    /** Locates every equation content region in [text]. */
+    /** Locates every LaTeX content region in [text]. */
     fun find(text: CharSequence): Result {
         val codeFences = QuarkdownCodeBlockSyntax.findFenceRanges(text)
         val regions = mutableListOf<Region>()
@@ -71,7 +119,11 @@ object QuarkdownEquationRegions {
 
         findMultilineBlocks(text, codeFences, regions, blockRanges, unclosed)
 
-        val skip = codeFences + blockRanges
+        // `.math` / `.texmacro` content is not delimited by `$`, so it is located separately
+        // and then excluded from the `$` scan (a `$` inside a math expression is plain TeX).
+        val callRegions = findCallRegions(text, codeFences)
+
+        val skip = codeFences + blockRanges + callRegions.map { it.contentStart until it.contentEnd }
         var i = 0
         while (i < text.length) {
             val skipped = skip.firstOrNull { i in it }
@@ -113,7 +165,155 @@ object QuarkdownEquationRegions {
             i = closeStart + run
         }
 
+        regions += callRegions
         return Result(regions.sortedBy { it.contentStart }, unclosed.sortedBy { it.first })
+    }
+
+    /**
+     * Every absolute range that must be treated as LaTeX by other language features — the
+     * analyzable segments of all regions, with nested Quarkdown calls inside `.math` content
+     * left out. Used by the spell checker to leave TeX alone.
+     */
+    fun latexRanges(text: CharSequence): List<IntRange> =
+        find(text).regions.flatMap { it.segments() }
+
+    // ------------------------------------------------------------------
+    // `.math` / `.texmacro` content
+    // ------------------------------------------------------------------
+
+    /**
+     * Locates the TeX content of `.math` and `.texmacro` calls, both for brace arguments
+     * (`.math {E = mc^2}`, `.texmacro {\R} {\mathbb{R}}`) and for indented block bodies:
+     *
+     * ```
+     * .math
+     *     E = mc^2
+     *
+     * .texmacro {\gradient}
+     *     \nabla
+     * ```
+     *
+     * For `.texmacro` the macro *name* is TeX too (`\gradient` is a control sequence), so it is
+     * returned as a region as well — otherwise the Quarkdown lexer would split it into `\g` plus
+     * `radient`.
+     */
+    private fun findCallRegions(text: CharSequence, codeFences: List<IntRange>): List<Region> {
+        val source = text.toString()
+        val regions = mutableListOf<Region>()
+
+        for (start in QuarkdownCallParser.findAllCallStarts(source)) {
+            if (codeFences.any { start in it }) continue
+            val call = QuarkdownCallParser.parseCall(source, start) ?: continue
+            when (call.name) {
+                "math" -> {
+                    val content = call.args.firstOrNull { it.paramName == "content" }
+                        ?: call.args.firstOrNull { !it.isNamed }
+                    if (content != null) {
+                        regions += Region(
+                            Kind.MATH_CALL, content.rawStart, content.rawEnd,
+                            nestedCallRanges(source, content.rawStart, content.rawEnd),
+                        )
+                    } else {
+                        blockBodyRange(source, call)?.let {
+                            regions += Region(Kind.MATH_CALL, it.first, it.last + 1)
+                        }
+                    }
+                }
+
+                "texmacro" -> {
+                    val nameArg = call.args.firstOrNull { it.paramName == "name" }
+                        ?: call.args.firstOrNull { !it.isNamed }
+                    val macroArg = call.args.firstOrNull { it.paramName == "macro" }
+                        ?: call.args.firstOrNull { it !== nameArg && !it.isNamed }
+                    // The declared command name is a control sequence such as `\gradient`.
+                    if (nameArg != null) {
+                        regions += Region(Kind.TEX_MACRO, nameArg.rawStart, nameArg.rawEnd)
+                    }
+                    if (macroArg != null) {
+                        regions += Region(Kind.TEX_MACRO, macroArg.rawStart, macroArg.rawEnd)
+                    } else {
+                        blockBodyRange(source, call)?.let {
+                            regions += Region(Kind.TEX_MACRO, it.first, it.last + 1)
+                        }
+                    }
+                }
+            }
+        }
+        return regions
+    }
+
+    /**
+     * The absolute range of the indented block body following [call], or `null` when the call
+     * has no body. The body starts at the first character of the line after the call and ends
+     * at the last non-blank line indented by at least two spaces (or one tab) — the same rule
+     * Quarkdown uses for body arguments. Trailing blank lines are not part of the body.
+     */
+    private fun blockBodyRange(text: String, call: QuarkdownCallParser.Call): IntRange? {
+        if (!call.hasBodyArgument) return null
+        // The body follows the call itself — i.e. right after the last argument's `}`, or right
+        // after the name when there are no arguments. `call.end` cannot be used here: argument
+        // parsing skips whitespace, so it has already moved past the newline that starts the body.
+        val after = call.args.lastOrNull()?.braceEnd ?: call.nameEnd
+        var i = after
+        while (i < text.length && (text[i] == ' ' || text[i] == '\t')) i++
+        if (i >= text.length || text[i] != '\n') return null
+
+        val bodyStart = i + 1
+        var cursor = bodyStart
+        var bodyEnd = -1
+        while (cursor <= text.length) {
+            var lineEnd = cursor
+            while (lineEnd < text.length && text[lineEnd] != '\n' && text[lineEnd] != '\r') lineEnd++
+            val line = text.substring(cursor, lineEnd)
+            if (line.isNotBlank()) {
+                val indent = line.takeWhile { it == ' ' || it == '\t' }.length
+                if (indent < 2) break // not indented → the body ended
+                bodyEnd = lineEnd
+            }
+            if (lineEnd >= text.length) break
+            cursor = lineEnd + 1
+            if (cursor < text.length && text[cursor - 1] == '\r' && text[cursor] == '\n') cursor++
+        }
+        return if (bodyEnd > bodyStart) bodyStart until bodyEnd else null
+    }
+
+    /**
+     * The absolute ranges of the Quarkdown function calls nested inside `[from, to)` of `text`
+     * (including `::` chain continuations). `.math` content is evaluated as Quarkdown, so these
+     * keep their own highlighting and must not be analysed as TeX.
+     */
+    private fun nestedCallRanges(text: String, from: Int, to: Int): List<IntRange> {
+        val ranges = mutableListOf<IntRange>()
+        var i = from
+        while (i < to) {
+            if (text[i] == '.' && QuarkdownCallParser.isFunctionStartDot(text, i)) {
+                val end = callChainEnd(text, i, to)
+                if (end > i) {
+                    ranges += i until end
+                    i = end
+                    continue
+                }
+            }
+            i++
+        }
+        return ranges
+    }
+
+    /**
+     * End of the call (and of any `::name {…}` chain) starting at [start], never past [limit].
+     * Returns [start] when the text at [start] is not a parsable call.
+     */
+    private fun callChainEnd(text: String, start: Int, limit: Int): Int {
+        val call = QuarkdownCallParser.parseCall(text, start) ?: return start
+        var end = call.end
+        if (end > limit) return start
+        // Absorb `::name {…}` chain segments, which findCallStarts deliberately skips.
+        while (end + 1 < limit && text[end] == ':' && text[end + 1] == ':') {
+            val chained = QuarkdownCallParser.parseCall(text, end) ?: break
+            if (chained.end <= end || chained.end > limit) break
+            end = chained.end
+        }
+        return end
     }
 
     // ------------------------------------------------------------------

@@ -80,6 +80,62 @@ class QuarkdownLatexAnnotatorTest : BasePlatformTestCase() {
         assertTrue(colors.isEmpty())
     }
 
+    // ------------------------------------------------------------------
+    // `.math` / `.texmacro` (no `$` involved)
+    // ------------------------------------------------------------------
+
+    fun `test a math block is analysed even without dollar signs`() {
+        val text = ".math\n    a^2 + b^2 = c^2\n"
+        val (problems, colors) = analyse(text)
+        assertTrue("a balanced formula must not report problems: $problems", problems.isEmpty())
+        assertTrue("the TeX must be colored, got $colors", colors.isNotEmpty())
+    }
+
+    fun `test a command in a math block is colored as one token`() {
+        // Regression: the Quarkdown lexer splits `\begin` into `\b` + `egin`, so the whole
+        // control sequence looked like a single highlighted `\b` followed by plain text.
+        val text = ".math\n    \\begin{cases}\n    0\n    \\end{cases}\n"
+        val (_, colors) = analyse(text)
+        val start = text.indexOf("\\begin{cases}")
+        assertTrue(
+            "expected one color span covering all of \\begin{cases}, got $colors",
+            colors.any { it.start == start && it.end == start + "\\begin{cases}".length }
+        )
+    }
+
+    fun `test an unclosed environment in a math block is reported`() {
+        val (problems, _) = analyse(".math\n    \\begin{aligned}\n    x\n")
+        assertEquals("expected one problem, got $problems", 1, problems.size)
+        assertTrue(
+            "the problem must name the environment, got '${problems[0].message}'",
+            problems[0].message.contains("aligned")
+        )
+    }
+
+    fun `test a texmacro body is analysed`() {
+        val text = ".texmacro {\\gradient} {\\nabla}"
+        val (problems, colors) = analyse(text)
+        assertTrue("a well-formed macro must not report problems: $problems", problems.isEmpty())
+        val start = text.indexOf("\\nabla")
+        assertTrue(
+            "the macro body must be colored, got $colors",
+            colors.any { it.start == start && it.end == start + "\\nabla".length }
+        )
+    }
+
+    fun `test nested calls inside math content keep out of the latex pass`() {
+        // `.math` content is evaluated as Quarkdown, so `.n` stays a Quarkdown reference and
+        // must not be re-checked as TeX.
+        val text = ".math {f(.n) = 1}\n"
+        val (problems, colors) = analyse(text)
+        assertTrue("nested calls must not create problems: $problems", problems.isEmpty())
+        val nestedStart = text.indexOf(".n")
+        assertTrue(
+            "the nested call must not be colored as TeX, got $colors",
+            colors.none { it.start == nestedStart }
+        )
+    }
+
     /**
      * Creates a proxy [AnnotationHolder] that records the range of every silent annotation
      * (a color) into [colors] and of every normal annotation (a problem) into [problems],
@@ -149,4 +205,3 @@ class QuarkdownLatexAnnotatorTest : BasePlatformTestCase() {
         } as AnnotationHolder
     }
 }
-

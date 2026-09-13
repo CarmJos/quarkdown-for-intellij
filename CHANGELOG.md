@@ -7,6 +7,11 @@
 
 ## [Unreleased]
 
+- `feat(latex)` TeX support also covers `.math` and `.texmacro` content
+    - `.math` content (brace argument or indented block body) and `.texmacro` name/body are highlighted and checked like `$…$` equations.
+    - Fixes control sequences being split: `\begin` was lexed as the Markdown escape `\b` plus plain text `egin`, so it looked like a lone highlighted `\b` and the spell checker reported "egin".
+    - TeX content is now skipped by the spell checker entirely, so `\mathbb` and friends are no longer flagged as misspelled words.
+    - Nested Quarkdown calls inside `.math` content (`.math {f(.n) = 1}`) keep their own highlighting and are excluded from the TeX pass.
 - `feat(latex)` syntax highlighting and structural checks for TeX content in equations
     - The LaTeX inside `$ … $`, `$$ … $$` and `$$$ … $$$` equations is tokenized and colored (commands, environments, braces, `^`/`_`, `#1` parameters, numbers, operators, `%` comments); the colors are customizable under *Editor | Color Scheme | Quarkdown*.
     - Structural mistakes are reported while typing: unbalanced braces, `\begin` / `\end` that do not pair up, empty environment names, dangling commands and unclosed equation delimiters.
