@@ -7,6 +7,8 @@
 
 ## [Unreleased]
 
+## [1.3.1] - 2026-09-13
+
 - `feat(latex)` TeX support for equations: highlighting, structural checks, a gutter menu, and an editor with a live typeset preview
     - LaTeX inside `$ … $`, `$$ … $$`, `$$$ … $$$` and the content of `.math` / `.texmacro` is tokenized and colored — commands, environments, braces, `^` / `_`, `#1` parameters, numbers, operators and `%` comments — and structural mistakes (unbalanced braces, `\begin` / `\end` that do not pair up) are reported while typing. The colors are customizable under *Editor | Color Scheme | Quarkdown*.
     - The gutter icon opens the equation in an editor: the TeX content is pre-filled into a real editor (line numbers, soft wraps and the same colors the document shows for the same formula), the id is offered where it is meaningful, and the syntax converts between `$ … $` and `.math` without rewriting it by hand. Several equations on one line offer a chooser, and inserting a new equation uses the same dialog with `$ … $` offered first.
@@ -143,7 +145,8 @@ After two rounds of pre-release iterations, this version brings a mature, battle
 
 - `feat` initial release: Quarkdown syntax support for IntelliJ IDEA
 
-[Unreleased]: https://github.com/CarmJos/quarkdown-for-intellij/compare/v1.3.0...HEAD
+[Unreleased]: https://github.com/CarmJos/quarkdown-for-intellij/compare/v1.3.1...HEAD
+[1.3.1]: https://github.com/CarmJos/quarkdown-for-intellij/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/CarmJos/quarkdown-for-intellij/compare/v1.2.1...v1.3.0
 [1.2.1]: https://github.com/CarmJos/quarkdown-for-intellij/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/CarmJos/quarkdown-for-intellij/compare/v1.1.1...v1.2.0
