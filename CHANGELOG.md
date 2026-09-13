@@ -7,6 +7,11 @@
 
 ## [Unreleased]
 
+- `feat(latex)` preview a formula from the gutter, rendered by the Quarkdown CLI
+    - The equation gutter icon now also covers `.math` / `.texmacro` content and gains a "Preview Formula" entry in its menu (and on a left click where there is no editable id).
+    - The formula is compiled into a throwaway document and shown in the embedded browser, so it renders offline with the same KaTeX build and theme as the final document, and degrades to the system browser when JCEF is unavailable.
+    - The document's `.texmacro` declarations and `.var` values are copied into the throwaway document, so custom commands and variables resolve exactly as they do in the real output.
+    - Each formula is re-emitted with the syntax it came from, because Quarkdown evaluates `.math` content but not `$…$` content — the preview therefore shows what the document will really render, including that distinction.
 - `feat(latex)` TeX support also covers `.math` and `.texmacro` content
     - `.math` content (brace argument or indented block body) and `.texmacro` name/body are highlighted and checked like `$…$` equations.
     - Fixes control sequences being split: `\begin` was lexed as the Markdown escape `\b` plus plain text `egin`, so it looked like a lone highlighted `\b` and the spell checker reported "egin".
