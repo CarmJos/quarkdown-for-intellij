@@ -12,6 +12,7 @@ import com.intellij.openapi.util.Disposer
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.jcef.JBCefBrowser
 import com.intellij.util.ui.JBUI
+import com.intellij.util.ui.UIUtil
 import org.cef.browser.CefBrowser
 import org.cef.browser.CefFrame
 import org.cef.handler.CefLoadHandler
@@ -27,6 +28,10 @@ import javax.swing.SwingConstants
  * ([QuarkdownLatexPreviewSource.renderCall]), so typing re-renders in milliseconds — no CLI process,
  * no compile, nothing bundled in this plugin. Rendering is driven by [render] and needs no
  * sequencing or debouncing of its own; callers may still debounce to avoid redundant calls.
+ *
+ * Every update also carries the IDE theme ([themeScript]): the page is typeset in the theme's own
+ * text color instead of a fixed black, which would be unreadable on the dark theme. The page owns
+ * the zoom (wheel) and pan (left-button drag) gestures — see [QuarkdownLatexPreviewSource.pageHtml].
  *
  * The view degrades into an explanatory label (never an exception) when the prerequisites are
  * missing:
@@ -82,11 +87,11 @@ class QuarkdownLatexPreviewView(private val project: Project) : Disposable {
 
                     override fun onLoadEnd(browser: CefBrowser, frame: CefFrame, httpStatusCode: Int) {
                         pageReady = true
-                        // Replay whatever was requested while the page was loading.
-                        pendingCall?.let { call ->
-                            pendingCall = null
-                            browser.executeJavaScript(call, server.baseUrl, 0)
-                        }
+                        // Replay whatever was requested while the page was loading. A request already
+                        // carries the theme, so a page that has nothing pending just needs the colors.
+                        val pending = pendingCall
+                        pendingCall = null
+                        browser.executeJavaScript(pending ?: themeScript(), server.baseUrl, 0)
                     }
 
                     override fun onLoadError(
@@ -121,7 +126,7 @@ class QuarkdownLatexPreviewView(private val project: Project) : Disposable {
      * replayed on load.
      */
     fun render(tex: String, macros: Map<String, String>, displayMode: Boolean) {
-        val call = QuarkdownLatexPreviewSource.renderCall(tex, macros, displayMode)
+        val call = themeScript() + QuarkdownLatexPreviewSource.renderCall(tex, macros, displayMode)
         val current = browser ?: return
         if (!pageReady) {
             pendingCall = call
@@ -131,6 +136,17 @@ class QuarkdownLatexPreviewView(private val project: Project) : Disposable {
         val serverUrl = assetServer?.baseUrl
         current.cefBrowser.executeJavaScript(call, serverUrl, 0)
     }
+
+    /**
+     * The IDE colors the page should use.
+     *
+     * They are read on every call rather than once, so a theme switched while a dialog is open is
+     * picked up by the next update instead of leaving the formula in the previous theme's color.
+     */
+    private fun themeScript(): String = QuarkdownLatexPreviewSource.themeCall(
+        QuarkdownLatexPreviewSource.cssColor(UIUtil.getLabelForeground()),
+        QuarkdownLatexPreviewSource.cssColor(UIUtil.getPanelBackground()),
+    )
 
     /** The Quarkdown home whose KaTeX build should be used, or `null` when it has none. */
     private fun resolveAssetRoot(): File? {

@@ -2,19 +2,24 @@ package cc.carm.plugin.intellij.quarkdown.action.equation
 
 import cc.carm.plugin.intellij.quarkdown.QuarkdownBundle
 import cc.carm.plugin.intellij.quarkdown.lang.equation.QuarkdownEquationEdit
+import cc.carm.plugin.intellij.quarkdown.lang.latex.QuarkdownLatexFileType
 import cc.carm.plugin.intellij.quarkdown.lang.latex.QuarkdownLatexPreviewSource
 import cc.carm.plugin.intellij.quarkdown.ui.preview.QuarkdownLatexPreviewView
+import com.intellij.openapi.editor.Document
+import com.intellij.openapi.editor.EditorFactory
+import com.intellij.openapi.editor.event.DocumentEvent as EditorDocumentEvent
+import com.intellij.openapi.editor.event.DocumentListener as EditorDocumentListener
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
+import com.intellij.openapi.util.text.StringUtil
 import com.intellij.ui.DocumentAdapter
+import com.intellij.ui.EditorTextField
+import com.intellij.ui.JBColor
 import com.intellij.ui.components.JBLabel
-import com.intellij.ui.components.JBScrollPane
-import com.intellij.ui.components.JBTextArea
 import com.intellij.ui.components.JBTextField
 import com.intellij.util.ui.JBUI
 import java.awt.BorderLayout
 import java.awt.FlowLayout
-import java.awt.Font
 import javax.swing.JComboBox
 import javax.swing.JComponent
 import javax.swing.JPanel
@@ -37,10 +42,12 @@ import javax.swing.event.DocumentEvent
  *
  * Behaviour worth noting:
  *
- *  - the **content** is pre-filled from the equation (it used to come up empty) and is a
- *    multi-line area, because TeX expressions are routinely several lines long;
+ *  - the **content** is pre-filled from the equation (it used to come up empty) and is edited in a
+ *    real editor — line numbers, soft wraps, the IDE's editor font and TeX coloring — because TeX
+ *    expressions are routinely several lines long;
  *  - the **preview** typesets the content with the KaTeX build from the Quarkdown installation, so
- *    it updates as you type without any compile step;
+ *    it updates as you type without any compile step; it follows the IDE theme, and the wheel zooms
+ *    it while dragging with the left button pans it (see `QuarkdownLatexPreviewSource`);
  *  - the **form** can be switched between `$ … $` and `.math`, which is the conversion needed
  *    when one syntax has to be used instead of the other;
  *  - the **id** field is offered where an id makes sense: always for `.math` (written as
@@ -70,10 +77,32 @@ class EquationDialog(
     /** Whether the dollar form keeps using the `$$$` fence. */
     private var fence: Boolean = original.fence
 
-    private val contentArea = JBTextArea(original.content, CONTENT_ROWS, CONTENT_COLUMNS).apply {
-        lineWrap = true
-        wrapStyleWord = false
-        font = Font(Font.MONOSPACED, Font.PLAIN, JBUI.scale(FONT_SIZE))
+    /**
+     * The TeX input's document.
+     *
+     * The input is an [EditorTextField] rather than a text area so it is a real editor: line
+     * numbers, soft wraps, the IDE's editor font, and — through [QuarkdownLatexFileType] — the same
+     * TeX colors the document shows for the same formula.
+     */
+    private val contentDocument: Document = EditorFactory.getInstance()
+        .createDocument(StringUtil.convertLineSeparators(original.content))
+
+    private val contentField = EditorTextField(
+        contentDocument,
+        project,
+        QuarkdownLatexFileType.INSTANCE,
+        false,
+        false,
+    ).apply {
+        addSettingsProvider { editor ->
+            editor.settings.isLineNumbersShown = true
+            editor.settings.isUseSoftWraps = true
+            editor.settings.isLineMarkerAreaShown = false
+            editor.settings.isFoldingOutlineShown = false
+            editor.settings.isIndentGuidesShown = false
+            editor.setVerticalScrollbarVisible(true)
+        }
+        border = JBUI.Borders.customLine(JBColor.border(), 1)
     }
 
     private val idField = JBTextField(original.id, 24)
@@ -118,15 +147,17 @@ class EquationDialog(
     }
 
     private fun installListeners() {
-        contentArea.document.addDocumentListener(object : DocumentAdapter() {
-            override fun textChanged(e: DocumentEvent) = updatePreview()
+        // The input is an editor document, so it reports changes through the editor's listener; the
+        // id field is a plain text field and keeps the Swing one.
+        contentDocument.addDocumentListener(object : EditorDocumentListener {
+            override fun documentChanged(event: EditorDocumentEvent) = updatePreview()
         })
         idField.document.addDocumentListener(object : DocumentAdapter() {
             override fun textChanged(e: DocumentEvent) = updatePreview()
         })
         formSelector.addActionListener {
             // Converting keeps a `$$$` block fenced: only that syntax can hold several lines.
-            fence = QuarkdownEquationEdit.fenceAfterConversion(original, currentForm(), contentArea.text)
+            fence = QuarkdownEquationEdit.fenceAfterConversion(original, currentForm(), contentField.text)
             refreshIdVisibility()
             updatePreview()
         }
@@ -154,7 +185,7 @@ class EquationDialog(
     /** Builds the occurrence text for the current fields. */
     fun buildText(): String = QuarkdownEquationEdit.render(
         form = currentForm(),
-        content = contentArea.text,
+        content = contentField.text,
         id = idField.text,
         fence = fence,
         indent = original.indent,
@@ -164,7 +195,7 @@ class EquationDialog(
     private fun updatePreview() {
         // The preview typesets the TeX content directly (no `.math` / `$` wrapper): KaTeX is the
         // renderer Quarkdown itself uses, and the wrapper carries no TeX meaning of its own.
-        val content = contentArea.text.trim()
+        val content = contentField.text.trim()
         previewView.render(
             tex = content,
             macros = macros,
@@ -191,8 +222,7 @@ class EquationDialog(
                 border = JBUI.Borders.empty(2, 0)
             }, BorderLayout.NORTH)
             add(
-                JBScrollPane(contentArea).apply {
-                    border = JBUI.Borders.empty()
+                contentField.apply {
                     // The input must never be squeezed out of view by the preview above it.
                     minimumSize = JBUI.size(0, JBUI.scale(CONTENT_MIN_HEIGHT))
                 },
@@ -207,6 +237,7 @@ class EquationDialog(
         val previewPanel = JPanel(BorderLayout()).apply {
             preferredSize = JBUI.size(PREVIEW_WIDTH, PREVIEW_HEIGHT)
             minimumSize = JBUI.size(0, JBUI.scale(PREVIEW_MIN_HEIGHT))
+            border = JBUI.Borders.customLine(JBColor.border(), 1)
             add(previewView.component, BorderLayout.CENTER)
         }
 
@@ -234,7 +265,7 @@ class EquationDialog(
     internal fun getIdForTest(): String = idField.text.trim()
 
     /** The current content, for tests. */
-    internal fun getContentForTest(): String = contentArea.text
+    internal fun getContentForTest(): String = contentField.text
 
     /** Which syntax family the form selector points at, for tests. */
     internal fun getFormForTest(): QuarkdownEquationEdit.Form = currentForm()
@@ -264,9 +295,6 @@ class EquationDialog(
     }
 
     private companion object {
-        const val CONTENT_ROWS = 10
-        const val CONTENT_COLUMNS = 64
-        const val FONT_SIZE = 13
         const val DIALOG_WIDTH = 700
         const val DIALOG_HEIGHT = 540
         const val CONTENT_MIN_HEIGHT = 100

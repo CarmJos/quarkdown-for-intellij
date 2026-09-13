@@ -2,6 +2,7 @@ package cc.carm.plugin.intellij.quarkdown.lang.latex
 
 import cc.carm.plugin.intellij.quarkdown.lang.function.QuarkdownCallParser
 import com.google.gson.Gson
+import java.awt.Color
 
 /**
  * Pure (no IntelliJ dependencies) builder of the page that typesets LaTeX with the KaTeX copy
@@ -22,6 +23,15 @@ import com.google.gson.Gson
  * Unlike `.math`, KaTeX does **not** evaluate Quarkdown function calls: nested calls inside a
  * `.math` body are shown as their raw text, which is the honest thing to show when the values are
  * only known to the compiler.
+ *
+ * The page is also where the preview's two interactive behaviours live, because the embedded
+ * browser forwards input to the page rather than to the Swing component around it:
+ *
+ *  - **theme** — the text and background colors are CSS variables the host sets with [themeCall];
+ *    without them the formula would keep the page's default black, which is unreadable on the dark
+ *    theme;
+ *  - **zoom & pan** — the wheel zooms around the pointer and dragging with the left button pans, so
+ *    a formula can be inspected without leaving the dialog.
  */
 object QuarkdownLatexPreviewSource {
 
@@ -43,15 +53,28 @@ object QuarkdownLatexPreviewSource {
           <link rel="stylesheet" href="${escapeAttribute(stylesheetUrl)}">
           <script src="${escapeAttribute(scriptUrl)}"></script>
           <style>
-            html, body { margin: 0; padding: 0; background: transparent; }
-            body {
-              /* The preview floats above the editor input, so the formula is centred and the
-                 placeholder keeps the pane from collapsing when nothing is rendered yet. */
-              display: flex; align-items: center; justify-content: center;
-              min-height: 100vh; overflow: auto;
+            /* The colours come from the IDE theme (see setTheme): a fixed black would be unreadable
+               on the dark theme, and a fixed white on the light one. */
+            html, body {
+              margin: 0; padding: 0;
+              background: var(--quarkdown-background, transparent);
+              color: var(--quarkdown-foreground, #000000);
               font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
             }
-            #output { padding: 8px 12px; }
+            body { overflow: hidden; }
+            /* The whole pane is the drag surface; the formula floats inside it. */
+            #viewport {
+              position: absolute; inset: 0; overflow: hidden;
+              cursor: grab; touch-action: none;
+            }
+            #viewport.dragging { cursor: grabbing; }
+            #output {
+              position: absolute; left: 50%; top: 50%;
+              transform: translate(-50%, -50%);
+              transform-origin: center center;
+              padding: 8px 12px;
+              will-change: transform;
+            }
             #output.display { width: 100%; text-align: center; }
             .placeholder { color: #9aa0a6; font-size: 12px; }
             .error {
@@ -62,9 +85,68 @@ object QuarkdownLatexPreviewSource {
           </style>
         </head>
         <body>
-          <div id="output"></div>
+          <div id="viewport"><div id="output"></div></div>
           <script>
+            // Zoom & pan. The view is a single CSS transform on the formula, so it needs no layout
+            // pass and stays smooth; the wheel zooms around the pointer and the left button pans.
+            (function () {
+              var viewport = document.getElementById('viewport');
+              var output = document.getElementById('output');
+              var MIN_ZOOM = 0.2, MAX_ZOOM = 8, ZOOM_STEP = 1.1;
+              var zoom = 1, panX = 0, panY = 0;
+              var dragging = false, lastX = 0, lastY = 0;
+
+              function applyView() {
+                output.style.transform =
+                  'translate(-50%, -50%) translate(' + panX + 'px, ' + panY + 'px) scale(' + zoom + ')';
+              }
+
+              viewport.addEventListener('wheel', function (event) {
+                event.preventDefault();
+                var next = zoom * (event.deltaY < 0 ? ZOOM_STEP : 1 / ZOOM_STEP);
+                next = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, next));
+                // Keep whatever sits under the pointer in place while the scale changes.
+                var centreX = window.innerWidth / 2, centreY = window.innerHeight / 2;
+                var ratio = next / zoom;
+                panX = (event.clientX - centreX) - ((event.clientX - centreX) - panX) * ratio;
+                panY = (event.clientY - centreY) - ((event.clientY - centreY) - panY) * ratio;
+                zoom = next;
+                applyView();
+              }, { passive: false });
+
+              viewport.addEventListener('mousedown', function (event) {
+                if (event.button !== 0) return;
+                dragging = true;
+                lastX = event.clientX; lastY = event.clientY;
+                viewport.classList.add('dragging');
+                event.preventDefault();
+              });
+
+              window.addEventListener('mousemove', function (event) {
+                if (!dragging) return;
+                panX += event.clientX - lastX;
+                panY += event.clientY - lastY;
+                lastX = event.clientX; lastY = event.clientY;
+                applyView();
+              });
+
+              window.addEventListener('mouseup', function () {
+                dragging = false;
+                viewport.classList.remove('dragging');
+              });
+
+              applyView();
+            })();
+
             window.$API_NAME = {
+              /**
+               * Applies the IDE colours, so the formula follows the current theme. Both arguments
+               * are CSS colors taken from the running theme by the host.
+               */
+              setTheme: function (foreground, background) {
+                document.documentElement.style.setProperty('--quarkdown-foreground', foreground);
+                document.documentElement.style.setProperty('--quarkdown-background', background);
+              },
               /**
                * Typesets [tex] into the page. [macros] is a JSON object of macro name to
                * replacement, [displayMode] selects block vs inline layout.
@@ -108,6 +190,18 @@ object QuarkdownLatexPreviewSource {
     fun renderCall(tex: String, macros: Map<String, String>, displayMode: Boolean): String =
         "$API_NAME.render(${gson.toJson(tex)}, ${gson.toJson(macros)}, $displayMode);"
 
+    /**
+     * The JavaScript call that switches the page to [foreground] / [background] (CSS colors).
+     *
+     * The page cannot know the IDE theme, and a formula typeset for the wrong one is barely
+     * readable — this is how the host keeps the text in the theme's own color. Values are
+     * JSON-encoded, so they cannot break out of the call either.
+     */
+    fun themeCall(foreground: String, background: String): String =
+        "$API_NAME.setTheme(${gson.toJson(foreground)}, ${gson.toJson(background)});"
+
+    /** [color] as the CSS `rgb(…)` literal the page's theme variables expect. */
+    fun cssColor(color: Color): String = "rgb(${color.red}, ${color.green}, ${color.blue})"
 
     /**
      * Every `.texmacro {name} {body}` declaration of [documentText], as the macro map KaTeX takes.

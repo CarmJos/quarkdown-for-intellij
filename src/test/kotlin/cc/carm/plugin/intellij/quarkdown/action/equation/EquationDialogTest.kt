@@ -1,11 +1,12 @@
 package cc.carm.plugin.intellij.quarkdown.action.equation
 
+import cc.carm.plugin.intellij.quarkdown.lang.latex.QuarkdownLatexFileType
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
+import com.intellij.ui.EditorTextField
 import java.awt.Component
 import java.awt.Container
 import java.awt.Dimension
 import javax.swing.JComponent
-import javax.swing.JTextArea
 
 /**
  * Layout regression tests for [EquationDialog].
@@ -19,6 +20,9 @@ import javax.swing.JTextArea
  *  1. the preview is given a bounded height, so a greedy browser cannot take the dialog;
  *  2. the body is built once, because [com.intellij.openapi.ui.DialogWrapper] may ask for the
  *     centre panel more than once and rebuilding it re-adds children to the same container.
+ *
+ * The input is an [EditorTextField] (a real editor with line numbers and TeX coloring), so the
+ * searches below look for that component rather than for a text area.
  */
 class EquationDialogTest : BasePlatformTestCase() {
 
@@ -36,8 +40,8 @@ class EquationDialogTest : BasePlatformTestCase() {
         return component
     }
 
-    private fun findContentArea(component: Component): JTextArea? {
-        if (component is JTextArea) return component
+    private fun findContentArea(component: Component): EditorTextField? {
+        if (component is EditorTextField) return component
         if (component is Container) {
             for (child in component.components) {
                 findContentArea(child)?.let { return it }
@@ -57,6 +61,21 @@ class EquationDialogTest : BasePlatformTestCase() {
             assertTrue(
                 "the content input must keep a usable height, height=${content.height}",
                 content.height >= 200,
+            )
+        } finally {
+            dialog.disposeForTest()
+        }
+    }
+
+    fun `test the content input is an editor for the TeX file type`() {
+        val dialog = EquationDialog(project, "\\frac{a}{b}", null)
+        try {
+            val content = findContentArea(dialog.buildPanelForTest())
+            assertNotNull("the dialog must contain the TeX content editor", content)
+            assertEquals(
+                "the input must be highlighted as TeX",
+                QuarkdownLatexFileType.INSTANCE,
+                content!!.fileType,
             )
         } finally {
             dialog.disposeForTest()

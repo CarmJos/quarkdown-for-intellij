@@ -43,7 +43,7 @@ enabling developers to write and edit Quarkdown documents with full IDE assistan
 
   </details>
 
-- **TeX Math Support** — LaTeX is tokenized and color-highlighted wherever it appears: in equations (`$ … $`, `$$ … $$` and `$$$ … $$$`) and in the content of `.math` / `.texmacro`. Structural mistakes such as unbalanced braces or mismatched `\begin` / `\end` are reported as you type, and the equation editor typesets your formula live using the KaTeX build that ships with Quarkdown — so there is no separate render step to wait for.
+- **TeX Math Support** — LaTeX is tokenized and color-highlighted wherever it appears: in equations (`$ … $`, `$$ … $$` and `$$$ … $$$`) and in the content of `.math` / `.texmacro`. Structural mistakes such as unbalanced braces or mismatched `\begin` / `\end` are reported as you type, and the equation editor typesets your formula live using the KaTeX build that ships with Quarkdown — so there is no separate render step to wait for. Its input is a real editor (line numbers, the same TeX colors), and the live preview follows the IDE theme, zooms with the mouse wheel and pans by dragging.
 
 - **Smart Code Completion** — As you type, get instant suggestions for functions, parameters, and file paths, together with documentation tooltips and parameter hints so you can write faster and more accurately.
 

@@ -7,6 +7,13 @@
 
 ## [Unreleased]
 
+- `feat(latex)` the equation editor's TeX input is a real editor with line numbers and TeX coloring
+    - The input was a plain text area; it is now an `EditorTextField` on a `QuarkdownLaTeX` language, so it gets line numbers, soft wraps, the IDE's editor font and the **same** colors the document shows for the same formula — both go through `QuarkdownLatexSyntax` / `QuarkdownLatexHighlighting`, so the two can never drift apart.
+    - The input and the preview each carry a border, so the two panes read as separate areas.
+- `feat(latex)` the formula preview follows the IDE theme, zooms with the wheel and pans by dragging
+    - The page typeset the formula in a fixed black on a transparent background, which is unreadable on the dark theme: the text and background colors now come from the running theme and are re-applied on every update, so switching the theme is picked up instead of leaving the formula in the previous color.
+    - The wheel zooms around the pointer (0.2×–8×) and dragging with the left button pans; both are CSS transforms on the formula itself, so they need no re-render and stay smooth.
+
 - `fix(latex)` the equation editor no longer loses its TeX input field
     - The preview is an embedded browser, whose component requests **800×600**; placed in the dialog without a bound it took the whole 540 px panel and left the input area with a *negative* height, so the input looked missing. The preview now has a bounded height (and the input a minimum), and extra space goes to the input when the dialog is enlarged.
     - The dialog body is also built once: `DialogWrapper` may ask for the centre panel more than once, and rebuilding it re-adds the same children to the same container.

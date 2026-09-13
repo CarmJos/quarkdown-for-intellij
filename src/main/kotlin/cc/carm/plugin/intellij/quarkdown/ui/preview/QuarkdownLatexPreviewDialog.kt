@@ -5,6 +5,7 @@ import cc.carm.plugin.intellij.quarkdown.lang.latex.QuarkdownLatexPreviewSource
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
+import com.intellij.ui.JBColor
 import com.intellij.util.ui.JBUI
 import javax.swing.Action
 import javax.swing.JComponent
@@ -36,6 +37,8 @@ class QuarkdownLatexPreviewDialog private constructor(
     override fun createCenterPanel(): JComponent = JPanel().apply {
         layout = java.awt.BorderLayout()
         preferredSize = JBUI.size(PREVIEW_WIDTH, PREVIEW_HEIGHT)
+        // A border separates the typeset formula from the dialog, whose background the page shares.
+        border = JBUI.Borders.customLine(JBColor.border(), 1)
         add(view.component, java.awt.BorderLayout.CENTER)
     }
 

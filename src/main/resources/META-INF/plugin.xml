@@ -130,6 +130,13 @@
                 language="Quarkdown"
                 implementationClass="cc.carm.plugin.intellij.quarkdown.lang.highlighter.QuarkdownSyntaxHighlighterFactory"/>
 
+        <!-- Syntax highlighting of a *bare* TeX fragment, i.e. of the equation editor's input
+             field. Equations inside a document are colored by QuarkdownLatexAnnotator instead;
+             both share the same tokenizer and color keys, so a formula looks the same in both. -->
+        <lang.syntaxHighlighterFactory
+                language="QuarkdownLaTeX"
+                implementationClass="cc.carm.plugin.intellij.quarkdown.lang.latex.QuarkdownLatexSyntaxHighlighterFactory"/>
+
         <!-- Color settings page -->
         <colorSettingsPage
                 implementation="cc.carm.plugin.intellij.quarkdown.lang.highlighter.QuarkdownColorSettingsPage"/>

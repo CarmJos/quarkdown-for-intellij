@@ -6,6 +6,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.awt.Color
 import java.io.File
 import java.nio.file.Files
 
@@ -91,6 +92,46 @@ class QuarkdownLatexPreviewSourceTest {
         assertTrue("the stylesheet must be referenced", html.contains("lib/katex/katex.min.css"))
         assertTrue("the API must be exposed", html.contains("window.${QuarkdownLatexPreviewSource.API_NAME}"))
         assertTrue("KaTeX must be called with macros", html.contains("macros: macros"))
+    }
+
+    @Test
+    fun `the page takes its colors from the theme`() {
+        val html = QuarkdownLatexPreviewSource.pageHtml("lib/katex/katex.min.js", "lib/katex/katex.min.css")
+        assertTrue("the host must be able to set the theme", html.contains("setTheme: function"))
+        assertTrue(
+            "the text must use the theme foreground",
+            html.contains("var(--quarkdown-foreground"),
+        )
+        assertTrue(
+            "the background must use the theme background",
+            html.contains("var(--quarkdown-background"),
+        )
+    }
+
+    @Test
+    fun `the page zooms with the wheel and pans by dragging`() {
+        val html = QuarkdownLatexPreviewSource.pageHtml("lib/katex/katex.min.js", "lib/katex/katex.min.css")
+        assertTrue("the wheel must zoom", html.contains("addEventListener('wheel'"))
+        assertTrue("the left button must start a drag", html.contains("addEventListener('mousedown'"))
+        assertTrue("moving the mouse must pan", html.contains("addEventListener('mousemove'"))
+        assertTrue("the drag must end on mouse up", html.contains("addEventListener('mouseup'"))
+        assertTrue("the view must be a CSS transform", html.contains("output.style.transform"))
+    }
+
+    @Test
+    fun `the theme call passes both colors`() {
+        val call = QuarkdownLatexPreviewSource.themeCall("rgb(1, 2, 3)", "rgb(4, 5, 6)")
+        assertTrue(
+            "the call must target the page API",
+            call.startsWith("${QuarkdownLatexPreviewSource.API_NAME}.setTheme("),
+        )
+        assertTrue("the foreground must be JSON-encoded", call.contains("\"rgb(1, 2, 3)\""))
+        assertTrue("the background must be JSON-encoded", call.contains("\"rgb(4, 5, 6)\""))
+    }
+
+    @Test
+    fun `a color becomes a CSS rgb literal`() {
+        assertEquals("rgb(10, 20, 30)", QuarkdownLatexPreviewSource.cssColor(Color(10, 20, 30)))
     }
 
     @Test
