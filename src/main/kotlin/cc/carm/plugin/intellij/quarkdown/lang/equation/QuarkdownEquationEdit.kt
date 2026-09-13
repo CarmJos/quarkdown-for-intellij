@@ -103,9 +103,19 @@ object QuarkdownEquationEdit {
      * Renders the occurrence text to write back into the document.
      *
      *  - [Form.DOLLAR] with [fence] produces a `$$$` block, otherwise a `$ … $` equation.
-     *  - [Form.MATH] produces a `.math` call; a multi-line content becomes an indented body.
+     *  - [Form.MATH] produces a `.math` call; a multi-line content becomes an indented body,
+     *    formatted with the `ref:` on the header line and the expression below it:
+     *
+     *    ```
+     *    .math ref:{energy}
+     *          \begin{aligned} … \end{aligned}
+     *    ```
+     *
      *  - [indent] is applied only for a standalone occurrence, so an inline equation stays
      *    inline and never gains stray whitespace.
+     *
+     * Note the `ref:` has **no space** before its brace. Quarkdown accepts `ref:{id}` but silently
+     * produces an *empty* formula for `ref: {id}`, which was verified against the CLI.
      */
     fun render(
         form: Form,
@@ -216,8 +226,15 @@ object QuarkdownEquationEdit {
         return lines.joinToString("\n") { line -> line.drop(common.coerceAtMost(line.length)) }
     }
 
-    /** Indents every non-blank line so the result is a valid body argument. */
+    /** Indents every non-blank line so the result is a valid body argument.
+     *
+     * Quarkdown requires at least two spaces of indentation; [BODY_INDENT] uses six so the body
+     * lines up under the call's arguments (`.math ` is six characters wide), which keeps long
+     * formulas visually grouped with their `.math` header.
+     */
     private fun indentBlock(content: String): String =
-        content.lines().joinToString("\n") { if (it.isBlank()) it else "    $it" }
-}
+        content.lines().joinToString("\n") { if (it.isBlank()) it else BODY_INDENT + it }
 
+    /** Indentation of a multi-line `.math` body (see [indentBlock]). */
+    private const val BODY_INDENT = "      "
+}

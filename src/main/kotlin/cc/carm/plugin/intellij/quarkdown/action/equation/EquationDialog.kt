@@ -97,6 +97,16 @@ class EquationDialog(
 
     private val rootPanel = JPanel(BorderLayout())
 
+    /**
+     * The centre panel, built **once**.
+     *
+     * Building it per call is not safe: [DialogWrapper] may ask for the panel more than once, and
+     * every rebuild re-adds the same children (the content area, the preview component, the id row)
+     * to the same container. That orphans the previous layout and leaves degenerate bounds — the
+     * content area ended up **negative** in height, which is how the input field disappeared.
+     */
+    private val centerPanel: JComponent by lazy { buildCenterPanel() }
+
     init {
         title = QuarkdownBundle.message(
             if (inserting) "quarkdown.dialog.equation.insert.title" else "quarkdown.dialog.equation.title"
@@ -163,6 +173,11 @@ class EquationDialog(
     }
 
     override fun createCenterPanel(): JComponent {
+        return centerPanel
+    }
+
+    /** Builds the dialog body: form selector, preview, TeX input and the id row. */
+    private fun buildCenterPanel(): JComponent {
         rootPanel.preferredSize = JBUI.size(DIALOG_WIDTH, DIALOG_HEIGHT)
 
         val formRow = JPanel(FlowLayout(FlowLayout.LEFT, JBUI.scale(6), JBUI.scale(4))).apply {
@@ -175,12 +190,28 @@ class EquationDialog(
             add(JBLabel(QuarkdownBundle.message("quarkdown.dialog.equation.content")).apply {
                 border = JBUI.Borders.empty(2, 0)
             }, BorderLayout.NORTH)
-            add(JBScrollPane(contentArea).apply { border = JBUI.Borders.empty() }, BorderLayout.CENTER)
+            add(
+                JBScrollPane(contentArea).apply {
+                    border = JBUI.Borders.empty()
+                    // The input must never be squeezed out of view by the preview above it.
+                    minimumSize = JBUI.size(0, JBUI.scale(CONTENT_MIN_HEIGHT))
+                },
+                BorderLayout.CENTER,
+            )
         }
 
-        // The preview sits above the input so it stays visible while typing.
+        // The preview sits above the input so it stays visible while typing, but it needs a
+        // *bounded* height: an embedded browser component asks for a lot of space, and in
+        // BorderLayout.NORTH it would otherwise take the whole dialog and push the content area
+        // out of view. The dialog can still be enlarged: extra space goes to the content area.
+        val previewPanel = JPanel(BorderLayout()).apply {
+            preferredSize = JBUI.size(PREVIEW_WIDTH, PREVIEW_HEIGHT)
+            minimumSize = JBUI.size(0, JBUI.scale(PREVIEW_MIN_HEIGHT))
+            add(previewView.component, BorderLayout.CENTER)
+        }
+
         val upper = JPanel(BorderLayout()).apply {
-            add(previewView.component, BorderLayout.NORTH)
+            add(previewPanel, BorderLayout.NORTH)
             add(contentPanel, BorderLayout.CENTER)
         }
 
@@ -212,7 +243,18 @@ class EquationDialog(
     internal fun isIdVisibleForTest(): Boolean = idRow.isVisible
 
     /** Renders the dialog body once, for tests that cannot show a dialog. */
-    internal fun buildPanelForTest(): JComponent = createCenterPanel()
+    internal fun buildPanelForTest(): JComponent = centerPanel
+
+    /**
+     * The component that hosts the typeset preview, for tests.
+     *
+     * It is exposed so a test can emulate the embedded browser's appetite (JCEF asks for 800×600)
+     * and assert that the TeX input still keeps a usable height.
+     */
+    internal fun previewComponentForTest(): JComponent = previewView.component
+
+    /** Releases the dialog's resources without showing it, for tests. */
+    internal fun disposeForTest() = dispose()
 
     private enum class FormChoice(private val labelKey: String) {
         DOLLAR("quarkdown.dialog.equation.form.dollar"),
@@ -227,6 +269,9 @@ class EquationDialog(
         const val FONT_SIZE = 13
         const val DIALOG_WIDTH = 700
         const val DIALOG_HEIGHT = 540
+        const val CONTENT_MIN_HEIGHT = 100
+        const val PREVIEW_WIDTH = 300
+        const val PREVIEW_HEIGHT = 200
+        const val PREVIEW_MIN_HEIGHT = 100
     }
 }
-

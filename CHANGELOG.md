@@ -7,6 +7,13 @@
 
 ## [Unreleased]
 
+- `fix(latex)` the equation editor no longer loses its TeX input field
+    - The preview is an embedded browser, whose component requests **800×600**; placed in the dialog without a bound it took the whole 540 px panel and left the input area with a *negative* height, so the input looked missing. The preview now has a bounded height (and the input a minimum), and extra space goes to the input when the dialog is enlarged.
+    - The dialog body is also built once: `DialogWrapper` may ask for the centre panel more than once, and rebuilding it re-adds the same children to the same container.
+    - Covered by layout tests, including one that emulates the browser's 800×600 appetite so the regression is caught even without JCEF; removing the bound makes it fail.
+- `refactor(latex)` format multi-line `.math` conversions with the id on the header line
+    - A multi-line expression now converts to `.math ref:{id}` followed by the body indented six spaces, aligning it under the call's arguments.
+    - The `ref:` keeps no space before its brace: Quarkdown accepts `ref:{id}` but silently renders an **empty** formula for `ref: {id}`, which was verified against the CLI and is pinned by a test.
 - `refactor(latex)` typeset the preview with the KaTeX build from the Quarkdown installation instead of the CLI
     - The previous preview compiled a throwaway document with the CLI, which took seconds per render (the CLI boots a JVM) and needed process sequencing to avoid piling up runs.
     - The renderer that Quarkdown itself uses ships inside the installation (`lib/html/lib/katex/`: script, stylesheet and web fonts), so it is served over a loopback port and driven by a single JavaScript call per update — a preview now takes milliseconds, with no CLI and nothing bundled in the plugin.

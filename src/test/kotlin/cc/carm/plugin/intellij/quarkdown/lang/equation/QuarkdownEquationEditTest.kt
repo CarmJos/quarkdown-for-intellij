@@ -145,8 +145,10 @@ class QuarkdownEquationEditTest {
 
     @Test
     fun `renders a multi-line math call as an indented body`() {
+        // The body is aligned under the call's arguments, matching the documented `ref:`-style
+        // formatting for multi-line content.
         assertEquals(
-            ".math ref:{e}\n    x = 1\n    \\begin{cases}\n    0\n    \\end{cases}",
+            ".math ref:{e}\n      x = 1\n      \\begin{cases}\n      0\n      \\end{cases}",
             QuarkdownEquationEdit.render(
                 Form.MATH,
                 "x = 1\n\\begin{cases}\n0\n\\end{cases}",
@@ -232,5 +234,21 @@ class QuarkdownEquationEditTest {
         assertEquals("a\n  b", occurrence.content)
         // This sample's fence is not indented, so there is no indentation to preserve.
         assertEquals("", occurrence.indent)
+    }
+
+    @Test
+    fun `a multi-line conversion keeps the ref on the header line without a space`() {
+        // Quarkdown accepts `ref:{id}` but silently renders nothing for `ref: {id}`, so the
+        // renderer must never introduce that space (verified against the CLI).
+        val rendered = QuarkdownEquationEdit.render(
+            Form.MATH,
+            "a\nb",
+            "energy",
+            fence = false,
+            indent = "",
+            standalone = true,
+        )
+        assertEquals(".math ref:{energy}\n      a\n      b", rendered)
+        assertFalse("a spaced ref: breaks Quarkdown silently", rendered.contains("ref: "))
     }
 }
