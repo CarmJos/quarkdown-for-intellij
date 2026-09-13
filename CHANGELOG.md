@@ -7,6 +7,9 @@
 
 ## [Unreleased]
 
+- `fix(latex)` dispose the formula preview with its dialog instead of leaking it
+    - `QuarkdownLatexPreviewView` registers the loopback asset server and the embedded browser as its own children, which puts the view itself into the Disposer tree. Nothing then disposed it *through* the Disposer — both dialogs called `view.dispose()` directly — so the IDE reported `Memory leak detected: … QuarkdownLatexPreviewView … was registered in Disposer as a child of 'ROOT_DISPOSABLE' but wasn't disposed` when it exited.
+    - The view now takes its owner (the dialog's disposable) as a constructor argument and is released with `Disposer.dispose(...)`, so the browser and the asset server go with the dialog. A regression test asserts the view is disposed when the dialog is, and fails without the fix.
 - `fix(build)` make the plugin verification pass again by dropping Kotlin's generated interface bridges
     - Kotlin's default JVM-default mode generates a **bridge method** in every implementing class for each member a Kotlin interface implements by default. The platform's `ToolWindowFactory` implements `manage`, `anchor` and `icon` as `@ApiStatus.Internal` (and `isApplicable` / `isDoNotActivateOnStart` as deprecated), so the bridges compiled into the tool window factory were reported as internal API usages and failed the `verify` job — for code the plugin never wrote.
     - Compiling with `jvmDefault = NO_COMPATIBILITY` emits plain JVM default methods without `DefaultImpls` or bridges, so the verifier now sees only what the plugin actually calls: the report went from "4 deprecated + 6 internal" usages to none, and `verifyPlugin` succeeds.

@@ -38,8 +38,24 @@ import javax.swing.SwingConstants
  *
  *  - JCEF, which is an optional dependency of this plugin;
  *  - the KaTeX assets, when the configured Quarkdown home does not contain them.
+ *
+ * The view owns two resources — the loopback asset server and the embedded browser — and registers
+ * both as its own children, which puts the view itself into the Disposer tree. It therefore takes
+ * the disposable that outlives it (the owning dialog) in its constructor: a view that is never
+ * disposed through the Disposer is reported by the IDE as a memory leak when it exits.
  */
-class QuarkdownLatexPreviewView(private val project: Project) : Disposable {
+class QuarkdownLatexPreviewView(
+    private val project: Project,
+    /**
+     * Owner of this view. The view is registered as its child before any of its own children are
+     * created, so the whole subtree is disposed with the owner.
+     */
+    parentDisposable: Disposable,
+) : Disposable {
+
+    init {
+        Disposer.register(parentDisposable, this)
+    }
 
     private val logger = Logger.getInstance(QuarkdownLatexPreviewView::class.java)
 

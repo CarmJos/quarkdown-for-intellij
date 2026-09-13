@@ -1,6 +1,7 @@
 package cc.carm.plugin.intellij.quarkdown.action.equation
 
 import cc.carm.plugin.intellij.quarkdown.lang.latex.QuarkdownLatexFileType
+import com.intellij.openapi.util.Disposer
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import com.intellij.ui.EditorTextField
 import java.awt.Component
@@ -101,6 +102,22 @@ class EquationDialogTest : BasePlatformTestCase() {
         } finally {
             dialog.disposeForTest()
         }
+    }
+
+    fun `test disposing the dialog disposes the preview view`() {
+        val dialog = EquationDialog(project, "", null)
+        val view = dialog.previewViewForTest()
+        assertFalse("the view must be alive while its dialog is", Disposer.isDisposed(view))
+
+        dialog.disposeForTest()
+
+        // The view owns the embedded browser and the loopback asset server, and registering them
+        // puts the view itself into the Disposer tree: if it is not disposed through the Disposer it
+        // stays a child of ROOT_DISPOSABLE and the IDE reports a memory leak when it exits.
+        assertTrue(
+            "the preview view must be disposed together with the dialog",
+            Disposer.isDisposed(view),
+        )
     }
 
     fun `test asking for the panel twice keeps the layout intact`() {

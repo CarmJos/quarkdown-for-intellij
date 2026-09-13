@@ -11,6 +11,7 @@ import com.intellij.openapi.editor.event.DocumentEvent as EditorDocumentEvent
 import com.intellij.openapi.editor.event.DocumentListener as EditorDocumentListener
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
+import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.text.StringUtil
 import com.intellij.ui.DocumentAdapter
 import com.intellij.ui.EditorTextField
@@ -119,7 +120,7 @@ class EquationDialog(
         add(idField)
     }
 
-    private val previewView = QuarkdownLatexPreviewView(project)
+    private val previewView = QuarkdownLatexPreviewView(project, disposable)
 
     /** The document's `.texmacro` declarations, used to resolve custom commands in the preview. */
     private val macros: Map<String, String> by lazy { QuarkdownLatexPreviewSource.macros(documentText) }
@@ -253,7 +254,9 @@ class EquationDialog(
     }
 
     override fun dispose() {
-        previewView.dispose()
+        // The view is a child of the dialog's disposable, so the platform disposes it (and the
+        // embedded browser it owns) first; this covers the paths that dispose the dialog directly.
+        Disposer.dispose(previewView)
         super.dispose()
     }
 
@@ -283,6 +286,14 @@ class EquationDialog(
      * and assert that the TeX input still keeps a usable height.
      */
     internal fun previewComponentForTest(): JComponent = previewView.component
+
+    /**
+     * The view that owns the embedded browser and the asset server, for tests.
+     *
+     * Exposed so a test can assert it is disposed together with the dialog — it is registered as a
+     * child of the dialog's disposable, and a view left undisposed is reported as a memory leak.
+     */
+    internal fun previewViewForTest(): QuarkdownLatexPreviewView = previewView
 
     /** Releases the dialog's resources without showing it, for tests. */
     internal fun disposeForTest() = dispose()

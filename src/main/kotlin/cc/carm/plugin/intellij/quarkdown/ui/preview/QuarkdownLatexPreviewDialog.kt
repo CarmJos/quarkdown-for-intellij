@@ -5,6 +5,7 @@ import cc.carm.plugin.intellij.quarkdown.lang.latex.QuarkdownLatexPreviewSource
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
+import com.intellij.openapi.util.Disposer
 import com.intellij.ui.JBColor
 import com.intellij.util.ui.JBUI
 import javax.swing.Action
@@ -25,7 +26,7 @@ class QuarkdownLatexPreviewDialog private constructor(
     displayMode: Boolean,
 ) : DialogWrapper(project) {
 
-    private val view = QuarkdownLatexPreviewView(project)
+    private val view = QuarkdownLatexPreviewView(project, disposable)
 
     init {
         title = QuarkdownBundle.message("quarkdown.math.preview.title")
@@ -46,7 +47,9 @@ class QuarkdownLatexPreviewDialog private constructor(
     override fun createActions(): Array<Action> = arrayOf(cancelAction)
 
     override fun dispose() {
-        view.dispose()
+        // The view is a child of the dialog's disposable, so the platform disposes it (and the
+        // embedded browser it owns) first; this covers the paths that dispose the dialog directly.
+        Disposer.dispose(view)
         super.dispose()
     }
 
