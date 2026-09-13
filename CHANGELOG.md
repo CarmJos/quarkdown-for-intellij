@@ -7,6 +7,11 @@
 
 ## [Unreleased]
 
+- `feat(latex)` syntax highlighting and structural checks for TeX content in equations
+    - The LaTeX inside `$ … $`, `$$ … $$` and `$$$ … $$$` equations is tokenized and colored (commands, environments, braces, `^`/`_`, `#1` parameters, numbers, operators, `%` comments); the colors are customizable under *Editor | Color Scheme | Quarkdown*.
+    - Structural mistakes are reported while typing: unbalanced braces, `\begin` / `\end` that do not pair up, empty environment names, dangling commands and unclosed equation delimiters.
+    - Delimiter detection follows the Quarkdown wiki exactly — both `$` must touch whitespace — so prose such as `it costs $5 and $10` is never mistaken for math, and code blocks are excluded.
+    - Command names are intentionally not validated: TeX ships thousands of primitives, KaTeX implements a subset, and `.texmacro` can define more, so an "unknown command" check would be mostly false positives.
 - `feat(preview)` auto-open the preview in the configured browser once the server is ready
     - Controlled by the new "Auto-open in browser" preview setting; only triggers when a browser path is configured.
 - `feat(preview)` optional "do not use the built-in preview browser" mode

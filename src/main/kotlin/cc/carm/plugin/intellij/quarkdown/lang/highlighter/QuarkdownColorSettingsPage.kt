@@ -2,6 +2,7 @@ package cc.carm.plugin.intellij.quarkdown.lang.highlighter
 
 import cc.carm.plugin.intellij.quarkdown.QuarkdownBundle
 import cc.carm.plugin.intellij.quarkdown.QuarkdownIcons
+import cc.carm.plugin.intellij.quarkdown.lang.latex.QuarkdownLatexHighlighting
 import com.intellij.openapi.editor.colors.TextAttributesKey
 import com.intellij.openapi.fileTypes.SyntaxHighlighter
 import com.intellij.openapi.options.colors.AttributesDescriptor
@@ -16,7 +17,12 @@ class QuarkdownColorSettingsPage : ColorSettingsPage {
     override fun getIcon(): Icon = QuarkdownIcons.FILE
     override fun getHighlighter(): SyntaxHighlighter = QuarkdownSyntaxHighlighter()
     override fun getDemoText(): String = DEMO_TEXT
-    override fun getAdditionalHighlightingTagToDescriptorMap(): Map<String, TextAttributesKey>? = null
+
+    /**
+     * LaTeX inside equations is colored by `QuarkdownLatexAnnotator`, not by the Quarkdown
+     * lexer the demo text is run through, so the demo relies on tags to preview those colors.
+     */
+    override fun getAdditionalHighlightingTagToDescriptorMap(): Map<String, TextAttributesKey> = DEMO_TAGS
     override fun getAttributeDescriptors(): Array<AttributesDescriptor> = descriptors
     override fun getColorDescriptors(): Array<ColorDescriptor> = ColorDescriptor.EMPTY_ARRAY
     override fun getDisplayName(): String = QuarkdownBundle.message("quarkdown.settings.name")
@@ -80,6 +86,18 @@ class QuarkdownColorSettingsPage : ColorSettingsPage {
             attr("quarkdown.color.attr.escape", QuarkdownSyntaxHighlighter.ESCAPE),
 
             attr("quarkdown.color.attr.plain.text", QuarkdownSyntaxHighlighter.TEXT),
+
+            attr("quarkdown.color.attr.latex.command", QuarkdownLatexHighlighting.COMMAND),
+            attr("quarkdown.color.attr.latex.environment", QuarkdownLatexHighlighting.ENVIRONMENT),
+            attr("quarkdown.color.attr.latex.brace", QuarkdownLatexHighlighting.BRACE),
+            attr("quarkdown.color.attr.latex.bracket", QuarkdownLatexHighlighting.BRACKET),
+            attr("quarkdown.color.attr.latex.superscript", QuarkdownLatexHighlighting.SUPERSCRIPT),
+            attr("quarkdown.color.attr.latex.subscript", QuarkdownLatexHighlighting.SUBSCRIPT),
+            attr("quarkdown.color.attr.latex.parameter", QuarkdownLatexHighlighting.PARAMETER),
+            attr("quarkdown.color.attr.latex.number", QuarkdownLatexHighlighting.NUMBER),
+            attr("quarkdown.color.attr.latex.operator", QuarkdownLatexHighlighting.OPERATOR),
+            attr("quarkdown.color.attr.latex.comment", QuarkdownLatexHighlighting.COMMENT),
+            attr("quarkdown.color.attr.latex.text", QuarkdownLatexHighlighting.TEXT),
         )
 
         private val DEMO_TEXT = buildString {
@@ -127,6 +145,35 @@ class QuarkdownColorSettingsPage : ColorSettingsPage {
             appendLine("<!-- This is a comment -->")
             appendLine()
             appendLine("Escape characters: \\* \\` \\[")
+            appendLine()
+            appendLine("Equations (LaTeX content is highlighted):")
+            appendLine()
+            appendLine("Let \$ <latexCmd>\\overline</latexCmd> <latexText>v</latexText> = <latexCmd>\\frac</latexCmd> <latexBrace>{</latexBrace><latexCmd>\\Delta</latexCmd> <latexText>x</latexText><latexBrace>}</latexBrace> <latexBrace>{</latexBrace><latexCmd>\\Delta</latexCmd> <latexText>t</latexText><latexBrace>}</latexBrace> \$ be the average velocity.")
+            appendLine()
+            appendLine("Let <latexText>cost</latexText> \$ be literal: no equation without whitespace-delimited delimiters.")
+            appendLine()
+            appendLine("$$$")
+            appendLine("<latexText>x</latexText><latexSup>^</latexSup><latexNum>2</latexNum> <latexOp>+</latexOp> <latexText>y</latexText><latexSub>_</latexSub><latexNum>1</latexNum> <latexComment>% a TeX comment</latexComment>")
+            appendLine("<latexEnv>\\begin{matrix}</latexEnv> <latexText>a</latexText> <latexOp>&amp;</latexOp> <latexText>b</latexText> <latexEnv>\\end{matrix}</latexEnv>")
+            appendLine("$$$")
         }
+
+        /**
+         * Demo-only tags for the colors applied by `QuarkdownLatexAnnotator`: the demo text is
+         * run through the Quarkdown lexer, which sees equation content as plain text.
+         */
+        private val DEMO_TAGS = mapOf(
+            "latexCmd" to QuarkdownLatexHighlighting.COMMAND,
+            "latexEnv" to QuarkdownLatexHighlighting.ENVIRONMENT,
+            "latexBrace" to QuarkdownLatexHighlighting.BRACE,
+            "latexBracket" to QuarkdownLatexHighlighting.BRACKET,
+            "latexSup" to QuarkdownLatexHighlighting.SUPERSCRIPT,
+            "latexSub" to QuarkdownLatexHighlighting.SUBSCRIPT,
+            "latexParam" to QuarkdownLatexHighlighting.PARAMETER,
+            "latexNum" to QuarkdownLatexHighlighting.NUMBER,
+            "latexOp" to QuarkdownLatexHighlighting.OPERATOR,
+            "latexComment" to QuarkdownLatexHighlighting.COMMENT,
+            "latexText" to QuarkdownLatexHighlighting.TEXT,
+        )
     }
 }

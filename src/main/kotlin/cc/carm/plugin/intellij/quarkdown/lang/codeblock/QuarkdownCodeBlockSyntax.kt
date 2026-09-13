@@ -145,12 +145,30 @@ object QuarkdownCodeBlockSyntax {
 
     /**
      * Returns the absolute line-start offsets of every *opening* fenced code block fence
-     * in [text]. A single linear scan pairs each opening fence with the next same-char
-     * fence (``` or ~~~), exactly like the folding builder, so closing fences never
-     * produce an entry.
+     * in [text]. Derived from [findFenceRanges] so the opening/closing pairing lives in a
+     * single place; closing fences never produce an entry.
      */
-    fun findFenceOpenOffsets(text: CharSequence): Set<Int> {
-        val result = mutableSetOf<Int>()
+    fun findFenceOpenOffsets(text: CharSequence): Set<Int> =
+        findFenceRanges(text).mapTo(mutableSetOf()) { it.first }
+
+    /** Number of consecutive [c] characters starting at [pos]. */
+    private fun countFence(text: CharSequence, pos: Int, c: Char): Int {
+        var count = 0
+        while (pos + count < text.length && text[pos + count] == c) count++
+        return count
+    }
+
+    /**
+     * Returns the `[start, end)` ranges of every fenced code block in [text], where
+     * `start` is the beginning of the opening fence line and `end` the end of the closing
+     * fence line (`\n` included). An opening fence is paired with the next fence of the
+     * same character (``` or ~~~), which is the pairing [findFenceOpenOffsets] consumes.
+     *
+     * Used to exclude raw code from constructs that must not be interpreted inside code
+     * blocks (e.g. equation delimiters).
+     */
+    fun findFenceRanges(text: CharSequence): List<IntRange> {
+        val ranges = mutableListOf<IntRange>()
         var i = 0
         var fenceStart = -1
         var fenceChar = '`'
@@ -162,19 +180,22 @@ object QuarkdownCodeBlockSyntax {
                 val contentPos = i + spaces
                 if (contentPos < text.length) {
                     val c = text[contentPos]
-                    // Any line whose first non-space char is ``` or ~~~ (3+) is a fence
-                    // line. A language identifier may follow the fence (```python), so no
-                    // whitespace check is applied after the delimiter run.
                     if ((c == '`' || c == '~') && fenceStart < 0) {
+                        // Any line whose first non-space char is ``` or ~~~ (3+) is a fence
+                        // line. A language identifier may follow the fence (```python), so
+                        // no whitespace check is applied after the delimiter run.
                         val count = countFence(text, contentPos, c)
                         if (count >= 3) {
                             fenceStart = i
                             fenceChar = c
                         }
-                    } else if (c == fenceChar && fenceStart >= 0) {
+                    } else if (c == fenceChar) {
                         val count = countFence(text, contentPos, c)
                         if (count >= 3) {
-                            result.add(fenceStart)
+                            var lineEnd = contentPos + count
+                            while (lineEnd < text.length && text[lineEnd] != '\n') lineEnd++
+                            if (lineEnd < text.length) lineEnd++ // include the newline
+                            ranges.add(fenceStart until lineEnd)
                             fenceStart = -1
                         }
                     }
@@ -182,12 +203,6 @@ object QuarkdownCodeBlockSyntax {
             }
             i++
         }
-        return result
-    }
-
-    private fun countFence(text: CharSequence, pos: Int, c: Char): Int {
-        var count = 0
-        while (pos + count < text.length && text[pos + count] == c) count++
-        return count
+        return ranges
     }
 }

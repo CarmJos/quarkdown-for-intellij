@@ -43,6 +43,8 @@ enabling developers to write and edit Quarkdown documents with full IDE assistan
 
   </details>
 
+- **TeX Math Support** — LaTeX inside equations (`$ … $`, `$$ … $$` and `$$$ … $$$`) is tokenized and color-highlighted, and structural mistakes such as unbalanced braces or mismatched `\begin` / `\end` are reported as you type.
+
 - **Smart Code Completion** — As you type, get instant suggestions for functions, parameters, and file paths, together with documentation tooltips and parameter hints so you can write faster and more accurately.
 
   <details>
