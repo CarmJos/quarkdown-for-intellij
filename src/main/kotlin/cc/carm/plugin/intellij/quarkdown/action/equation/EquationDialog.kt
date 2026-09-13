@@ -2,8 +2,8 @@ package cc.carm.plugin.intellij.quarkdown.action.equation
 
 import cc.carm.plugin.intellij.quarkdown.QuarkdownBundle
 import cc.carm.plugin.intellij.quarkdown.lang.equation.QuarkdownEquationEdit
-import cc.carm.plugin.intellij.quarkdown.lang.latex.QuarkdownFormulaPreviewSource
-import cc.carm.plugin.intellij.quarkdown.ui.preview.QuarkdownFormulaPreviewPane
+import cc.carm.plugin.intellij.quarkdown.lang.latex.QuarkdownLatexPreviewSource
+import cc.carm.plugin.intellij.quarkdown.ui.preview.QuarkdownLatexPreviewView
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.ui.DocumentAdapter
@@ -26,21 +26,21 @@ import javax.swing.event.DocumentEvent
  *
  * ```
  * ┌ Form:  [ $ … $ ▾ ]──────────────────────┐
- * │ ┌ preview (live, debounced) ──────────┐ │
- * │ └─────────────────────────────────────┘ │
- * │ ┌ TeX content ────────────────────────┐ │
- * │ │ \begin{aligned} …                   │ │
- * │ └─────────────────────────────────────┘ │
- * │ ID: [ … ]                               │
- * └─────────────────────────────────────────┘
+ * │ ┌ preview (typeset as you type) ────────┐ │
+ * │ └───────────────────────────────────────┘ │
+ * │ ┌ TeX content ──────────────────────────┐ │
+ * │ │ \begin{aligned} …                     │ │
+ * │ └───────────────────────────────────────┘ │
+ * │ ID: [ … ]                                 │
+ * └───────────────────────────────────────────┘
  * ```
  *
  * Behaviour worth noting:
  *
  *  - the **content** is pre-filled from the equation (it used to come up empty) and is a
  *    multi-line area, because TeX expressions are routinely several lines long;
- *  - the **preview** re-renders as you type, debounced by the pane so the CLI is not started on
- *    every keystroke;
+ *  - the **preview** typesets the content with the KaTeX build from the Quarkdown installation, so
+ *    it updates as you type without any compile step;
  *  - the **form** can be switched between `$ … $` and `.math`, which is the conversion needed
  *    when one syntax has to be used instead of the other;
  *  - the **id** field is offered where an id makes sense: always for `.math` (written as
@@ -90,7 +90,10 @@ class EquationDialog(
         add(idField)
     }
 
-    private val previewPane = QuarkdownFormulaPreviewPane(project)
+    private val previewView = QuarkdownLatexPreviewView(project)
+
+    /** The document's `.texmacro` declarations, used to resolve custom commands in the preview. */
+    private val macros: Map<String, String> by lazy { QuarkdownLatexPreviewSource.macros(documentText) }
 
     private val rootPanel = JPanel(BorderLayout())
 
@@ -149,8 +152,14 @@ class EquationDialog(
     )
 
     private fun updatePreview() {
-        val formula = buildText()
-        previewPane.render(if (formula.isBlank()) "" else QuarkdownFormulaPreviewSource.wrap(documentText, formula))
+        // The preview typesets the TeX content directly (no `.math` / `$` wrapper): KaTeX is the
+        // renderer Quarkdown itself uses, and the wrapper carries no TeX meaning of its own.
+        val content = contentArea.text.trim()
+        previewView.render(
+            tex = content,
+            macros = macros,
+            displayMode = QuarkdownLatexPreviewSource.displayMode(content, fence),
+        )
     }
 
     override fun createCenterPanel(): JComponent {
@@ -171,7 +180,7 @@ class EquationDialog(
 
         // The preview sits above the input so it stays visible while typing.
         val upper = JPanel(BorderLayout()).apply {
-            add(previewPane.component, BorderLayout.NORTH)
+            add(previewView.component, BorderLayout.NORTH)
             add(contentPanel, BorderLayout.CENTER)
         }
 
@@ -182,7 +191,7 @@ class EquationDialog(
     }
 
     override fun dispose() {
-        previewPane.dispose()
+        previewView.dispose()
         super.dispose()
     }
 

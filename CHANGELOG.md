@@ -7,18 +7,20 @@
 
 ## [Unreleased]
 
+- `refactor(latex)` typeset the preview with the KaTeX build from the Quarkdown installation instead of the CLI
+    - The previous preview compiled a throwaway document with the CLI, which took seconds per render (the CLI boots a JVM) and needed process sequencing to avoid piling up runs.
+    - The renderer that Quarkdown itself uses ships inside the installation (`lib/html/lib/katex/`: script, stylesheet and web fonts), so it is served over a loopback port and driven by a single JavaScript call per update — a preview now takes milliseconds, with no CLI and nothing bundled in the plugin.
+    - Because the page, the renderer and its fonts share one HTTP origin, Chromium's `file:` restrictions cannot block the fonts (which would render an unstyled formula).
+    - The page is loaded once per dialog; updates are plain script evaluations, so the editor's live preview is effectively instant.
+    - `.texmacro` declarations are still passed to KaTeX (`macros`), including the block-body form, so custom commands resolve; when the installation has no KaTeX build the view explains what to check instead of failing.
+    - Removed the CLI-based preview classes and their tests (renderer, background service, render scheduler, result dialog, asset-free pane).
 - `fix(latex)` the equation gutter dialog now shows the content and a live preview
     - The dialog opened with an **empty content field and no preview**; clicking the gutter of a `$ … $` / `$$$` equation still opened the old id-only dialog, which is why such equations looked unrecognized even though the editor highlighting worked (verified through the real daemon pipeline).
-    - The content is pre-filled from the equation and edited in a multi-line editor; the rendered formula is shown live above it, debounced so the CLI is not started on every keystroke, discarding out-of-order renders.
+    - The content is pre-filled from the equation and edited in a multi-line editor, with the typeset result shown live above it.
     - The syntax can be switched between `$ … $` and `.math`, converting the equation without rewriting it by hand (`$$$` is used automatically when the content spans several lines).
     - The id field is offered where an id is meaningful — always for `.math` (as `ref:{…}`) and for `$ … $` when inserting or when the equation already has one — so an existing id is never silently dropped.
     - Editing replaces the whole occurrence (delimiters and `{#id}` included), so an inline equation no longer has to sit on a line of its own.
 - `feat(latex)` pick which equation to edit when several share a line, and insert equations with preview, content and id (the `$ … $` form is offered first)
-- `feat(latex)` preview a formula from the gutter, rendered by the Quarkdown CLI
-    - The equation gutter icon now also covers `.math` / `.texmacro` content and gains a "Preview Formula" entry in its menu (and on a left click where there is no editable id).
-    - The formula is compiled into a throwaway document and shown in the embedded browser, so it renders offline with the same KaTeX build and theme as the final document, and degrades to the system browser when JCEF is unavailable.
-    - The document's `.texmacro` declarations and `.var` values are copied into the throwaway document, so custom commands and variables resolve exactly as they do in the real output.
-    - Each formula is re-emitted with the syntax it came from, because Quarkdown evaluates `.math` content but not `$…$` content — the preview therefore shows what the document will really render, including that distinction.
 - `feat(latex)` TeX support also covers `.math` and `.texmacro` content
     - `.math` content (brace argument or indented block body) and `.texmacro` name/body are highlighted and checked like `$…$` equations.
     - Fixes control sequences being split: `\begin` was lexed as the Markdown escape `\b` plus plain text `egin`, so it looked like a lone highlighted `\b` and the spell checker reported "egin".

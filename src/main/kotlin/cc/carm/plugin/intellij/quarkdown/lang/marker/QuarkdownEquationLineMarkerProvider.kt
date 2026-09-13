@@ -6,8 +6,9 @@ import cc.carm.plugin.intellij.quarkdown.QuarkdownIcons
 import cc.carm.plugin.intellij.quarkdown.action.equation.EquationDialog
 import cc.carm.plugin.intellij.quarkdown.lang.equation.QuarkdownEquationEdit
 import cc.carm.plugin.intellij.quarkdown.lang.latex.QuarkdownEquationRegions
-import cc.carm.plugin.intellij.quarkdown.lang.preview.QuarkdownFormulaPreview
+import cc.carm.plugin.intellij.quarkdown.lang.latex.QuarkdownLatexPreviewSource
 import cc.carm.plugin.intellij.quarkdown.lang.reference.QuarkdownIdRenameUtils
+import cc.carm.plugin.intellij.quarkdown.ui.preview.QuarkdownLatexPreviewDialog
 import com.intellij.codeInsight.daemon.GutterIconNavigationHandler
 import com.intellij.codeInsight.daemon.LineMarkerInfo
 import com.intellij.codeInsight.daemon.LineMarkerProvider
@@ -39,7 +40,8 @@ import java.awt.event.MouseEvent
  *  - **several** equations on one line → a chooser popup lists them, because the icon cannot
  *    know which one was meant;
  *  - nothing editable (e.g. a `.texmacro`, whose name/body are not equations) → the formula is
- *    rendered with the Quarkdown CLI.
+ *  - nothing editable (e.g. a `.texmacro`, whose name/body are not equations) → the formula is
+ *    typeset with the KaTeX build that ships in the Quarkdown installation.
  *
  * The popup menu always offers both actions explicitly.
  *
@@ -238,7 +240,13 @@ class QuarkdownEquationLineMarkerProvider : LineMarkerProvider {
             .filter { !it.isEmpty && markerLineStart(text, it) == lineStart }
             .maxByOrNull { it.contentEnd - it.contentStart }
             ?: return
-        QuarkdownFormulaPreview.getInstance(project).preview(text, region)
+        // Typeset the region's TeX with the installation's KaTeX build: instant, no compile.
+        val tex = text.substring(region.contentStart, region.contentEnd).trim()
+        val displayMode = QuarkdownLatexPreviewSource.displayMode(
+            tex,
+            region.kind == QuarkdownEquationRegions.Kind.MULTILINE,
+        )
+        QuarkdownLatexPreviewDialog.show(project, tex, text, displayMode)
     }
 
     /** A one-line description of an equation, used as the chooser's entry text. */
