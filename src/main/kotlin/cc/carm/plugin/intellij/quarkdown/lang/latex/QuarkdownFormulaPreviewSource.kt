@@ -35,13 +35,7 @@ object QuarkdownFormulaPreviewSource {
      */
     fun build(documentText: CharSequence, region: QuarkdownEquationRegions.Region): String {
         val content = documentText.substring(region.contentStart, region.contentEnd)
-
-        val lines = mutableListOf(DOCTYPE, "")
-        lines += texmacroDeclarations(documentText)
-        lines += varDeclarations(documentText)
-        if (lines.size > 2) lines += ""
-        lines += emitFormula(content, region.kind)
-        return lines.joinToString("\n")
+        return wrap(documentText, emitFormula(content, region.kind))
     }
 
     /** Renders the formula itself, using the syntax that preserves its semantics. */
@@ -61,6 +55,20 @@ object QuarkdownFormulaPreviewSource {
             QuarkdownEquationRegions.Kind.TEX_MACRO ->
                 "\$\$\$\n${content.trim()}\n\$\$\$"
         }
+
+    /**
+     * Wraps an already-rendered formula — e.g. one the editor dialog built from its current
+     * fields — into a complete throwaway document, carrying the [documentText] declarations the
+     * formula may depend on (`.texmacro` and `.var`).
+     */
+    fun wrap(documentText: CharSequence, formula: String): String {
+        val lines = mutableListOf(DOCTYPE, "")
+        lines += texmacroDeclarations(documentText)
+        lines += varDeclarations(documentText)
+        if (lines.size > 2) lines += ""
+        lines += formula
+        return lines.joinToString("\n")
+    }
 
     /**
      * Every `.texmacro {name} {body}` declaration of [documentText], rebuilt as a normalised

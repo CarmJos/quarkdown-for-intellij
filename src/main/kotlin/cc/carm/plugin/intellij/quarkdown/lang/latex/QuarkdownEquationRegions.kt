@@ -74,8 +74,18 @@ object QuarkdownEquationRegions {
         val kind: Kind,
         val contentStart: Int,
         val contentEnd: Int,
+        /**
+         * Absolute range of the **whole occurrence** — delimiters and the optional `{#id}` tag
+         * included — so an editor can replace the equation in one go. Defaults to the content
+         * range for regions whose content is the whole construct.
+         */
+        val spanStart: Int = contentStart,
+        val spanEnd: Int = contentEnd,
         val excluded: List<IntRange> = emptyList(),
     ) {
+        /** The whole occurrence as a range. */
+        val span: IntRange get() = spanStart until spanEnd
+
         val isEmpty: Boolean get() = contentEnd <= contentStart
 
         /**
@@ -160,7 +170,9 @@ object QuarkdownEquationRegions {
                 } else {
                     Kind.INLINE
                 }
-                regions += Region(kind, openEnd, closeStart)
+                // The occurrence spans the `$` delimiters and a trailing `{#id}` tag as well.
+                val closeEnd = closeStart + run
+                regions += Region(kind, openEnd, closeStart, i, idTagEnd(text, closeEnd))
             }
             i = closeStart + run
         }
@@ -208,14 +220,20 @@ object QuarkdownEquationRegions {
                 "math" -> {
                     val content = call.args.firstOrNull { it.paramName == "content" }
                         ?: call.args.firstOrNull { !it.isNamed }
+                    // The occurrence is the whole `.math` call, body argument included, without
+                    // the whitespace that separates it from what follows on the line.
+                    val spanStart = start
+                    val spanEnd = trimTrailingWhitespace(source, callSpanEnd(source, call))
+
                     if (content != null) {
                         regions += Region(
                             Kind.MATH_CALL, content.rawStart, content.rawEnd,
+                            spanStart, spanEnd,
                             nestedCallRanges(source, content.rawStart, content.rawEnd),
                         )
                     } else {
                         blockBodyRange(source, call)?.let {
-                            regions += Region(Kind.MATH_CALL, it.first, it.last + 1)
+                            regions += Region(Kind.MATH_CALL, it.first, it.last + 1, spanStart, spanEnd)
                         }
                     }
                 }
@@ -227,13 +245,19 @@ object QuarkdownEquationRegions {
                         ?: call.args.firstOrNull { it !== nameArg && !it.isNamed }
                     // The declared command name is a control sequence such as `\gradient`.
                     if (nameArg != null) {
-                        regions += Region(Kind.TEX_MACRO, nameArg.rawStart, nameArg.rawEnd)
+                        regions += Region(
+                            Kind.TEX_MACRO, nameArg.rawStart, nameArg.rawEnd,
+                            nameArg.braceStart, nameArg.braceEnd,
+                        )
                     }
                     if (macroArg != null) {
-                        regions += Region(Kind.TEX_MACRO, macroArg.rawStart, macroArg.rawEnd)
+                        regions += Region(
+                            Kind.TEX_MACRO, macroArg.rawStart, macroArg.rawEnd,
+                            macroArg.braceStart, macroArg.braceEnd,
+                        )
                     } else {
                         blockBodyRange(source, call)?.let {
-                            regions += Region(Kind.TEX_MACRO, it.first, it.last + 1)
+                            regions += Region(Kind.TEX_MACRO, it.first, it.last + 1, start, callSpanEnd(source, call))
                         }
                     }
                 }
@@ -348,9 +372,12 @@ object QuarkdownEquationRegions {
                 // the first character of the closing fence line.
                 val contentStart = openLineEnd + 1
                 if (contentStart <= lineStart) {
-                    regions += Region(Kind.MULTILINE, contentStart, lineStart)
+                    // The occurrence spans the two `$$$` delimiter lines, including the `{#id}`
+                    // tag that may follow the opening fence.
+                    regions += Region(Kind.MULTILINE, contentStart, lineStart, openLineStart, lineEnd)
                 }
                 blockRanges += openLineStart until lineEnd
+
                 openLineStart = -1
             }
         }
@@ -400,6 +427,39 @@ object QuarkdownEquationRegions {
         var count = 0
         while (pos + count < text.length && text[pos + count] == '$') count++
         return count
+    }
+
+    /**
+     * End of an optional `{#id}` tag that may follow [from] (whitespace in between allowed).
+     * Returns [from] when there is no tag, or when the braces belong to a function call's
+     * argument (`{#…}` only counts when its content starts with `#`).
+     */
+    private fun idTagEnd(text: CharSequence, from: Int): Int {
+        var i = from
+        while (i < text.length && (text[i] == ' ' || text[i] == '\t')) i++
+        if (i >= text.length || text[i] != '{') return from
+        val close = text.indexOf('}', i + 1)
+        if (close < 0) return from
+        if (!text.substring(i + 1, close).trim().startsWith("#")) return from
+        return close + 1
+    }
+
+    /**
+     * End of the whole call — including its indented body argument when it has one —, used as
+     * the end of a `.math` / `.texmacro` occurrence.
+     */
+    private fun callSpanEnd(text: String, call: QuarkdownCallParser.Call): Int =
+        blockBodyRange(text, call)?.last?.plus(1) ?: call.end
+
+    /**
+     * [end] moved back over trailing whitespace, so an occurrence never swallows the separator
+     * (space or newline) that follows it — replacing the occurrence must keep the surrounding
+     * document layout intact.
+     */
+    private fun trimTrailingWhitespace(text: String, end: Int): Int {
+        var i = end.coerceAtMost(text.length)
+        while (i > 0 && text[i - 1].isWhitespace()) i--
+        return i
     }
 
     /** True when only whitespace precedes [pos] on its line. */

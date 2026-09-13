@@ -4,7 +4,7 @@ import cc.carm.plugin.intellij.quarkdown.QuarkdownBundle
 import cc.carm.plugin.intellij.quarkdown.QuarkdownFileType
 import cc.carm.plugin.intellij.quarkdown.QuarkdownIcons
 import cc.carm.plugin.intellij.quarkdown.action.equation.EquationDialog
-import cc.carm.plugin.intellij.quarkdown.lang.equation.QuarkdownEquationSyntax
+import cc.carm.plugin.intellij.quarkdown.lang.equation.QuarkdownEquationEdit
 import cc.carm.plugin.intellij.quarkdown.lang.latex.QuarkdownEquationRegions
 import cc.carm.plugin.intellij.quarkdown.lang.preview.QuarkdownFormulaPreview
 import cc.carm.plugin.intellij.quarkdown.lang.reference.QuarkdownIdRenameUtils
@@ -17,9 +17,12 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.editor.markup.GutterIconRenderer
+import com.intellij.openapi.project.Project
+import com.intellij.openapi.ui.popup.JBPopupFactory
 import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
+import java.awt.Component
 import java.awt.event.MouseEvent
 
 /**
@@ -27,23 +30,23 @@ import java.awt.event.MouseEvent
  *
  *  - `$ ... $ {#id}` equations — on the equation line;
  *  - `$$$ {#id}` fenced equations — on the opening `$$$` line;
- *  - `.math` and `.texmacro` content — on the first content line (for an indented block body)
- *    or on the call line (for a brace argument).
+ *  - `.math` and `.texmacro` content — on the first content line (for an indented block body) or
+ *    on the call line (for a brace argument).
  *
- * The icon offers, through its popup menu:
+ * What a click does:
  *
- *  - **Preview Formula** — renders the formula with the Quarkdown CLI (see
- *    [QuarkdownFormulaPreview]) and shows the result in an embedded browser;
- *  - **Edit Equation ID…** — the [EquationDialog], available only where an equation really has
- *    an editable id (a `$` equation, not `.math` / `.texmacro`).
+ *  - one editable equation on the line → the [EquationDialog] opens for it;
+ *  - **several** equations on one line → a chooser popup lists them, because the icon cannot
+ *    know which one was meant;
+ *  - nothing editable (e.g. a `.texmacro`, whose name/body are not equations) → the formula is
+ *    rendered with the Quarkdown CLI.
  *
- * A left click keeps the historical behaviour where it applies — opening the id dialog for
- * `$` equations — and previews the formula everywhere else.
+ * The popup menu always offers both actions explicitly.
  *
- * The regions come from [QuarkdownEquationRegions], the same single source of truth used by
- * the LaTeX annotator, so the gutter can never disagree with the highlighting about what
- * counts as TeX. That is also why [collectSlowLineMarkers] is used: locating the regions (and
- * pairing `$$$` fences) needs one scan of the document, which a per-element callback cannot do.
+ * Regions come from [QuarkdownEquationRegions] — the same single source of truth as the LaTeX
+ * annotator — so the gutter can never disagree with the highlighting about what counts as TeX.
+ * That is also why [collectSlowLineMarkers] is used: locating the regions (and pairing `$$$`
+ * fences) needs one scan of the document, which a per-element callback cannot do.
  */
 class QuarkdownEquationLineMarkerProvider : LineMarkerProvider {
 
@@ -58,14 +61,14 @@ class QuarkdownEquationLineMarkerProvider : LineMarkerProvider {
         if (file.fileType !is QuarkdownFileType) return
         val text = file.text
 
-        // One gutter icon per line: group the regions by the line that should carry the icon.
-        // `.texmacro {\a} {\b}` yields two regions on one line, `$ x $ {#a} $ y $ {#b}` too.
-        val regionsByLine = LinkedHashMap<Int, MutableList<QuarkdownEquationRegions.Region>>()
+        // One gutter icon per line: several regions can share a line (`.texmacro {\a} {\b}`,
+        // two `$ … $` equations in one paragraph).
+        val linesWithLatex = HashSet<Int>()
         for (region in QuarkdownEquationRegions.find(text).regions) {
             if (region.isEmpty) continue
-            regionsByLine.getOrPut(markerLineStart(text, region)) { mutableListOf() }.add(region)
+            linesWithLatex.add(markerLineStart(text, region))
         }
-        if (regionsByLine.isEmpty()) return
+        if (linesWithLatex.isEmpty()) return
 
         for (element in elements) {
             if (element.firstChild != null) continue
@@ -73,40 +76,42 @@ class QuarkdownEquationLineMarkerProvider : LineMarkerProvider {
             // Anchor the marker at the leaf that starts the line: the first non-whitespace
             // character of a line belongs to the leaf whose range begins at the line start.
             if (elementOffset != findLineStart(text, elementOffset)) continue
-            val regions = regionsByLine.remove(elementOffset) ?: continue
-            // The regions themselves are not kept: the preview re-resolves them from the
-            // current text, so stale offsets can never be used.
-            if (regions.isEmpty()) continue
+            if (elementOffset !in linesWithLatex) continue
             result.add(createMarker(file, element, elementOffset))
         }
     }
 
-    private fun createMarker(
-        file: PsiFile,
-        element: PsiElement,
-        lineStart: Int,
-    ): LineMarkerInfo<*> {
-        val handler = EquationGutterHandler(file, lineStart)
+    private fun createMarker(file: PsiFile, element: PsiElement, lineStart: Int): LineMarkerInfo<*> {
+        // The tooltip is kept in a typed local: the LineMarkerInfo overloads accept either a
+        // tooltip Function or an accessible-name Supplier, and an inline lambda is ambiguous.
+        val tooltip: com.intellij.util.Function<PsiElement, String> =
+            object : com.intellij.util.Function<PsiElement, String> {
+                override fun `fun`(param: PsiElement): String =
+                    QuarkdownBundle.message("quarkdown.marker.equation.tooltip")
+            }
+        // The accessible name doubles as the tooltip for screen readers.
+        val accessibleName = java.util.function.Supplier {
+            QuarkdownBundle.message("quarkdown.marker.equation.tooltip")
+        }
+
         return object : LineMarkerInfo<PsiElement>(
             element,
             element.textRange,
             QuarkdownIcons.EQUATION_MARKER,
-            { QuarkdownBundle.message("quarkdown.marker.equation.tooltip") },
-            handler,
+            tooltip,
+            EquationGutterHandler(file, lineStart),
             GutterIconRenderer.Alignment.RIGHT,
-            { QuarkdownBundle.message("quarkdown.marker.equation.tooltip") },
+            accessibleName,
         ) {
-            // The default renderer has no popup menu; this one adds the formula preview (and the
-            // id dialog) to the gutter's menu.
+            // The default renderer has no popup menu; this one adds both actions.
             override fun createGutterRenderer(): GutterIconRenderer =
                 FormulaGutterRenderer(this, file, lineStart)
         }
     }
 
     /**
-     * The line that should carry the gutter icon for [region]. Fenced blocks are marked on
-     * their opening `$$$` line (the line before the content), everything else on the line the
-     * content starts on.
+     * The line that should carry the gutter icon for [region]: fenced blocks are marked on their
+     * opening `$$$` line, everything else on the line the content starts on.
      */
     private fun markerLineStart(text: CharSequence, region: QuarkdownEquationRegions.Region): Int =
         if (region.kind == QuarkdownEquationRegions.Kind.MULTILINE) {
@@ -115,18 +120,23 @@ class QuarkdownEquationLineMarkerProvider : LineMarkerProvider {
             findLineStart(text, region.contentStart)
         }
 
-    /** Left click: the id dialog where an equation has an id, the formula preview otherwise. */
+    /** Left click: edit the single equation on the line, choose among several, or preview. */
     private inner class EquationGutterHandler(
         private val file: PsiFile,
         private val lineStart: Int,
     ) : GutterIconNavigationHandler<PsiElement> {
 
         override fun navigate(e: MouseEvent, elt: PsiElement) {
-            if (editableEquationKind(elt) != null) editEquationId(elt) else previewFormula(file, lineStart)
+            val equations = editableEquations(file, lineStart)
+            when {
+                equations.size == 1 -> editEquation(file, equations.first())
+                equations.size > 1 -> chooseEquation(file, equations, e.component)
+                else -> previewFormula(file, lineStart)
+            }
         }
     }
 
-    /** Gutter icon adding the formula preview (and the id dialog) to the popup menu. */
+    /** Gutter icon adding the equation actions to the popup menu. */
     private inner class FormulaGutterRenderer(
         info: LineMarkerInfo<PsiElement>,
         private val file: PsiFile,
@@ -138,110 +148,116 @@ class QuarkdownEquationLineMarkerProvider : LineMarkerProvider {
             group.add(object : AnAction(QuarkdownBundle.message("quarkdown.math.preview.action")) {
                 override fun actionPerformed(e: AnActionEvent) = previewFormula(file, lineStart)
             })
-            // Only `$ ... $` / `$$$` equations have an editable id; `.math` and `.texmacro`
-            // do not, so the entry is not offered there (and is decided when the menu opens).
-            if (currentElement()?.let { editableEquationKind(it) } != null) {
-                group.addSeparator()
-                group.add(object : AnAction(QuarkdownBundle.message("quarkdown.dialog.equation.title")) {
-                    override fun actionPerformed(e: AnActionEvent) {
-                        currentElement()?.let { editEquationId(it) }
+            group.addSeparator()
+            group.add(object : AnAction(QuarkdownBundle.message("quarkdown.dialog.equation.title")) {
+                override fun actionPerformed(e: AnActionEvent) {
+                    val equations = editableEquations(file, lineStart)
+                    when {
+                        equations.size == 1 -> editEquation(file, equations.first())
+                        equations.size > 1 -> chooseEquation(file, equations, null)
                     }
-                })
-            }
-            return group
-        }
+                }
 
-        /** The element at the marker's line, re-resolved because PSI may have been rebuilt. */
-        private fun currentElement(): PsiElement? {
-            val text = file.text
-            return file.findElementAt(lineStart.coerceIn(0, text.length))
+                override fun update(e: AnActionEvent) {
+                    e.presentation.isEnabled = editableEquations(file, lineStart).isNotEmpty()
+                }
+            })
+            return group
         }
     }
 
     /**
-     * Renders the formula of the gutter icon on [lineStart].
-     *
-     * The regions are recomputed from the current document text instead of reusing the ones the
-     * markers were built from: the document may have been edited in the meantime, and a formula
-     * is short enough for the re-scan to be cheap. When several regions share the line — a
-     * `.texmacro` name and its body, or two equations — the largest is previewed, which selects
-     * the macro body rather than its name.
+     * The equations on [lineStart] that can be edited — i.e. those with a content/id model.
+     * `.texmacro` regions are excluded: a macro declaration is not an equation.
+     */
+    private fun editableEquations(
+        file: PsiFile,
+        lineStart: Int,
+    ): List<QuarkdownEquationRegions.Region> {
+        val text = file.text
+        return QuarkdownEquationRegions.find(text).regions.filter { region ->
+            !region.isEmpty && markerLineStart(text, region) == lineStart &&
+                    QuarkdownEquationEdit.occurrence(text, region) != null
+        }
+    }
+
+    /**
+     * Asks which equation to edit when several share one line. The popup is shown near the
+     * click when [component] is known (gutter click) and otherwise over the editor.
+     */
+    private fun chooseEquation(
+        file: PsiFile,
+        equations: List<QuarkdownEquationRegions.Region>,
+        component: Component?,
+    ) {
+        val text = file.text
+        val choices = equations.mapIndexed { index, region -> Choice(index + 1, snippet(text, region), region) }
+        val builder = JBPopupFactory.getInstance()
+            .createPopupChooserBuilder(choices)
+            .setTitle(QuarkdownBundle.message("quarkdown.dialog.equation.choose"))
+            .setItemChosenCallback { editEquation(file, it.region) }
+        val popup = builder.createPopup()
+        if (component != null) popup.showUnderneathOf(component) else popup.showInFocusCenter()
+    }
+
+    /** Opens the equation editor for [region] and writes the result back over its span. */
+    private fun editEquation(file: PsiFile, region: QuarkdownEquationRegions.Region) {
+        val project = file.project
+        if (project.isDisposed) return
+        val document = PsiDocumentManager.getInstance(project).getDocument(file) ?: return
+        val text = document.immutableCharSequence
+        val occurrence = QuarkdownEquationEdit.occurrence(text, region) ?: return
+
+        val dialog = EquationDialog(project, text.toString(), occurrence)
+        if (!dialog.showAndGet()) return
+
+        // The region may be replaced wholesale: its span covers the delimiters and the id tag.
+        val replacement = dialog.buildText()
+        val start = region.spanStart
+        val end = region.spanEnd
+        WriteCommandAction.runWriteCommandAction(project) {
+            document.replaceString(start, end, replacement)
+        }
+
+        val newId = dialog.getIdForTest()
+        if (occurrence.id.isNotEmpty() && occurrence.id != newId) {
+            QuarkdownIdRenameUtils.renameRefUsagesAndNotify(project, file, occurrence.id, newId)
+        }
+    }
+
+    /**
+     * Renders the formula of the gutter icon on [lineStart]. When several regions share the line
+     * — a `.texmacro` name and its body, or two equations — the largest is previewed, which
+     * selects the macro body rather than its name.
      */
     private fun previewFormula(file: PsiFile, lineStart: Int) {
-        if (file.project.isDisposed) return
+        val project = file.project
+        if (project.isDisposed) return
         val text = file.text
         val region = QuarkdownEquationRegions.find(text).regions
             .filter { !it.isEmpty && markerLineStart(text, it) == lineStart }
             .maxByOrNull { it.contentEnd - it.contentStart }
             ?: return
-        QuarkdownFormulaPreview.getInstance(file.project).preview(text, region)
+        QuarkdownFormulaPreview.getInstance(project).preview(text, region)
     }
 
-
-    /** Opens the [EquationDialog] for the equation starting on [element]'s line. */
-    private fun editEquationId(elt: PsiElement) {
-        val project = elt.project
-        val file = elt.containingFile ?: return
-        val document = PsiDocumentManager.getInstance(project).getDocument(file) ?: return
-
-        val kind = editableEquationKind(elt) ?: return
-        val text = document.immutableCharSequence
-        val start = findLineStart(text, elt.textRange.startOffset)
-        val end = findLineEnd(text, start)
-        val line = text.subSequence(start, end).toString()
-
-        val dialog = EquationDialog(project, kind)
-        val oldId: String
-        when (kind) {
-            QuarkdownEquationSyntax.Kind.INLINE -> {
-                val info = QuarkdownEquationSyntax.parseInlineEquationLine(line) ?: return
-                dialog.parseInline(info)
-                oldId = info.id
-            }
-
-            QuarkdownEquationSyntax.Kind.FENCED -> {
-                val info = QuarkdownEquationSyntax.parseFenceEquationLine(line) ?: return
-                dialog.parseFence(info)
-                oldId = info.id
-            }
+    /** A one-line description of an equation, used as the chooser's entry text. */
+    private fun snippet(text: CharSequence, region: QuarkdownEquationRegions.Region): String {
+        val content = text.substring(region.contentStart, region.contentEnd)
+            .replace(Regex("\\s+"), " ")
+            .trim()
+        val head = if (content.length > SNIPPET_LENGTH) content.take(SNIPPET_LENGTH) + "…" else content
+        val kind = when (region.kind) {
+            QuarkdownEquationRegions.Kind.MATH_CALL -> ".math"
+            QuarkdownEquationRegions.Kind.MULTILINE -> "$$$"
+            else -> "\$"
         }
-
-        if (dialog.showAndGet()) {
-            val newId = dialog.getIdForTest()
-            WriteCommandAction.runWriteCommandAction(project) {
-                val replacement = dialog.buildLine()
-                document.replaceString(start, end, replacement)
-            }
-            if (oldId != newId) {
-                QuarkdownIdRenameUtils.renameRefUsagesAndNotify(project, file, oldId, newId)
-            }
-        }
+        return "$kind  $head"
     }
 
-    /**
-     * The equation kind whose id is editable from the line [element] belongs to, or `null`
-     * when the line is not an `$ ... $` / `$$$` equation (`.math` and `.texmacro` carry no
-     * editable id).
-     */
-    private fun editableEquationKind(element: PsiElement): QuarkdownEquationSyntax.Kind? {
-        val file = element.containingFile ?: return null
-        val text = file.text
-        val start = findLineStart(text, element.textRange.startOffset)
-        val line = text.subSequence(start, findLineEnd(text, start)).toString()
-
-        if (QuarkdownEquationSyntax.parseFenceEquationLine(line) != null) {
-            // Only the opening fence is editable — a closing `$$$` must not open the dialog.
-            return if (start in QuarkdownEquationSyntax.findEquationFenceOpenOffsets(text)) {
-                QuarkdownEquationSyntax.Kind.FENCED
-            } else {
-                null
-            }
-        }
-        return if (QuarkdownEquationSyntax.parseInlineEquationLine(line) != null) {
-            QuarkdownEquationSyntax.Kind.INLINE
-        } else {
-            null
-        }
+    /** One entry of the multi-equation chooser. */
+    private data class Choice(val index: Int, val label: String, val region: QuarkdownEquationRegions.Region) {
+        override fun toString(): String = "$index. $label"
     }
 
     private fun findLineStart(text: CharSequence, offset: Int): Int {
@@ -250,9 +266,8 @@ class QuarkdownEquationLineMarkerProvider : LineMarkerProvider {
         return i
     }
 
-    private fun findLineEnd(text: CharSequence, offset: Int): Int {
-        var i = offset
-        while (i < text.length && text[i] != '\n') i++
-        return i
+    private companion object {
+        /** Characters of the equation shown in the chooser. */
+        const val SNIPPET_LENGTH = 60
     }
 }

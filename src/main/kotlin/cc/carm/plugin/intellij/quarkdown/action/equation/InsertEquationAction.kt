@@ -12,8 +12,9 @@ import com.intellij.openapi.project.DumbAware
 /**
  * Inserts a new Quarkdown equation at the caret.
  *
- * Opens [EquationDialog] to enter the equation content and an optional `{#id}`.
- * The equation is inserted as a standalone `$ ... $ {#id}` line (inline kind).
+ * Opens [EquationDialog] to enter the TeX content (with a live preview), an optional id and the
+ * syntax to use. The `$ … $` form is offered first, because it is the syntax Quarkdown documents
+ * use most; a multi-line expression is inserted as a `$$$` block automatically.
  */
 class InsertEquationAction : AnAction(
     QuarkdownBundle.message("quarkdown.action.insert.equation"),
@@ -30,11 +31,12 @@ class InsertEquationAction : AnAction(
 
     override fun actionPerformed(e: AnActionEvent) {
         val editor = e.getData(CommonDataKeys.EDITOR) ?: return
-        val project = e.project
+        val project = e.project ?: return
 
-        val dialog = EquationDialog(project, QuarkdownEquationSyntax.Kind.INLINE)
+        val dialog = EquationDialog(project, editor.document.text, null)
         if (!dialog.showAndGet()) return
-        val line = dialog.buildInsertLine()
+        val line = dialog.buildText()
+        if (line.isBlank()) return
 
         WriteCommandAction.runWriteCommandAction(project) {
             val document = editor.document

@@ -7,6 +7,13 @@
 
 ## [Unreleased]
 
+- `fix(latex)` the equation gutter dialog now shows the content and a live preview
+    - The dialog opened with an **empty content field and no preview**; clicking the gutter of a `$ … $` / `$$$` equation still opened the old id-only dialog, which is why such equations looked unrecognized even though the editor highlighting worked (verified through the real daemon pipeline).
+    - The content is pre-filled from the equation and edited in a multi-line editor; the rendered formula is shown live above it, debounced so the CLI is not started on every keystroke, discarding out-of-order renders.
+    - The syntax can be switched between `$ … $` and `.math`, converting the equation without rewriting it by hand (`$$$` is used automatically when the content spans several lines).
+    - The id field is offered where an id is meaningful — always for `.math` (as `ref:{…}`) and for `$ … $` when inserting or when the equation already has one — so an existing id is never silently dropped.
+    - Editing replaces the whole occurrence (delimiters and `{#id}` included), so an inline equation no longer has to sit on a line of its own.
+- `feat(latex)` pick which equation to edit when several share a line, and insert equations with preview, content and id (the `$ … $` form is offered first)
 - `feat(latex)` preview a formula from the gutter, rendered by the Quarkdown CLI
     - The equation gutter icon now also covers `.math` / `.texmacro` content and gains a "Preview Formula" entry in its menu (and on a left click where there is no editable id).
     - The formula is compiled into a throwaway document and shown in the embedded browser, so it renders offline with the same KaTeX build and theme as the final document, and degrades to the system browser when JCEF is unavailable.
