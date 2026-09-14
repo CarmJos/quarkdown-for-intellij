@@ -45,6 +45,13 @@ _**"为 JetBrains IntelliJ 平台提供 Quarkdown 语言支持。"**_
 
 - **TeX 公式支持** — 只要出现 LaTeX，都会被词法分析并着色：包括公式（`$ … $`、`$$ … $$` 与 `$$$ … $$$`）以及 `.math` / `.texmacro` 的内容。公式编辑器会直接使用 Quarkdown 自带的 KaTeX 实时排版，无需等待额外的编译过程。其输入框是真正的编辑器（含行号与相同的 TeX 配色），实时预览会跟随 IDE 主题，并支持滚轮缩放与鼠标拖动平移。
 
+  <details>
+  <summary>查看截图</summary>
+
+  <img src=".doc/screenshots/latex.png" alt="带实时排版预览的公式编辑器" width="80%"/>
+
+  </details>
+
 - **智能代码补全** — 输入时自动提示可用的函数、参数与文件路径，并同步显示文档说明与参数提示，写起来更快、更准确。
 
   <details>
