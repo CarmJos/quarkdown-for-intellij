@@ -206,8 +206,9 @@ class QuarkdownFoldingBuilder : FoldingBuilderEx() {
     /**
      * Builds cross-reference folds: every `.ref {id}` usage is folded to preview its target.
      * When the target can be resolved to a caption-bearing element the placeholder shows its
-     * type + caption (e.g. `Table Beverage preferences`); otherwise it falls back to
-     * `Reference(id)`. Hovering shows the original `.ref {id}` and clicking expands it.
+     * type + caption (e.g. `Table Beverage preferences`, with the type rendered in the IDE's
+     * own language); otherwise it falls back to a generic reference placeholder. Hovering
+     * shows the original `.ref {id}` and clicking expands it.
      *
      * Each reference folds independently and is collapsed by default so the preview is
      * directly visible.
@@ -239,10 +240,12 @@ class QuarkdownFoldingBuilder : FoldingBuilderEx() {
         return descriptors
     }
 
-    /** Builds the `.ref {id}` fold placeholder: type + caption, or `Reference(id)`. */
+    /** Builds the `.ref {id}` fold placeholder: localized type + caption, or the fallback. */
     private fun buildRefPlaceholder(text: String, id: String): String {
-        val target = QuarkdownReferenceLabelResolver.resolve(text, id) ?: return "Reference($id)"
-        return if (target.caption.isEmpty()) target.kind.label else "${target.kind.label} ${target.caption}"
+        val target = QuarkdownReferenceLabelResolver.resolve(text, id)
+            ?: return QuarkdownBundle.message("quarkdown.ref.fold.unresolved", id)
+        val label = QuarkdownBundle.message(target.kind.labelKey)
+        return if (target.caption.isEmpty()) label else "$label ${target.caption}"
     }
 
     // ------------------------------------------------------------------

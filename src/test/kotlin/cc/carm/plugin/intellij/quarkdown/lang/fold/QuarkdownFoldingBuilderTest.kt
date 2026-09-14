@@ -1,5 +1,7 @@
 package cc.carm.plugin.intellij.quarkdown.lang.fold
 
+import cc.carm.plugin.intellij.quarkdown.QuarkdownBundle
+import cc.carm.plugin.intellij.quarkdown.lang.reference.QuarkdownReferenceLabelResolver
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 
 /**
@@ -118,5 +120,31 @@ class QuarkdownFoldingBuilderTest : BasePlatformTestCase() {
 
         val refFolds = descriptors.filter { it.placeholderText?.startsWith("Reference") == true }
         assertTrue("no .ref fold inside fenced code block, got: $refFolds", refFolds.isEmpty())
+    }
+
+    // ------------------------------------------------------------------
+    // Localized reference labels
+    // ------------------------------------------------------------------
+
+    fun `test every ref kind resolves a bundle label`() {
+        for (kind in QuarkdownReferenceLabelResolver.Kind.entries) {
+            val label = QuarkdownBundle.message(kind.labelKey)
+            assertFalse(
+                "kind ${kind.name} should resolve ${kind.labelKey}, got: $label",
+                label.startsWith("!") || label == kind.labelKey
+            )
+        }
+    }
+
+    fun `test ref fold placeholder uses the localized label`() {
+        myFixture.configureByText("test.qd", "See .ref {intro}.\n\n## Introduction {#intro}\n")
+        val file = myFixture.file
+        val document = file.viewProvider.document!!
+        val builder = QuarkdownFoldingBuilder()
+        val descriptors = builder.buildFoldRegions(file, document, false).toList()
+
+        val label = QuarkdownBundle.message(QuarkdownReferenceLabelResolver.Kind.SECTION.labelKey)
+        val refFolds = descriptors.filter { it.placeholderText == "$label Introduction" }
+        assertEquals("should fold .ref {intro} using the bundle label", 1, refFolds.size)
     }
 }

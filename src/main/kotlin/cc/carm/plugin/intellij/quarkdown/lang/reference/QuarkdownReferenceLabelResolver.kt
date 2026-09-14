@@ -8,25 +8,30 @@ import cc.carm.plugin.intellij.quarkdown.lang.equation.QuarkdownEquationSyntax
  * description of its target element — its **type** (Section / Figure / Table / Code /
  * Equation) and its **caption** (heading text, image title, table caption, code caption).
  *
- * It is used by the folding builder to preview a `.ref {id}` reference as a CustomFold
- * placeholder (e.g. `Table Beverage preferences`), mirroring the actual rendered reference
- * as closely as possible.
+ * It is used by the folding builder to preview a `.ref {id}` reference as a fold placeholder
+ * (e.g. `Table Beverage preferences`), mirroring the actual rendered reference as closely as
+ * possible. The type part is *not* hard-coded here: [Kind] only exposes a bundle key
+ * ([Kind.labelKey]), so callers render the type in the IDE's own language.
  *
  * Quarkdown's *exact* rendered reference (e.g. `Table 1.1: Beverage preferences`)
  * additionally depends on the numbering configuration (`.numbering`) and the document
  * language (`.doclang`). Those are deliberately **not** replicated here — this resolver
- * returns only the stable type + caption parts, and callers fall back to `Reference(id)`
- * when no caption-bearing target can be identified.
+ * returns only the stable type + caption parts, and callers fall back to a generic
+ * reference placeholder when no caption-bearing target can be identified.
  */
 object QuarkdownReferenceLabelResolver {
 
-    /** The kind of target a `.ref {id}` can resolve to, with its default English label. */
-    enum class Kind(val label: String) {
-        SECTION("Section"),
-        FIGURE("Figure"),
-        TABLE("Table"),
-        CODE("Code"),
-        EQUATION("Equation")
+    /**
+     * The kind of target a `.ref {id}` can resolve to, together with the bundle key of its
+     * display label (resolved by the UI layer, keeping this resolver free of platform
+     * dependencies).
+     */
+    enum class Kind(val labelKey: String) {
+        SECTION("quarkdown.ref.kind.section"),
+        FIGURE("quarkdown.ref.kind.figure"),
+        TABLE("quarkdown.ref.kind.table"),
+        CODE("quarkdown.ref.kind.code"),
+        EQUATION("quarkdown.ref.kind.equation")
     }
 
     /** A resolved reference target: the element kind plus its caption (may be empty). */
@@ -60,7 +65,7 @@ object QuarkdownReferenceLabelResolver {
 
     /**
      * Resolves [id] to a description of its target element, or `null` when no caption-bearing
-     * target can be identified (callers then fall back to `Reference(id)`).
+     * target can be identified (callers then fall back to their own generic placeholder).
      */
     fun resolve(text: String, id: String): Target? {
         val normalized = id.trim()

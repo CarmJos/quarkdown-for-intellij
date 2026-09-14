@@ -7,6 +7,9 @@
 
 ## [Unreleased]
 
+- `feat(fold)` `.ref` previews follow the IDE language
+    - The reference type shown for a collapsed `.ref {id}` (`Section` / `Figure` / `Table` / `Code` / `Equation`) and the unresolved `Reference(id)` fallback were hard-coded English; they now come from the message bundle, so a Chinese IDE shows `章节` / `图` / `表` / `代码` / `公式` and `引用（id）`.
+
 ## [1.3.1] - 2026-09-13
 
 - `feat(latex)` TeX support for equations: highlighting, structural checks, a gutter menu, and an editor with a live typeset preview
