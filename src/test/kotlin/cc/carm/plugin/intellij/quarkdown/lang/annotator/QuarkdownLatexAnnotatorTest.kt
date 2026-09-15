@@ -74,6 +74,23 @@ class QuarkdownLatexAnnotatorTest : BasePlatformTestCase() {
         assertTrue("prices must not be colored: $colors", colors.isEmpty())
     }
 
+    fun `test punctuation after an equation keeps the following tags out of the equation`() {
+        val text = "For large values of \$ d_k \$, the dot products grow large.\n" +
+                "\n" +
+                "\$\$\$ {#eq-multihead}\n" +
+                "\\begin{aligned}\n" +
+                "x = 1\n" +
+                "\\end{aligned}\n" +
+                "\$\$\$\n" +
+                "\n" +
+                "## Heading {#heading}\n"
+        val (problems, _) = analyse(text)
+        assertTrue(
+            "the `{#id}` tags and the heading must not be analysed as TeX: $problems",
+            problems.isEmpty()
+        )
+    }
+
     fun `test a document without dollar signs is skipped`() {
         val (problems, colors) = analyse("# Title\n\nJust prose, no math here.\n")
         assertTrue(problems.isEmpty())

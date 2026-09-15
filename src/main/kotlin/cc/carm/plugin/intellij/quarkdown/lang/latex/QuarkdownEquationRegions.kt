@@ -17,11 +17,17 @@ import cc.carm.plugin.intellij.quarkdown.lang.function.QuarkdownCallParser
  *                 f(x) = \begin{cases} 0 & \text{if } x = 0 \\ 1 & \text{otherwise} \end{cases}
  *                 $$$
  *     ```
- *     The exact rule is that **both `$` delimiters must be preceded *and* followed by
- *     whitespace**, or be at the beginning / end of a line. That rule is what makes prose like
- *     `it costs $5 and $10` stay plain text, so it is implemented literally here instead of the
- *     laxer "any `$...$`" heuristic. A `$$$` (three or more) run only counts as a delimiter when
- *     it sits alone on its line, optionally followed by the `{#id}` cross-reference tag.
+ *     The rule comes from Quarkdown's `ONELINE_MATH` pattern (`\$[ \t]` … `(?<![ \t])[ \t]\$`,
+ *     wrapped in `(?<=^|\s|\W)` … `(?=$|\s|\W)`): the opening `$` must be preceded by the start
+ *     of the text or a blank and followed by a blank, while the closing `$` must be preceded by
+ *     a blank and followed by the end of the text, a blank or a non-word character. The blank
+ *     after the opening `$` is what makes prose like `it costs $5 and $10` stay plain text, so
+ *     it is implemented literally here instead of the laxer "any `$...$`" heuristic; the laxer
+ *     *trailing* check is what makes `$ d_k $,` an equation, since punctuation may follow the
+ *     closing `$`. The non-word character allowed *before* an opening `$` is not implemented:
+ *     it is nearly always an inline code span delimiter (`` `$ x $` ``), which Quarkdown lexes
+ *     as code because the span starts earlier. A `$$$` (three or more) run only counts as a
+ *     delimiter when it sits alone on its line, optionally followed by the `{#id}` tag.
  *  2. **`.math`** — the function backing both syntaxes above. Its `content` argument (or its
  *     indented block body) is a TeX expression.
  *  3. **`.texmacro`** — its `name` argument is the declared command (e.g. `\gradient`) and its
@@ -153,7 +159,7 @@ object QuarkdownEquationRegions {
                 i = openEnd
                 continue
             }
-            if (!isDelimiter(text, i, run)) {
+            if (!isOpeningDelimiter(text, i, run)) {
                 i = openEnd
                 continue
             }
@@ -389,15 +395,40 @@ object QuarkdownEquationRegions {
     // ------------------------------------------------------------------
 
     /**
-     * True when the `$` run of [len] characters at [pos] is a valid equation delimiter:
-     * preceded and followed by whitespace, or by the beginning / end of the text. Line
-     * breaks count as whitespace, which is what makes "beginning / end of the line" work.
+     * True when the `$` run of [len] characters at [pos] can open an equation: preceded by the
+     * start of the text or a blank, and followed by a blank (or the end of the text).
+     *
+     * The blank *after* the run is what keeps `$5` and `word$x$` plain text, exactly like the
+     * `\$[ \t]` opening of Quarkdown's `ONELINE_MATH` pattern.
      */
-    private fun isDelimiter(text: CharSequence, pos: Int, len: Int): Boolean {
+    private fun isOpeningDelimiter(text: CharSequence, pos: Int, len: Int): Boolean {
         val before = pos == 0 || text[pos - 1].isWhitespace()
         val after = pos + len >= text.length || text[pos + len].isWhitespace()
         return before && after
     }
+
+    /**
+     * True when the `$` run of [len] characters at [pos] can close an equation: preceded by a
+     * blank (the content must end with one) and followed by the end of the text, a blank or a
+     * non-word character.
+     *
+     * The trailing check mirrors the `(?=$|\s|\W)` lookahead of Quarkdown's `ONELINE_MATH`
+     * pattern: a formula is still a formula when punctuation follows its closing `$` —
+     * `$ d_k $,` and `$ x $.` are equations, and requiring whitespace there used to make the
+     * closing delimiter invisible. The scan then ran on to the next `$` and paired the opening
+     * with a delimiter far below, swallowing the whole paragraph — and every `{#id}` tag and
+     * heading in between — into a bogus "equation" whose `#` then looked like a broken macro
+     * parameter.
+     */
+    private fun isClosingDelimiter(text: CharSequence, pos: Int, len: Int): Boolean {
+        val before = pos > 0 && text[pos - 1].isWhitespace()
+        val after = pos + len >= text.length || !isWordCharacter(text[pos + len])
+        return before && after
+    }
+
+    /** Java's `\w`, which the lookarounds of Quarkdown's math patterns are written against. */
+    private fun isWordCharacter(c: Char): Boolean =
+        c in 'a'..'z' || c in 'A'..'Z' || c in '0'..'9' || c == '_'
 
     /**
      * Finds the closing delimiter of the same length as the opening one, skipping code
@@ -416,7 +447,7 @@ object QuarkdownEquationRegions {
                 continue
             }
             val run = countDollarRun(text, j)
-            if (run == len && isDelimiter(text, j, run)) return j
+            if (run == len && isClosingDelimiter(text, j, run)) return j
             j += run
         }
         return -1

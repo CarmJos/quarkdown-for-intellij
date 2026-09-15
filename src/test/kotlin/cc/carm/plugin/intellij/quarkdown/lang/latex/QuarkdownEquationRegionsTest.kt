@@ -6,9 +6,11 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * Verifies [QuarkdownEquationRegions] follows Quarkdown's documented equation delimiter
- * rules (wiki: *TeX formulae*): `$ ... $` inline / one-line blocks, `$$$` multiline blocks,
- * and the requirement that both `$` delimiters touch whitespace.
+ * Verifies [QuarkdownEquationRegions] follows Quarkdown's equation delimiter rules (wiki:
+ * *TeX formulae*, and the `ONELINE_MATH` pattern of the reference implementation):
+ * `$ ... $` inline / one-line blocks, `$$$` multiline blocks, the blank required right after
+ * the opening `$`, and the end-of-text / whitespace / non-word character required right after
+ * the closing `$`.
  */
 class QuarkdownEquationRegionsTest {
 
@@ -62,6 +64,45 @@ class QuarkdownEquationRegionsTest {
     fun `a delimiter without surrounding whitespace is ignored`() {
         val text = "Template \$x\$ and \$y\$ placeholders."
         assertTrue(find(text).regions.isEmpty())
+    }
+
+    // ------------------------------------------------------------------
+    // Punctuation around the closing delimiter
+    // ------------------------------------------------------------------
+
+    @Test
+    fun `a closing delimiter followed by a comma still closes the equation`() {
+        val text = "For large values of \$ d_k \$, the dot products grow large."
+        val result = find(text)
+        assertEquals(1, result.regions.size)
+        assertEquals(" d_k ", contentOf(text))
+    }
+
+    @Test
+    fun `a closing delimiter followed by a period or a bracket still closes the equation`() {
+        val text = "We use \$ \\mathbf{z} \$. Then \$ \\mathbf{z} = (z_1) \$, again."
+        val result = find(text)
+        assertEquals(2, result.regions.size)
+        assertEquals(" \\mathbf{z} ", contentOf(text, 0))
+        assertEquals(" \\mathbf{z} = (z_1) ", contentOf(text, 1))
+    }
+
+    @Test
+    fun `punctuation after a closing delimiter does not swallow the following content`() {
+        val text = "Each head operates on \$ d_k = d_v = \$ .dk dimensions.\n\n\$\$\$ {#eq}\nx = 1\n\$\$\$\n\n# Heading {#id}\n"
+        val result = find(text)
+        assertEquals(2, result.regions.size)
+        assertEquals(" d_k = d_v = ", text.substring(result.regions[0].contentStart, result.regions[0].contentEnd))
+        assertTrue("nothing must be left unclosed: ${result.unclosedDelimiters}", result.unclosedDelimiters.isEmpty())
+    }
+
+    @Test
+    fun `a closing delimiter followed by a word character does not close the equation`() {
+        val text = "Let \$ x \$y be given."
+        val result = find(text)
+        assertTrue("the word right after the dollar keeps it from closing: ${result.regions}", result.regions.isEmpty())
+        assertEquals(1, result.unclosedDelimiters.size)
+        assertEquals(4, result.unclosedDelimiters[0].first)
     }
 
     // ------------------------------------------------------------------
