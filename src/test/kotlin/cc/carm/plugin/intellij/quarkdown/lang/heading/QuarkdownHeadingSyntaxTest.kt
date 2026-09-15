@@ -60,6 +60,51 @@ class QuarkdownHeadingSyntaxTest {
     }
 
     // ------------------------------------------------------------------
+    // Decorative headings (`#!`) and CRLF documents
+    // ------------------------------------------------------------------
+
+    @Test
+    fun `parses a decorative heading`() {
+        val info = QuarkdownHeadingSyntax.parseHeadingLine("##! A.2 Results {#a2}")!!
+        assertEquals("##", info.marker)
+        assertEquals(2, info.level)
+        assertTrue("the `!` marks the heading as decorative", info.decorative)
+        assertEquals("A.2 Results", info.content)
+        assertEquals("a2", info.id)
+    }
+
+    @Test
+    fun `a plain heading is not decorative`() {
+        assertFalse(QuarkdownHeadingSyntax.parseHeadingLine("## A.2 Results")!!.decorative)
+    }
+
+    @Test
+    fun `parses a heading line of a CRLF document`() {
+        // Callers pass the line including its carriage return, which `.` never matches.
+        val info = QuarkdownHeadingSyntax.parseHeadingLine("##! A.2 Results {#a2}\r")!!
+        assertEquals(2, info.level)
+        assertTrue(info.decorative)
+        assertEquals("A.2 Results", info.content)
+        assertEquals("a2", info.id)
+    }
+
+    @Test
+    fun `building keeps the decorative marker`() {
+        assertEquals(
+            "##! New Title {#new-id}",
+            QuarkdownHeadingSyntax.buildHeadingLine("##! Old Title {#old-id}", 2, "New Title", "new-id")
+        )
+    }
+
+    @Test
+    fun `building can produce a decorative heading`() {
+        assertEquals(
+            "###! Appendix {#app}",
+            QuarkdownHeadingSyntax.buildHeadingInsert(3, "Appendix", "app", decorative = true)
+        )
+    }
+
+    // ------------------------------------------------------------------
     // Heading line building
     // ------------------------------------------------------------------
 

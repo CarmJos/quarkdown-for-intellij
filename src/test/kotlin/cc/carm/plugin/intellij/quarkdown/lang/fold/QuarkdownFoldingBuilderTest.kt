@@ -67,6 +67,20 @@ class QuarkdownFoldingBuilderTest : BasePlatformTestCase() {
         assertTrue("section folds should still be produced", sectionFolds.isNotEmpty())
     }
 
+    fun `test decorative headings fold their sections`() {
+        myFixture.configureByText(
+            "test.qd",
+            "##! A.2 Results\n\nSome content here.\n\n##! A.3 Results\n\nMore content."
+        )
+        val file = myFixture.file
+        val document = file.viewProvider.document!!
+        val builder = QuarkdownFoldingBuilder()
+        val descriptors = builder.buildFoldRegions(file, document, false).toList()
+
+        val sectionFolds = descriptors.filter { it.placeholderText?.startsWith("...") == true }
+        assertEquals("each decorative heading should fold its section", 2, sectionFolds.size)
+    }
+
     // ------------------------------------------------------------------
     // .ref cross-reference folds
     // ------------------------------------------------------------------

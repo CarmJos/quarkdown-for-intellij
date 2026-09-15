@@ -20,7 +20,7 @@ import cc.carm.plugin.intellij.quarkdown.lang.table.QuarkdownTableParser
  */
 object QuarkdownStatsParser {
 
-    private val headingMarkerPattern = Regex("^#{1,6}\\s+")
+    private val headingMarkerPattern = Regex("^#{1,6}!?\\s+")
     private val blockquotePattern = Regex("^>+\\s?")
     private val unorderedListPattern = Regex("^[-*+]\\s+")
     private val orderedListPattern = Regex("^\\d+[.)]\\s+")

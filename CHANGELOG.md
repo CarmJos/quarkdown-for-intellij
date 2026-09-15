@@ -13,6 +13,9 @@
     - Quarkdown only requires a non-word character after the closing `$`, so `$ d_k $,` is an equation. The closing delimiter used to be accepted only when whitespace followed it, which made the scan run on to the next `$` and pair the opening delimiter with one far below; every `{#id}` tag and heading in between was then analysed as TeX and reported bogus errors such as *Parameter marker "#" must be followed by a number*.
 - `fix(table)` tables whose separator cells use a single dash are recognized again
     - GFM — and therefore Quarkdown, which renders `| -: |` as a right-aligned cell — requires only one dash per separator cell, but the plugin demanded three. Every table using a short cell (`| :-------: | ---: | :-------: | -: |`) was invisible to the plugin: no gutter icon, no floating row/column bars, no table actions and no structure-view entry. The rule now lives in one place (`QuarkdownTableParser.isSeparatorRow`) shared by the parser, the gutter marker, the table editor and the status bar.
+- `fix(heading)` decorative headings (`#!`) and CRLF documents are recognized as headings
+    - Quarkdown's heading pattern is `^ {0,3}(#{1,6})(!?)(?=\s|$)`, where the `!` marks the heading as decorative: unnumbered and out of the table of contents, but still an anchor that `.ref {id}` resolves to. The plugin required a space right after the `#`s, so an appendix written entirely with `#!` / `##!` headings had no heading at all — an empty structure view, no heading gutter icons, no go-to-symbol entries — and `.ref` could not resolve them.
+    - `QuarkdownHeadingSyntax.parseHeadingLine` also rejected every heading of a CRLF document, because callers pass the line including its carriage return and `.` never matches one; the heading gutter icon was therefore missing on Windows-authored files. The decorative `!` is preserved when a heading is edited (`buildHeadingLine`) and can be produced by `buildHeadingInsert`.
 
 ## [1.3.1] - 2026-09-13
 

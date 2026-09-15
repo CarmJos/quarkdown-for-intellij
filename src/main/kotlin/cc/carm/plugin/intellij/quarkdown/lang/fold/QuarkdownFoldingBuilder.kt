@@ -116,10 +116,13 @@ class QuarkdownFoldingBuilder : FoldingBuilderEx() {
                 var hCount = 0
                 while (hCount < trimmed.length && trimmed[hCount] == '#') hCount++
                 if (hCount in 1..6) {
-                    val after = hCount
-                    if (after < trimmed.length && (trimmed[after] == ' ' || trimmed[after] == '\t')) {
-                        headings.add(i to hCount)
-                    }
+                    // A decorative heading (`##! Title`) is a heading too: the `!` is part
+                    // of the marker and must be followed by whitespace or the line end.
+                    var after = hCount
+                    if (after < trimmed.length && trimmed[after] == '!') after++
+                    val boundary = after >= trimmed.length || trimmed[after] == ' ' ||
+                            trimmed[after] == '\t' || trimmed[after] == '\r'
+                    if (boundary) headings.add(i to hCount)
                 }
             }
         }

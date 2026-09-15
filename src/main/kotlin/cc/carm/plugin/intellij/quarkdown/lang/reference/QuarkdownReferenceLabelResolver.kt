@@ -40,8 +40,8 @@ object QuarkdownReferenceLabelResolver {
     /** Matches `{#id}` label declarations (case-insensitive, hyphenated ids allowed). */
     private val labelPattern = Regex("""\{\s*#\s*([a-zA-Z0-9_-]+)\s*}""")
 
-    /** Matches a heading line `# Title` … `###### Title` (decorative `#!` excluded). */
-    private val headingPattern = Regex("""^\s*(#{1,6})\s+(.+)$""")
+    /** Matches a heading line `# Title` … `###### Title`, decorative `#!` included. */
+    private val headingPattern = Regex("""^\s*(#{1,6})!?\s+(.+)$""")
 
     /** Strips a trailing `{#id}` label from a heading/image line. */
     private val trailingLabelPattern = Regex("""\{\s*#\s*[a-zA-Z0-9_-]+\s*}\s*$""")

@@ -70,6 +70,29 @@ class QuarkdownStructureViewTest : BasePlatformTestCase() {
         assertTrue(heading.canNavigateToSource())
     }
 
+    fun `test decorative headings build the outline too`() {
+        // `#!` / `##!` mark a heading as decorative (unnumbered, out of the contents) but
+        // it is still a heading: an appendix written with them must not have an empty view.
+        myFixture.configureByText("test.qd", "#! Appendix {#app}\n\n##! A.2 Results {#a2}\n")
+        val appendix = headingTreeElements().single()
+        assertEquals("Appendix", appendix.presentation.presentableText)
+        assertEquals("app", appendix.presentation.locationString)
+
+        val section = appendix.children
+            .filterIsInstance<QuarkdownStructureTreeElement>()
+            .single()
+        assertEquals("A.2 Results", section.presentation.presentableText)
+        assertEquals("a2", section.presentation.locationString)
+    }
+
+    fun `test decorative heading text excludes the marker`() {
+        myFixture.configureByText("test.qd", "##! A.2 Results {#a2}\n")
+        val heading = PsiTreeUtil.findChildOfType(myFixture.file, QuarkdownHeading::class.java)!!
+        assertEquals(2, heading.level)
+        assertEquals("A.2 Results", heading.headingText)
+        assertEquals("a2", heading.id)
+    }
+
     fun `test image appears as a child of its heading`() {
         myFixture.configureByText("test.qd", "# Chapter\n\n![alt](images/logo.png)\n")
         val heading = headingTreeElements().single()

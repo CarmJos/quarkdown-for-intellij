@@ -251,4 +251,26 @@ class QuarkdownLexerTest {
         val tokens = tokenize(text)
         assertTrue("must not contain CAPTION", tokens.none { it.first == "CAPTION" })
     }
+
+    @Test
+    fun `a decorative heading marker includes the exclamation mark`() {
+        // `##! Title` is a decorative heading: the `!` belongs to the marker, so the PSI
+        // parser sees a heading and the structure view is not empty.
+        val tokens = tokenize("##! A.2 Results {#a2}\n")
+        assertEquals("HEADING_MARKER", tokens[0].first)
+        assertEquals("##!", tokens[0].second)
+    }
+
+    @Test
+    fun `a decorative heading marker is recognized in a CRLF document`() {
+        val tokens = tokenize("#! Appendix\r\n")
+        assertEquals("HEADING_MARKER", tokens[0].first)
+        assertEquals("#!", tokens[0].second)
+    }
+
+    @Test
+    fun `an exclamation mark without a space is not a heading`() {
+        val tokens = tokenize("#!NoSpace\n")
+        assertTrue("must not contain HEADING_MARKER", tokens.none { it.first == "HEADING_MARKER" })
+    }
 }

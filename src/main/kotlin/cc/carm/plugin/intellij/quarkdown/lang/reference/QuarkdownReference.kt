@@ -338,7 +338,7 @@ class QuarkdownReference(
         // 2) Look for a heading whose text or trailing `{#id}` matches the id.
         // NOTE: heading slugs are not indexed (only explicit anchors are), so this scan
         // must consider every project file rather than narrowing via the reference index.
-        val headingPattern = Regex("""#{1,6}\s+(.+?)(?:\s*#+\s*)?$""", RegexOption.MULTILINE)
+        val headingPattern = Regex("""#{1,6}!?\s+(.+?)(?:\s*#+\s*)?$""", RegexOption.MULTILINE)
         val slugTarget = id.replace(Regex("""[^a-z0-9]+"""), "-").trim('-')
         return findElementInQdFiles(project, headingPattern, null) { hMatch ->
             val headingText = hMatch.groupValues[1].trim()

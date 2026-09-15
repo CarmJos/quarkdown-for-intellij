@@ -131,7 +131,7 @@ class QuarkdownGotoDeclarationHandler : GotoDeclarationHandler {
         if (all.isEmpty()) {
             // Heading whose slug matches the id (no explicit {#id}).
             val slugTarget = id.lowercase().replace(Regex("""[^a-z0-9]+"""), "-").trim('-')
-            val headingPattern = Regex("""#{1,6}\s+(.+?)(?:\s*#+\s*)?$""", RegexOption.MULTILINE)
+            val headingPattern = Regex("""#{1,6}!?\s+(.+?)(?:\s*#+\s*)?$""", RegexOption.MULTILINE)
             val headings = collectRaw(project, sourceFile, headingPattern, id) { hMatch ->
                 val text = hMatch.groupValues[1].trim()
                 text.lowercase().replace(Regex("""[^a-z0-9]+"""), "-").trim('-') == slugTarget

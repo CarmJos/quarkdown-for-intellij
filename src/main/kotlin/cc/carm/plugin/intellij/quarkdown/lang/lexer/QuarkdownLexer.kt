@@ -464,15 +464,29 @@ class QuarkdownLexer : LexerBase() {
         )
     }
 
-    /** Lexes a heading marker (`#` … `######`); returns `null` when not a heading. */
+    /**
+     * Lexes a heading marker (`#` … `######`, optionally followed by `!` for a decorative
+     * heading such as `##! A.2 Results`); returns `null` when not a heading.
+     *
+     * Quarkdown's heading pattern is `^ {0,3}(#{1,6})(!?)(?=\s|$)`: the `!` is part of the
+     * marker and marks the heading as decorative — unnumbered, kept out of the table of
+     * contents, but still referenceable. Without it a document whose headings are all
+     * decorative (an appendix, typically) has no heading at all, which empties the
+     * structure view and hides every heading gutter icon.
+     */
     private fun lexHeading(start: Int, contentPos: Int): IElementType? {
         if (contentPos >= endOffset || ch(contentPos) != '#') return null
         var hCount = 0
         while (contentPos + hCount < endOffset && ch(contentPos + hCount) == '#') hCount++
         if (hCount !in 1..6) return null
-        val after = contentPos + hCount
-        if (after < endOffset && ch(after) != ' ' && ch(after) != '\t') return null
-        return emit(QuarkdownTokenTypes.HEADING_MARKER, contentPos + hCount - start)
+        var after = contentPos + hCount
+        if (after < endOffset && ch(after) == '!') after++
+        // The marker must be followed by whitespace or the end of the line.
+        if (after < endOffset) {
+            val c = ch(after)
+            if (c != ' ' && c != '\t' && c != '\n' && c != '\r') return null
+        }
+        return emit(QuarkdownTokenTypes.HEADING_MARKER, after - start)
     }
 
     /** Lexes a list marker (`- * +`, `1.` or `1)`); returns `null` when not one. */

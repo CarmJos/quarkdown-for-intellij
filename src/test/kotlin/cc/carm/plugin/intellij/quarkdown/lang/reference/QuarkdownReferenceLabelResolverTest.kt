@@ -85,6 +85,19 @@ class QuarkdownReferenceLabelResolverTest {
     }
 
     @Test
+    fun `resolves a decorative heading reference`() {
+        // `#!`/`##!` headings are still headings: Quarkdown keeps their anchor and resolves
+        // `.ref {id}` to them, only their numbering and contents entry are suppressed.
+        val bang = resolve("See .ref {app}.\n\n##! Appendix {#app}\n", "app")!!
+        assertEquals(QuarkdownReferenceLabelResolver.Kind.SECTION, bang.kind)
+        assertEquals("Appendix", bang.caption)
+
+        val slug = resolve("See .ref {appendix-notes}.\n\n##! Appendix Notes\n", "appendix-notes")!!
+        assertEquals(QuarkdownReferenceLabelResolver.Kind.SECTION, slug.kind)
+        assertEquals("Appendix Notes", slug.caption)
+    }
+
+    @Test
     fun `resolves case-insensitively`() {
         val text = "See .ref {Data}.\n\n| A | B |\n|---|---|\n| 1 | 2 |\n\"Preferences\" {#data}\n"
         val target = resolve(text, "Data")!!
