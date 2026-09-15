@@ -13,8 +13,6 @@ import com.intellij.openapi.project.Project
  */
 object QuarkdownTableModificationUtils {
 
-    private val separatorRegex = Regex("""^\|?\s*:?-{3,}:?(?:\s*\|\s*:?-{3,}:?)*\s*\|?$""")
-
     /** Matches a Quarkdown table label/id line: `"label" {#id}` (both optional, but at least one). */
     internal val labelLineRegex = Regex("""^\s*(?:"([^"]*)"\s*)?(?:\{#([^}]+)}\s*)?$""")
 
@@ -143,7 +141,7 @@ object QuarkdownTableModificationUtils {
                 j = if (sEnd < text.length) sEnd + 1 else sEnd
                 continue
             }
-            return separatorRegex.matches(sLine.trim())
+            return QuarkdownTableParser.isSeparatorRow(sLine)
         }
         return false
     }

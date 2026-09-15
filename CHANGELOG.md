@@ -11,6 +11,8 @@
     - The reference type shown for a collapsed `.ref {id}` (`Section` / `Figure` / `Table` / `Code` / `Equation`) and the unresolved `Reference(id)` fallback were hard-coded English; they now come from the message bundle, so a Chinese IDE shows `章节` / `图` / `表` / `代码` / `公式` and `引用（id）`.
 - `fix(latex)` an equation closed before punctuation no longer swallows the rest of the document
     - Quarkdown only requires a non-word character after the closing `$`, so `$ d_k $,` is an equation. The closing delimiter used to be accepted only when whitespace followed it, which made the scan run on to the next `$` and pair the opening delimiter with one far below; every `{#id}` tag and heading in between was then analysed as TeX and reported bogus errors such as *Parameter marker "#" must be followed by a number*.
+- `fix(table)` tables whose separator cells use a single dash are recognized again
+    - GFM — and therefore Quarkdown, which renders `| -: |` as a right-aligned cell — requires only one dash per separator cell, but the plugin demanded three. Every table using a short cell (`| :-------: | ---: | :-------: | -: |`) was invisible to the plugin: no gutter icon, no floating row/column bars, no table actions and no structure-view entry. The rule now lives in one place (`QuarkdownTableParser.isSeparatorRow`) shared by the parser, the gutter marker, the table editor and the status bar.
 
 ## [1.3.1] - 2026-09-13
 

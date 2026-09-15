@@ -36,6 +36,22 @@ class QuarkdownTableModificationUtilsTest {
     }
 
     @Test
+    fun `a separator cell only needs one dash`() {
+        // `| -: |` is a valid GFM separator cell and Quarkdown renders such a table, so the
+        // block must be found; requiring three dashes used to hide every table using one.
+        val text = "| 2025.3.20 | > | 2025.6.21 | > |\n" +
+                "| :-------: | ---: | :-------: | -: |\n" +
+                "| 1:30-1:40 | 4.20 | 0:20-0:30 | 8.72 |\n" +
+                "\"caption\" {#tab-1}"
+        val blocks = QuarkdownTableModificationUtils.findTableBlocks(text)
+        assertEquals(1, blocks.size)
+        val block = blocks[0]
+        assertEquals(3, block.lines.size)
+        assertEquals("\"caption\" {#tab-1}", block.labelLine)
+        assertEquals("tab-1", QuarkdownTableModificationUtils.parseLabelLineId(block.labelLine))
+    }
+
+    @Test
     fun `separator may be separated by blank line`() {
         val text = "| H |\n\n|---|\n| x |"
         val blocks = QuarkdownTableModificationUtils.findTableBlocks(text)

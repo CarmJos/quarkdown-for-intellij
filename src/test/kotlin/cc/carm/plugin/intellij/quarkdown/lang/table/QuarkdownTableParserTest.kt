@@ -41,6 +41,25 @@ class QuarkdownTableParserTest {
     }
 
     @Test
+    fun `a separator cell only needs one dash`() {
+        // GFM (and therefore Quarkdown) accepts `-`, `:-`, `-:` and `:-:` as separator
+        // cells; a document using them must still be recognised as a table.
+        val table = QuarkdownTableParser.parse(
+            listOf(
+                "| C | R | L | N |",
+                "| :-------: | ---: | :-------: | -: |",
+                "| a | b | c | d |"
+            )
+        )
+        assertNotNull(table)
+        assertEquals(
+            listOf(Alignment.CENTER, Alignment.RIGHT, Alignment.CENTER, Alignment.RIGHT),
+            table!!.alignments
+        )
+        assertEquals(listOf("a", "b", "c", "d"), table.rows[0])
+    }
+
+    @Test
     fun `handles no explicit alignment`() {
         val table = QuarkdownTableParser.parse(basicTable)
         assertEquals(listOf(Alignment.NONE, Alignment.NONE), table!!.alignments)

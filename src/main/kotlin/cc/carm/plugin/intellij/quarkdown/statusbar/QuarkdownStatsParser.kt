@@ -1,6 +1,7 @@
 package cc.carm.plugin.intellij.quarkdown.statusbar
 
 import cc.carm.plugin.intellij.quarkdown.lang.function.QuarkdownCallParser
+import cc.carm.plugin.intellij.quarkdown.lang.table.QuarkdownTableParser
 
 /**
  * Word / paragraph counting for a Quarkdown (.qd) document.
@@ -29,7 +30,6 @@ object QuarkdownStatsParser {
     private val autoLinkPattern = Regex("<[^>]+>")
 
     private val separatorPattern = Regex("^(?:-{3,}|\\*{3,}|_{3,})$")
-    private val tableSeparatorPattern = Regex("^\\|?\\s*:?-{3,}:?\\s*(?:\\|\\s*:?-{3,}:?\\s*)*\\|?$")
 
     /** Counting result for one document. */
     data class Stats(
@@ -221,7 +221,7 @@ object QuarkdownStatsParser {
 
             // Table separator rows (`| --- | --- |`) carry no words and do not split
             // the table paragraph.
-            if (tableSeparatorPattern.matches(line)) continue
+            if (QuarkdownTableParser.isSeparatorRow(line)) continue
 
             val stripped = stripMarkdown(line)
             val words = countWords(stripped)

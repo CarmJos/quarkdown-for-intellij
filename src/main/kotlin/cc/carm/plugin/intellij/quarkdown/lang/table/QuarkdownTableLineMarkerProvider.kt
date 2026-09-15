@@ -72,6 +72,9 @@ class QuarkdownTableLineMarkerProvider : LineMarkerProvider {
     /**
      * True when the line at [lineStart] begins a table block: it contains a `|` and is
      * followed by a separator row (`| --- | :---: |`) on the next non-empty line.
+     *
+     * A separator cell only needs one dash (`| -: |`), like GFM and like the Quarkdown
+     * compiler, which accepts it.
      */
     private fun isTableStartLine(text: CharSequence, lineStart: Int): Boolean {
         val line = getFullLine(text, lineStart)
@@ -84,7 +87,7 @@ class QuarkdownTableLineMarkerProvider : LineMarkerProvider {
                 next = skipLine(text, next)
                 continue
             }
-            return separatorRegex.matches(nextLine.trim())
+            return QuarkdownTableParser.isSeparatorRow(nextLine)
         }
         return false
     }
@@ -215,9 +218,5 @@ class QuarkdownTableLineMarkerProvider : LineMarkerProvider {
             val idx = first.indexOfFirst { it != ' ' && it != '\t' }
             return if (idx > 0) first.substring(0, idx) else ""
         }
-    }
-
-    companion object {
-        private val separatorRegex = Regex("""^\|?\s*(?::?-{3,}:?)(?:\s*\|\s*(?::?-{3,}:?))*\s*\|?$""")
     }
 }

@@ -17,6 +17,10 @@ package cc.carm.plugin.intellij.quarkdown.lang.table
  *  - `:---:` → centered
  *  - `---:`  → right-aligned
  *  - `---`   → no explicit alignment
+ *
+ * A cell only needs **one** dash, exactly like GFM: `-`, `:-`, `-:` and `:-:` are valid
+ * separator cells (Quarkdown renders them all), so a table such as
+ * `| :-------: | ---: | :-------: | -: |` is recognised even though one cell is short.
  */
 object QuarkdownTableParser {
 
@@ -50,7 +54,18 @@ object QuarkdownTableParser {
     }
 
     /** True when [line] looks like a table separator row (`| --- | :---: |`). */
-    private val separatorRegex = Regex("""^\|?\s*(?::?-{3,}:?)(?:\s*\|\s*(?::?-{3,}:?))*\s*\|?$""")
+    private val separatorRegex = Regex("""^\|?\s*(?::?-+:?)(?:\s*\|\s*(?::?-+:?))*\s*\|?$""")
+
+    /**
+     * True when [line] is a table separator row: cells made of one or more dashes with
+     * optional alignment colons (`| --- | :---: |`, or the GFM minimum `| - |`).
+     *
+     * Shared by the parser, the gutter marker, the floating table editor and the status
+     * bar so the rule cannot drift between them. Quarkdown (CommonMark/GFM) renders a
+     * separator cell with a single dash, so requiring more than one hid every table that
+     * used one — including a whole appendix of them.
+     */
+    fun isSeparatorRow(line: CharSequence): Boolean = separatorRegex.matches(line.trim())
 
     private val cellSplitRegex = Regex("""\s*\|\s*""")
 
@@ -70,7 +85,7 @@ object QuarkdownTableParser {
         val headerLine = cleaned[0]
         if (!headerLine.contains('|')) return null
         val separatorLine = cleaned[1]
-        if (!separatorRegex.matches(separatorLine)) return null
+        if (!isSeparatorRow(separatorLine)) return null
 
         val headers = splitCells(headerLine)
         if (headers.isEmpty()) return null
@@ -78,7 +93,7 @@ object QuarkdownTableParser {
         val alignments = splitCells(separatorLine).map { Alignment.fromSeparator(it) }
 
         // Remaining lines are data rows; skip any table separators just in case.
-        val dataRows = cleaned.drop(2).filter { !separatorRegex.matches(it) }
+        val dataRows = cleaned.drop(2).filter { !isSeparatorRow(it) }
             .map { splitCells(it).toMutableList() }
         // Unify the table width: every row must fit, so the header is *widened* rather
         // than longer rows being truncated — dropping cells beyond the header count
