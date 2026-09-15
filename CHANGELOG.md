@@ -7,6 +7,8 @@
 
 ## [Unreleased]
 
+## [1.3.2] - 2026-09-15
+
 - `feat(fold)` `.ref` previews follow the IDE language
     - The reference type shown for a collapsed `.ref {id}` (`Section` / `Figure` / `Table` / `Code` / `Equation`) and the unresolved `Reference(id)` fallback were hard-coded English; they now come from the message bundle, so a Chinese IDE shows `章节` / `图` / `表` / `代码` / `公式` and `引用（id）`.
 - `fix(latex)` an equation closed before punctuation no longer swallows the rest of the document
@@ -155,7 +157,8 @@ After two rounds of pre-release iterations, this version brings a mature, battle
 
 - `feat` initial release: Quarkdown syntax support for IntelliJ IDEA
 
-[Unreleased]: https://github.com/CarmJos/quarkdown-for-intellij/compare/v1.3.1...HEAD
+[Unreleased]: https://github.com/CarmJos/quarkdown-for-intellij/compare/v1.3.2...HEAD
+[1.3.2]: https://github.com/CarmJos/quarkdown-for-intellij/compare/v1.3.1...v1.3.2
 [1.3.1]: https://github.com/CarmJos/quarkdown-for-intellij/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/CarmJos/quarkdown-for-intellij/compare/v1.2.1...v1.3.0
 [1.2.1]: https://github.com/CarmJos/quarkdown-for-intellij/compare/v1.2.0...v1.2.1
